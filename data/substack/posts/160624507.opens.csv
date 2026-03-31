@@ -1,0 +1,4 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+160624507,2025-04-07T11:37:55.010Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+160624507,2025-04-07T11:42:45.701Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+160624507,2025-04-07T11:47:37.172Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)

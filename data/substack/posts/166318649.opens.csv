@@ -1,0 +1,15 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+166318649,2025-06-20T11:06:04.862Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+166318649,2025-06-20T11:16:36.758Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+166318649,2025-06-20T11:31:38.544Z,swzanussi@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+166318649,2025-06-20T11:33:44.122Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+166318649,2025-06-20T11:39:04.916Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+166318649,2025-06-20T12:45:58.961Z,lrgatley@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+166318649,2025-06-20T14:23:02.678Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+166318649,2025-06-20T19:34:51.411Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+166318649,2025-06-20T22:39:56.214Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+166318649,2025-06-21T02:20:41.823Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+166318649,2025-06-21T09:03:45.738Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+166318649,2025-06-22T03:49:39.745Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+166318649,2025-06-23T19:45:56.783Z,swzanussi@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+166318649,2025-06-23T19:45:56.784Z,zsara@mac.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0

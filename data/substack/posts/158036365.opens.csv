@@ -1,0 +1,5 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+158036365,2025-03-03T12:54:20.781Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+158036365,2025-03-03T12:54:27.068Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+158036365,2025-03-03T12:54:27.590Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+158036365,2025-03-03T15:18:51.834Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

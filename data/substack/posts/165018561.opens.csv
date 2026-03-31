@@ -1,0 +1,13 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+165018561,2025-06-09T12:27:12.029Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018561,2025-06-09T12:27:58.909Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T12:35:46.875Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T13:28:10.355Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T15:14:23.240Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018561,2025-06-09T17:43:59.874Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018561,2025-06-09T18:07:53.231Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T18:07:53.481Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T21:57:25.161Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+165018561,2025-06-09T22:05:16.517Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018561,2025-06-11T01:44:18.102Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+165018561,2025-06-16T01:58:29.563Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0

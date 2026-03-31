@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCogna — Voice Setup</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F9F5EF;
+    --ink: #1C1A17;
+    --ink-muted: #6B6760;
+    --ink-faint: #B5B2AC;
+    --gold: #C9963A;
+    --gold-light: #EDD9A8;
+    --gold-pale: #F7F0E3;
+    --teal: #3A7B72;
+    --coral: #C45E4A;
+    --purple: #6E5A8A;
+    --border: rgba(28,26,23,0.12);
+    --radius: 2px;
+  }
+
+  body {
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px 64px;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 620px;
+    overflow: hidden;
+    box-shadow: 0 2px 40px rgba(28,26,23,0.08), 0 1px 4px rgba(28,26,23,0.06);
+  }
+
+  /* Header */
+  .header {
+    background: var(--ink);
+    padding: 32px 40px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,150,58,0.2);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -20px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,150,58,0.1);
+  }
+  .header-eyebrow {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .header-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: white;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .header-title em {
+    font-style: italic;
+    color: var(--gold-light);
+  }
+  .header-sub {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+  }
+
+  /* Voice name row */
+  .name-row {
+    padding: 28px 40px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--gold-pale);
+    border: 1.5px solid var(--gold-light);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .name-inputs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .text-input {
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 4px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--ink);
+    background: transparent;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: var(--gold); }
+  .text-input::placeholder { color: var(--ink-faint); font-weight: 300; }
+
+  .endearment-row {
+    padding: 16px 40px 0;
+    display: flex;
+    gap: 24px;
+  }
+  .endearment-row .field { flex: 1; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  /* Divider */
+  .divider {
+    margin: 28px 40px 0;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Parameters */
+  .params-section {
+    padding: 0 40px 36px;
+  }
+  .section-label {
+    padding: 20px 0 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .param-block {
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(28,26,23,0.06);
+  }
+  .param-block:last-child { border-bottom: none; }
+
+  .param-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .param-name .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Slider track */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .pole {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    flex-shrink: 0;
+    min-width: 52px;
+    line-height: 1.2;
+  }
+  .pole.right { text-align: right; }
+
+  .slider-wrap {
+    flex: 1;
+    position: relative;
+    height: 28px;
+    display: flex;
+    align-items: center;
+  }
+  .slider-track {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--track-left, #C9963A), var(--track-right, #6E5A8A));
+    border-radius: 2px;
+    opacity: 0.25;
+  }
+  .slider-fill {
+    position: absolute;
+    left: 0;
+    height: 2px;
+    background: var(--fill-color, var(--gold));
+    border-radius: 2px;
+    pointer-events: none;
+    transition: width 0.05s;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 28px;
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--thumb-color, var(--gold));
+    box-shadow: 0 1px 6px rgba(28,26,23,0.15);
+    cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  input[type=range]:active::-webkit-slider-thumb {
+    cursor: grabbing;
+    transform: scale(1.2);
+    box-shadow: 0 2px 12px rgba(28,26,23,0.22);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--thumb-color, var(--gold));
+    box-shadow: 0 1px 6px rgba(28,26,23,0.15);
+    cursor: grab;
+  }
+  input[type=range]:focus { outline: none; }
+
+  .param-desc {
+    font-size: 12.5px;
+    font-weight: 300;
+    color: var(--ink-muted);
+    line-height: 1.65;
+    font-style: italic;
+  }
+  .param-desc strong {
+    font-style: normal;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* Save button */
+  .footer {
+    padding: 0 40px 40px;
+  }
+  .save-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .save-btn:hover { background: #333; }
+  .save-btn:active { transform: scale(0.99); }
+
+  /* Value badge */
+  .value-badge {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    min-width: 28px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="header">
+    <div class="header-eyebrow">MyCogna · Voice Setup</div>
+    <h1 class="header-title">Shape your<br><em>companion's voice</em></h1>
+    <p class="header-sub">Each slider calibrates how this Cogna thinks, speaks, and shows up for you.</p>
+  </div>
+
+  <div class="name-row">
+    <div class="avatar" id="avatarInitial">M</div>
+    <div class="name-inputs">
+      <div class="field">
+        <span class="field-label">Voice name</span>
+        <input class="text-input" id="voiceName" type="text" placeholder="e.g. Mom, Echo, Ciara…" oninput="updateAvatar(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <div class="endearment-row">
+    <div class="field">
+      <span class="field-label">Relationship</span>
+      <input class="text-input" type="text" placeholder="e.g. Mother, Friend, Coach…">
+    </div>
+    <div class="field">
+      <span class="field-label">Term of endearment</span>
+      <input class="text-input" type="text" placeholder="e.g. Buddy, Sunshine, Champ…">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="params-section">
+    <div class="section-label">Relational parameters</div>
+
+    <!-- 1. Warmth -->
+    <div class="param-block">
+      <div class="param-name">
+        <span class="dot" style="background:#C9963A"></span>
+        Warmth
+      </div>
+      <div class="slider-row">
+        <span class="pole">Warm</span>
+        <div class="slider-wrap">
+          <div class="slider-track" style="--track-left:#C9963A;--track-right:#C9963A"></div>
+          <div class="slider-fill" id="fill-warmth" style="--fill-color:#C9963A"></div>
+          <input type="range" min="0" max="100" value="50"
+            style="--thumb-color:#C9963A"
+            oninput="updateSlider('warmth',this.value)">
+        </div>
+        <span class="pole right">Direct</span>
+        <span class="value-badge" id="val-warmth">50</span>
+      </div>
+      <p class="param-desc"><strong>Soft landing vs. straight talk.</strong> Does this voice lead with kindness, tenderness, and emotional safety — or with practicality, candor, and tough love?</p>
+    </div>
+
+    <!-- 2. Validation -->
+    <div class="param-block">
+      <div class="param-name">
+        <span class="dot" style="background:#3A7B72"></span>
+        Validation
+      </div>
+      <div class="slider-row">
+        <span class="pole">Affirm</span>
+        <div class="slider-wrap">
+          <div class="slider-track" style="--track-left:#3A7B72;--track-right:#3A7B72"></div>
+          <div class="slider-fill" id="fill-validation" style="--fill-color:#3A7B72"></div>
+          <input type="range" min="0" max="100" value="50"
+            style="--thumb-color:#3A7B72"
+            oninput="updateSlider('validation',this.value)">
+        </div>
+        <span class="pole right">Challenge</span>
+        <span class="value-badge" id="val-validation">50</span>
+      </div>
+      <p class="param-desc"><strong>Mirror vs. catalyst.</strong> Does this voice primarily affirm and reflect feelings back — or push back, ask hard questions, and invite growth?</p>
+    </div>
+
+    <!-- 3. Tone -->
+    <div class="param-block">
+      <div class="param-name">
+        <span class="dot" style="background:#C45E4A"></span>
+        Tone
+      </div>
+      <div class="slider-row">
+        <span class="pole">Playful</span>
+        <div class="slider-wrap">
+          <div class="slider-track" style="--track-left:#C45E4A;--track-right:#C45E4A"></div>
+          <div class="slider-fill" id="fill-tone" style="--fill-color:#C45E4A"></div>
+          <input type="range" min="0" max="100" value="50"
+            style="--thumb-color:#C45E4A"
+            oninput="updateSlider('tone',this.value)">
+        </div>
+        <span class="pole right">Serious</span>
+        <span class="value-badge" id="val-tone">50</span>
+      </div>
+      <p class="param-desc"><strong>Levity vs. gravity.</strong> Does this voice lighten the mood with humor and ease — or hold space with weight, presence, and emotional solemnity?</p>
+    </div>
+
+    <!-- 4. Structure -->
+    <div class="param-block">
+      <div class="param-name">
+        <span class="dot" style="background:#5A7EA8"></span>
+        Structure
+      </div>
+      <div class="slider-row">
+        <span class="pole">Steps</span>
+        <div class="slider-wrap">
+          <div class="slider-track" style="--track-left:#5A7EA8;--track-right:#5A7EA8"></div>
+          <div class="slider-fill" id="fill-structure" style="--fill-color:#5A7EA8"></div>
+          <input type="range" min="0" max="100" value="50"
+            style="--thumb-color:#5A7EA8"
+            oninput="updateSlider('structure',this.value)">
+        </div>
+        <span class="pole right">Explore</span>
+        <span class="value-badge" id="val-structure">50</span>
+      </div>
+      <p class="param-desc"><strong>Roadmap vs. open road.</strong> Does this voice offer clear steps and concrete advice — or open-ended questions that invite the person to find their own way?</p>
+    </div>
+
+    <!-- 5. Stance -->
+    <div class="param-block">
+      <div class="param-name">
+        <span class="dot" style="background:#6E5A8A"></span>
+        Stance
+      </div>
+      <div class="slider-row">
+        <span class="pole">Protect</span>
+        <div class="slider-wrap">
+          <div class="slider-track" style="--track-left:#6E5A8A;--track-right:#6E5A8A"></div>
+          <div class="slider-fill" id="fill-stance" style="--fill-color:#6E5A8A"></div>
+          <input type="range" min="0" max="100" value="50"
+            style="--thumb-color:#6E5A8A"
+            oninput="updateSlider('stance',this.value)">
+        </div>
+        <span class="pole right">Empower</span>
+        <span class="value-badge" id="val-stance">50</span>
+      </div>
+      <p class="param-desc"><strong>Safe harbor vs. launchpad.</strong> Does this voice wrap around and shield — or believe in the person's capability and nudge them toward their own strength? Both honor dignity; neither is wrong.</p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <button class="save-btn">Save this Cogna voice →</button>
+  </div>
+
+</div>
+
+<script>
+  function updateSlider(name, value) {
+    const fill = document.getElementById('fill-' + name);
+    const badge = document.getElementById('val-' + name);
+    fill.style.width = value + '%';
+    badge.textContent = value;
+  }
+
+  function updateAvatar(name) {
+    const el = document.getElementById('avatarInitial');
+    el.textContent = name.trim() ? name.trim()[0].toUpperCase() : '?';
+  }
+
+  // Initialize fills at 50%
+  ['warmth','validation','tone','structure','stance'].forEach(n => {
+    const fill = document.getElementById('fill-' + n);
+    if (fill) fill.style.width = '50%';
+  });
+</script>
+</body>
+</html>

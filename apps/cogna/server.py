@@ -1,0 +1,1196 @@
+"""FastAPI server for MyCogna.
+
+App surfaces:
+1) Child/user app at `/`
+2) Guardian portal at `/portal`
+
+Architecture:
+- A Cogna IS a single voice/persona (Mom is one Cogna, Kenzie is another, Dillon is a third).
+- Guardian creates Cognas; each has 5 relational parameter sliders + name/relationship/term_of_endearment.
+- One child_access_code per guardian account unlocks all their Cognas.
+- Multi-voice conversations: selected Cognas respond to user AND to each other.
+- Session journals saved to Supabase conversation_sessions table.
+- Data storage: Supabase (PostgreSQL + Storage). Falls back to local JSON when SUPABASE_URL is unset.
+"""
+
+import hashlib
+import json
+import os
+import secrets
+import shutil
+import string
+import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import anthropic
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+
+# ----------------------------------------------------
+# Config / Paths
+# ----------------------------------------------------
+ROOT = Path(__file__).resolve().parent
+
+load_dotenv(dotenv_path=ROOT.parent.parent / ".env")
+load_dotenv(dotenv_path=ROOT / ".env", override=False)
+
+CONFIG_PATH = ROOT / "config.json"
+if not CONFIG_PATH.exists():
+    raise RuntimeError(
+        "Missing config.json. Copy apps/cogna/config.sample.json -> apps/cogna/config.json"
+    )
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    CONFIG = json.load(f)
+
+# Audio cache — ephemeral on Railway, fine for TTS test playback
+CACHE_DIR = Path(os.getenv("CACHE_DIR", tempfile.gettempdir())) / "cogna_cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+VOICE_REFERENCE_DIR = ROOT.parent / CONFIG.get("voice_reference_dir", "voices")
+
+# Local fallback paths (used when SUPABASE_URL is not set)
+PORTAL_DATA_DIR = ROOT / "data"
+PORTAL_DATA_DIR.mkdir(parents=True, exist_ok=True)
+PORTAL_UPLOAD_DIR = PORTAL_DATA_DIR / "family_uploads"
+PORTAL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+PORTAL_DB_PATH = PORTAL_DATA_DIR / "family_portal.json"
+SESSIONS_DIR = PORTAL_DATA_DIR / "sessions"
+SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+
+SESSIONS: Dict[str, str] = {}
+
+# Claude API setup
+CLAUDE_API_KEY = os.getenv(CONFIG.get("claude_api_key_env", "CLAUDE_API_KEY"))
+if not CLAUDE_API_KEY:
+    raise RuntimeError(f"Missing API key: {CONFIG.get('claude_api_key_env')}")
+
+client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+
+# OpenAI (Whisper) setup
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if (OPENAI_API_KEY and OpenAI) else None
+
+# Hume EVI setup
+HUME_API_KEY = os.getenv("HUME_API_KEY", "")
+HUME_SECRET_KEY = os.getenv("HUME_SECRET_KEY", "")
+HUME_CONFIG_ID = os.getenv("HUME_CONFIG_ID", "")
+
+# Supabase setup
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+
+supabase = None
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    try:
+        from supabase import create_client, Client as SupabaseClient
+        supabase: SupabaseClient = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    except Exception as e:
+        print(f"Warning: Supabase init failed: {e}. Falling back to local JSON.")
+
+
+# ----------------------------------------------------
+# Pydantic models
+# ----------------------------------------------------
+
+class FamilyRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    setup_type: str = "guardian"  # "guardian" or "self"
+
+
+class FamilyLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class CognaCreateRequest(BaseModel):
+    name: str
+    relationship: str = ""
+    term_of_endearment: str = ""
+    params: Dict[str, int] = {}
+    voice_backend: str = "tts"
+    elevenlabs_voice_id: Optional[str] = None
+    hume_voice_id: Optional[str] = None
+
+
+class CognaUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    relationship: Optional[str] = None
+    term_of_endearment: Optional[str] = None
+    params: Optional[Dict[str, int]] = None
+    voice_backend: Optional[str] = None
+    elevenlabs_voice_id: Optional[str] = None
+    hume_voice_id: Optional[str] = None
+
+
+class TestVoiceRequest(BaseModel):
+    message: str
+
+
+class ChildAccessRequest(BaseModel):
+    access_code: str
+
+
+class EviSessionRequest(BaseModel):
+    cogna_id: str
+
+
+class ConverseTurn(BaseModel):
+    cogna_ids: List[str]
+    message: Optional[str] = None
+    history: List[Dict] = []
+
+
+class SaveSessionRequest(BaseModel):
+    cogna_ids: List[str]
+    transcript: List[Dict]
+    voice_names: List[str]
+    duration_seconds: int = 0
+
+
+# ----------------------------------------------------
+# FastAPI app
+# ----------------------------------------------------
+app = FastAPI(
+    title="MyCogna",
+    description="Voice companion app with multi-Cogna support.",
+    version="1.0.0",
+)
+
+app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+
+
+@app.get("/")
+def index():
+    return FileResponse(ROOT / "static" / "index.html")
+
+
+@app.get("/portal")
+def portal():
+    return FileResponse(ROOT / "static" / "portal.html")
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+
+# ----------------------------------------------------
+# Audio serving (local fallback only)
+# ----------------------------------------------------
+
+@app.get("/audio/{filename}")
+def serve_audio(filename: str):
+    audio_path = CACHE_DIR / filename
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Not found")
+    if filename.endswith(".mp3"):
+        media_type = "audio/mpeg"
+    elif filename.endswith(".aiff"):
+        media_type = "audio/aiff"
+    else:
+        media_type = "audio/wav"
+    return FileResponse(audio_path, media_type=media_type)
+
+
+# ----------------------------------------------------
+# Auth endpoints: /api/auth/*
+# ----------------------------------------------------
+
+@app.post("/api/auth/register")
+def auth_register(payload: FamilyRegisterRequest):
+    email = payload.email.strip().lower()
+
+    existing = _get_user(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Account already exists")
+
+    setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
+    salt = secrets.token_hex(8)
+    password_hash = _hash_password(payload.password, salt)
+
+    user = {
+        "email": email,
+        "name": payload.name.strip(),
+        "password_salt": salt,
+        "password_hash": password_hash,
+        "setup_type": setup_type,
+        "child_access_code": _generate_child_access_code(),
+        "created_at": _utc_now(),
+    }
+
+    _create_user(user)
+    token = _create_session(email)
+    return {"token": token, "user": _public_user(user)}
+
+
+@app.post("/api/auth/login")
+def auth_login(payload: FamilyLoginRequest):
+    email = payload.email.strip().lower()
+    user = _get_user(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    expected_hash = _hash_password(payload.password, user["password_salt"])
+    if expected_hash != user["password_hash"]:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = _create_session(email)
+    return {"token": token, "user": _public_user(user)}
+
+
+@app.get("/api/auth/me")
+def auth_me(authorization: Optional[str] = Header(default=None)):
+    user = _auth_user(authorization)
+    return {"user": _public_user(user)}
+
+
+@app.get("/api/auth/me/access-code")
+def get_access_code(authorization: Optional[str] = Header(default=None)):
+    user = _auth_user(authorization)
+    return {"access_code": user.get("child_access_code", "")}
+
+
+# ----------------------------------------------------
+# Cogna CRUD endpoints
+# ----------------------------------------------------
+
+@app.get("/api/cognas")
+def list_cognas(authorization: Optional[str] = Header(default=None)):
+    user = _auth_user(authorization)
+    cognas = _list_cognas(user["email"])
+    return {"cognas": cognas}
+
+
+@app.post("/api/cognas")
+def create_cogna(
+    payload: CognaCreateRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+
+    cogna_id = "cogna_" + secrets.token_hex(6)
+    default_params = {"warmth": 50, "validation": 50, "tone": 50, "structure": 50, "stance": 50}
+    params = {**default_params, **{k: max(0, min(100, v)) for k, v in payload.params.items()}}
+
+    cogna = {
+        "id": cogna_id,
+        "owner_email": user["email"],
+        "name": payload.name.strip(),
+        "relationship": payload.relationship.strip(),
+        "term_of_endearment": payload.term_of_endearment.strip(),
+        "params": params,
+        "voice_backend": payload.voice_backend,
+        "elevenlabs_voice_id": payload.elevenlabs_voice_id,
+        "hume_voice_id": payload.hume_voice_id,
+        "voice_sample": None,
+        "photo": None,
+        "hume_consent": None,
+        "last_tested_at": None,
+        "created_at": _utc_now(),
+    }
+
+    _create_cogna(cogna)
+    return {"cogna": cogna}
+
+
+@app.get("/api/cognas/{cogna_id}")
+def get_cogna_detail(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    return {"cogna": cogna}
+
+
+@app.put("/api/cognas/{cogna_id}")
+def update_cogna(
+    cogna_id: str,
+    payload: CognaUpdateRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    updates: Dict[str, Any] = {}
+    if payload.name is not None:
+        updates["name"] = payload.name.strip()
+    if payload.relationship is not None:
+        updates["relationship"] = payload.relationship.strip()
+    if payload.term_of_endearment is not None:
+        updates["term_of_endearment"] = payload.term_of_endearment.strip()
+    if payload.params is not None:
+        existing_params = cogna.get("params", {})
+        for k, v in payload.params.items():
+            existing_params[k] = max(0, min(100, v))
+        updates["params"] = existing_params
+    if payload.voice_backend is not None:
+        updates["voice_backend"] = payload.voice_backend
+    if payload.elevenlabs_voice_id is not None:
+        updates["elevenlabs_voice_id"] = payload.elevenlabs_voice_id
+    if payload.hume_voice_id is not None:
+        updates["hume_voice_id"] = payload.hume_voice_id
+
+    if updates:
+        _update_cogna(cogna_id, updates)
+        cogna.update(updates)
+
+    return {"cogna": cogna}
+
+
+@app.delete("/api/cognas/{cogna_id}")
+def delete_cogna(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    _delete_cogna(cogna_id)
+    return {"ok": True}
+
+
+@app.post("/api/cognas/{cogna_id}/hume-consent")
+def record_hume_consent(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    """
+    Record that the guardian has explicitly consented to Hume AI processing audio
+    for this Cogna. Required before EVI sessions can be started.
+    """
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    consent = {
+        "accepted": True,
+        "accepted_at": _utc_now(),
+        "guardian_email": user["email"],
+    }
+    _update_cogna(cogna_id, {"hume_consent": consent})
+    return {"ok": True}
+
+
+@app.post("/api/cognas/{cogna_id}/sample")
+async def upload_cogna_sample(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+    file: UploadFile = File(...),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    _validate_upload(file.filename, {".mp3", ".wav", ".m4a", ".webm", ".mp4"})
+    saved = _save_cogna_upload(cogna_id, "voice", file)
+    _update_cogna(cogna_id, {"voice_sample": saved})
+    return {"ok": True, "voice_sample": saved}
+
+
+@app.post("/api/cognas/{cogna_id}/photo")
+async def upload_cogna_photo(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+    file: UploadFile = File(...),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    _validate_upload(file.filename, {".png", ".jpg", ".jpeg", ".webp"})
+    saved = _save_cogna_upload(cogna_id, "photo", file)
+    _update_cogna(cogna_id, {"photo": saved})
+    return {"ok": True, "photo": saved}
+
+
+@app.post("/api/cognas/{cogna_id}/test")
+def test_cogna_voice(
+    cogna_id: str,
+    payload: TestVoiceRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    text = payload.message.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Enter a test message")
+
+    audio_url = _generate_cogna_audio(cogna, text)
+    _update_cogna(cogna_id, {"last_tested_at": _utc_now()})
+    return {"ok": True, "audio_url": audio_url}
+
+
+# ----------------------------------------------------
+# Child access endpoint
+# ----------------------------------------------------
+
+@app.post("/api/child/access")
+def child_access(payload: ChildAccessRequest):
+    code = payload.access_code.strip().upper()
+    owner = _find_user_by_code(code)
+
+    if not owner:
+        raise HTTPException(status_code=404, detail="Access code not found")
+
+    all_cognas = _list_cognas(owner["email"])
+    cognas = [
+        {
+            "id": c["id"],
+            "name": c["name"],
+            "relationship": c.get("relationship", ""),
+            "photo": c.get("photo"),
+            "has_voice": bool(c.get("voice_sample") or c.get("elevenlabs_voice_id")),
+        }
+        for c in all_cognas
+    ]
+
+    return {"owner_name": owner.get("name", ""), "cognas": cognas}
+
+
+# ----------------------------------------------------
+# Hume EVI session endpoint
+# ----------------------------------------------------
+
+@app.post("/api/evi/session")
+async def evi_session(payload: EviSessionRequest):
+    """
+    Return everything the browser needs to open an EVI WebSocket directly with Hume.
+    Generates a short-lived access token so the raw API key never touches the browser.
+    Falls back to returning the api_key directly if no secret key is configured.
+    """
+    if not HUME_API_KEY:
+        raise HTTPException(status_code=503, detail="Hume is not configured on this server")
+
+    cogna = _get_cogna(payload.cogna_id)
+
+    # Require guardian consent before starting any EVI session
+    if not (cogna.get("hume_consent") or {}).get("accepted"):
+        raise HTTPException(
+            status_code=403,
+            detail="Guardian consent is required before using Hume voice. Please enable it in the guardian portal."
+        )
+
+    system_prompt = _cogna_voice_prompt(cogna)
+    voice_id = cogna.get("hume_voice_id") or None
+
+    # Generate a short-lived access token if we have a secret key
+    access_token = None
+    if HUME_SECRET_KEY:
+        try:
+            import base64
+            import httpx as _httpx
+            encoded = base64.b64encode(f"{HUME_API_KEY}:{HUME_SECRET_KEY}".encode()).decode()
+            resp = _httpx.post(
+                "https://api.hume.ai/oauth2-cc/token",
+                headers={"Authorization": f"Basic {encoded}"},
+                data={"grant_type": "client_credentials"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            access_token = resp.json().get("access_token")
+        except Exception:
+            pass  # Fall back to api_key
+
+    return {
+        "access_token": access_token,
+        "api_key": None if access_token else HUME_API_KEY,
+        "config_id": HUME_CONFIG_ID or None,
+        "system_prompt": system_prompt,
+        "voice_id": voice_id,
+    }
+
+
+# ----------------------------------------------------
+# Multi-voice conversation endpoint
+# ----------------------------------------------------
+
+@app.post("/api/converse")
+async def converse(
+    cogna_ids: str = Form(...),
+    history: str = Form("[]"),
+    message: Optional[str] = Form(None),
+    audio: Optional[UploadFile] = File(None),
+):
+    try:
+        cogna_ids_list: List[str] = json.loads(cogna_ids)
+        history_list: List[Dict] = json.loads(history)
+        payload = ConverseTurn(cogna_ids=cogna_ids_list, message=message, history=history_list)
+
+        incoming_message = payload.message
+        if audio and not incoming_message:
+            incoming_message = _transcribe_audio(audio)
+        if not incoming_message:
+            raise HTTPException(status_code=400, detail="Provide message text or audio")
+
+        # Crisis keyword check
+        crisis_keywords = ["hurt myself", "kill myself", "suicide", "end my life", "don't want to live"]
+        lower_msg = incoming_message.lower()
+        if any(kw in lower_msg for kw in crisis_keywords):
+            return {
+                "crisis": True,
+                "message": "It sounds like you might be going through something really hard. Please reach out to the 988 Suicide & Crisis Lifeline by calling or texting 988.",
+            }
+
+        if not payload.cogna_ids:
+            raise HTTPException(status_code=400, detail="Provide at least one cogna_id")
+
+        cognas = []
+        for cid in payload.cogna_ids:
+            cognas.append(_get_cogna(cid))
+
+        other_names_map = {
+            c["id"]: [x["name"] for x in cognas if x["id"] != c["id"]]
+            for c in cognas
+        }
+
+        turn_responses = []
+        turn_context = []
+
+        for cogna in cognas:
+            system_prompt = _cogna_voice_prompt(cogna)
+
+            if len(cognas) > 1:
+                others = other_names_map[cogna["id"]]
+                others_str = " and ".join(others)
+                system_prompt += (
+                    f"\n\nYou are in a group conversation with {others_str}. "
+                    "Respond to the user and authentically to what the others have shared. "
+                    "You may affirm, gently push back, or add your own perspective. "
+                    "Keep your response warm and concise — 2 to 4 sentences."
+                )
+
+            messages = []
+            for entry in payload.history:
+                role = "user" if entry.get("role") == "user" else "assistant"
+                messages.append({"role": role, "content": entry.get("content", "")})
+
+            combined = incoming_message
+            if turn_context:
+                prior = "\n".join(f"{r['role']}: {r['content']}" for r in turn_context)
+                combined = f"{incoming_message}\n\n[Others in this conversation have already responded:\n{prior}]"
+
+            messages.append({"role": "user", "content": combined})
+
+            response_text = _generate_text_response(system_prompt, messages)
+            audio_url = _generate_cogna_audio(cogna, response_text)
+
+            turn_responses.append({
+                "cogna_id": cogna["id"],
+                "cogna_name": cogna["name"],
+                "text": response_text,
+                "audio_url": audio_url,
+            })
+            turn_context.append({"role": cogna["name"], "content": response_text})
+
+        transcript_entry = [{"role": "user", "content": incoming_message}] + turn_context
+
+        return {"turn": turn_responses, "transcript_entry": transcript_entry}
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ----------------------------------------------------
+# Session journal endpoints
+# ----------------------------------------------------
+
+@app.post("/api/sessions")
+def save_session(payload: SaveSessionRequest):
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    session_id = f"session_{timestamp}"
+    primary_cogna_id = payload.cogna_ids[0] if payload.cogna_ids else "multi"
+
+    _save_session(
+        session_id=session_id,
+        primary_cogna_id=primary_cogna_id,
+        cogna_ids=payload.cogna_ids,
+        voice_names=payload.voice_names,
+        transcript=payload.transcript,
+        duration_seconds=payload.duration_seconds,
+    )
+    return {"ok": True, "session_id": session_id}
+
+
+@app.get("/api/sessions/{cogna_id}")
+def list_sessions(
+    cogna_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    cogna = _get_cogna(cogna_id)
+    if cogna["owner_email"] != user["email"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    sessions = _list_sessions(cogna_id)
+    return {"sessions": sessions}
+
+
+# ----------------------------------------------------
+# Legacy /api/respond (single-Cogna, backward compat)
+# ----------------------------------------------------
+
+@app.post("/api/respond")
+async def respond(
+    cogna_id: Optional[str] = Form(None),
+    message: Optional[str] = Form(None),
+    text: Optional[str] = Form(None),
+    audio: Optional[UploadFile] = File(None),
+):
+    try:
+        if not cogna_id:
+            raise HTTPException(status_code=400, detail="Unknown cogna_id")
+
+        cogna = _get_cogna(cogna_id)
+        incoming_message = text or message
+        if not incoming_message and not audio:
+            raise HTTPException(status_code=400, detail="Provide message text or audio file")
+
+        if audio and not incoming_message:
+            incoming_message = _transcribe_audio(audio)
+
+        persona_prompt = _cogna_voice_prompt(cogna)
+        generated_text = _generate_text_response(persona_prompt, [{"role": "user", "content": incoming_message}])
+        audio_url = _generate_cogna_audio(cogna, generated_text)
+
+        return {
+            "cogna_id": cogna_id,
+            "cogna_name": cogna["name"],
+            "text": generated_text,
+            "audio_url": audio_url,
+            "transcript": incoming_message,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ----------------------------------------------------
+# Data access layer — Supabase (primary) + JSON fallback
+# ----------------------------------------------------
+
+def _get_user(email: str) -> Optional[Dict[str, Any]]:
+    if supabase:
+        r = supabase.table("users").select("*").eq("email", email).maybe_single().execute()
+        return r.data
+    db = _load_db()
+    return db["users"].get(email)
+
+
+def _create_user(user: Dict[str, Any]):
+    if supabase:
+        supabase.table("users").insert(user).execute()
+        return
+    db = _load_db()
+    db["users"][user["email"]] = user
+    _save_db(db)
+
+
+def _get_cogna(cogna_id: str) -> Dict[str, Any]:
+    if supabase:
+        r = supabase.table("cognas").select("*").eq("id", cogna_id).maybe_single().execute()
+        cogna = r.data
+    else:
+        db = _load_db()
+        cogna = db["cognas"].get(cogna_id)
+    if not cogna:
+        raise HTTPException(status_code=404, detail="Cogna not found")
+    return cogna
+
+
+def _list_cognas(owner_email: str) -> List[Dict[str, Any]]:
+    if supabase:
+        r = supabase.table("cognas").select("*").eq("owner_email", owner_email).order("created_at").execute()
+        return r.data or []
+    db = _load_db()
+    return [c for c in db["cognas"].values() if c.get("owner_email") == owner_email]
+
+
+def _create_cogna(cogna: Dict[str, Any]):
+    if supabase:
+        supabase.table("cognas").insert(cogna).execute()
+        return
+    db = _load_db()
+    db["cognas"][cogna["id"]] = cogna
+    # Keep cogna_ids list on user for local JSON compat
+    user = db["users"].get(cogna["owner_email"])
+    if user and cogna["id"] not in user.get("cogna_ids", []):
+        user.setdefault("cogna_ids", []).append(cogna["id"])
+    _save_db(db)
+
+
+def _update_cogna(cogna_id: str, updates: Dict[str, Any]):
+    if supabase:
+        supabase.table("cognas").update(updates).eq("id", cogna_id).execute()
+        return
+    db = _load_db()
+    if cogna_id in db["cognas"]:
+        db["cognas"][cogna_id].update(updates)
+    _save_db(db)
+
+
+def _delete_cogna(cogna_id: str):
+    if supabase:
+        supabase.table("cognas").delete().eq("id", cogna_id).execute()
+        return
+    db = _load_db()
+    cogna = db["cognas"].pop(cogna_id, None)
+    if cogna:
+        user = db["users"].get(cogna.get("owner_email", ""))
+        if user:
+            user["cogna_ids"] = [cid for cid in user.get("cogna_ids", []) if cid != cogna_id]
+    _save_db(db)
+
+
+def _find_user_by_code(code: str) -> Optional[Dict[str, Any]]:
+    if supabase:
+        r = supabase.table("users").select("*").eq("child_access_code", code).maybe_single().execute()
+        return r.data
+    db = _load_db()
+    for user in db["users"].values():
+        if user.get("child_access_code", "").upper() == code:
+            return user
+    return None
+
+
+def _save_session(session_id: str, primary_cogna_id: str, cogna_ids: List[str],
+                  voice_names: List[str], transcript: List[Dict], duration_seconds: int):
+    if supabase:
+        supabase.table("conversation_sessions").insert({
+            "id": session_id,
+            "primary_cogna_id": primary_cogna_id,
+            "cogna_ids": cogna_ids,
+            "voice_names": voice_names,
+            "transcript": transcript,
+            "duration_seconds": duration_seconds,
+        }).execute()
+        return
+    # Local JSON fallback
+    session_dir = SESSIONS_DIR / primary_cogna_id
+    session_dir.mkdir(parents=True, exist_ok=True)
+    session_data = {
+        "cogna_ids": cogna_ids,
+        "voice_names": voice_names,
+        "transcript": transcript,
+        "duration_seconds": duration_seconds,
+        "saved_at": _utc_now(),
+    }
+    with open(session_dir / f"{session_id}.json", "w", encoding="utf-8") as f:
+        json.dump(session_data, f, indent=2)
+
+
+def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
+    if supabase:
+        r = (supabase.table("conversation_sessions")
+             .select("id, saved_at, voice_names, duration_seconds, transcript")
+             .eq("primary_cogna_id", primary_cogna_id)
+             .order("saved_at", desc=True)
+             .limit(20)
+             .execute())
+        rows = r.data or []
+        return [
+            {
+                "session_id": row["id"],
+                "saved_at": row.get("saved_at"),
+                "voice_names": row.get("voice_names", []),
+                "duration_seconds": row.get("duration_seconds", 0),
+                "turns": len([e for e in (row.get("transcript") or []) if e.get("role") == "user"]),
+            }
+            for row in rows
+        ]
+    # Local JSON fallback
+    session_dir = SESSIONS_DIR / primary_cogna_id
+    sessions = []
+    if session_dir.exists():
+        for f in sorted(session_dir.glob("session_*.json"), reverse=True)[:20]:
+            with open(f, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            sessions.append({
+                "session_id": f.stem,
+                "saved_at": data.get("saved_at"),
+                "voice_names": data.get("voice_names", []),
+                "duration_seconds": data.get("duration_seconds", 0),
+                "turns": len([e for e in data.get("transcript", []) if e.get("role") == "user"]),
+            })
+    return sessions
+
+
+# ----------------------------------------------------
+# Auth helpers
+# ----------------------------------------------------
+
+def _auth_user(authorization: Optional[str]) -> Dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    email = SESSIONS.get(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = _get_user(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="User no longer exists")
+    return user
+
+
+def _create_session(email: str) -> str:
+    token = secrets.token_urlsafe(32)
+    SESSIONS[token] = email
+    return token
+
+
+def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "email": user["email"],
+        "name": user.get("name", ""),
+        "setup_type": user.get("setup_type", "guardian"),
+        "child_access_code": user.get("child_access_code", ""),
+    }
+
+
+# ----------------------------------------------------
+# File upload helper — Supabase Storage (primary) + local fallback
+# ----------------------------------------------------
+
+def _save_cogna_upload(cogna_id: str, kind: str, file: UploadFile) -> str:
+    """Upload voice sample or photo. Returns Supabase CDN URL (or local path as fallback)."""
+    ext = Path(file.filename or "upload.bin").suffix.lower()
+    filename = f"{kind}-{int(datetime.now().timestamp())}{ext}"
+
+    content = file.file.read()
+
+    if supabase:
+        storage_path = f"{cogna_id}/{filename}"
+        mime = {
+            ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4",
+            ".webm": "audio/webm", ".mp4": "audio/mp4",
+            ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
+        }.get(ext, "application/octet-stream")
+
+        supabase.storage.from_("cogna-uploads").upload(
+            path=storage_path,
+            file=content,
+            file_options={"content-type": mime, "upsert": "true"},
+        )
+        return supabase.storage.from_("cogna-uploads").get_public_url(storage_path)
+
+    # Local fallback
+    cogna_dir = PORTAL_UPLOAD_DIR / cogna_id
+    cogna_dir.mkdir(parents=True, exist_ok=True)
+    path = cogna_dir / filename
+    with open(path, "wb") as out:
+        out.write(content)
+    return str(path.relative_to(ROOT))
+
+
+# ----------------------------------------------------
+# Local JSON fallback (used when SUPABASE_URL is not set)
+# ----------------------------------------------------
+
+def _load_db() -> Dict[str, Any]:
+    if not PORTAL_DB_PATH.exists():
+        db = {"users": {}, "cognas": {}, "created_at": _utc_now()}
+        _save_db(db)
+        return db
+    with open(PORTAL_DB_PATH, "r", encoding="utf-8") as f:
+        db = json.load(f)
+    db.setdefault("users", {})
+    db.setdefault("cognas", {})
+    return db
+
+
+def _save_db(db: Dict[str, Any]):
+    with open(PORTAL_DB_PATH, "w", encoding="utf-8") as f:
+        json.dump(db, f, indent=2)
+
+
+# ----------------------------------------------------
+# Voice / audio helpers
+# ----------------------------------------------------
+
+def _cogna_voice_prompt(cogna: Dict[str, Any]) -> str:
+    p = cogna.get("params", {})
+    name = cogna["name"]
+    relationship = cogna.get("relationship", "")
+    tod = cogna.get("term_of_endearment", "")
+
+    warmth_desc = (
+        "lead with tenderness and emotional safety"
+        if p.get("warmth", 50) < 50
+        else "be candid and direct, offering straight talk over softness"
+    )
+    validation_desc = (
+        "primarily affirm and reflect feelings back"
+        if p.get("validation", 50) < 50
+        else "gently challenge, ask hard questions, and invite growth"
+    )
+    tone_desc = (
+        "bring lightness, humor, and ease when appropriate"
+        if p.get("tone", 50) < 50
+        else "hold space with gravity, weight, and emotional presence"
+    )
+    structure_desc = (
+        "offer clear steps and practical guidance"
+        if p.get("structure", 50) < 50
+        else "ask open-ended questions and invite the person to find their own way"
+    )
+    stance_desc = (
+        "wrap around and protect, making them feel safe"
+        if p.get("stance", 50) < 50
+        else "believe in their capability and nudge them toward their own strength"
+    )
+
+    tod_line = f" Address them as '{tod}'." if tod else ""
+
+    return (
+        f"You are {name}, a {relationship}.{tod_line} "
+        f"When you respond: {warmth_desc}. "
+        f"You tend to {validation_desc}. "
+        f"In terms of tone, {tone_desc}. "
+        f"For guidance, {structure_desc}. "
+        f"Your stance is to {stance_desc}. "
+        f"Keep responses warm, concise, and human — 2 to 4 sentences unless more is needed. "
+        f"Never use emojis or emoticons — your words are spoken aloud."
+    )
+
+
+def _generate_child_access_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    suffix = "".join(secrets.choice(chars) for _ in range(4))
+    return f"COGNA-{suffix}"
+
+
+def _generate_cogna_audio(cogna: Dict[str, Any], text: str) -> str:
+    voice_backend = cogna.get("voice_backend", "tts")
+    cache_key = hashlib.sha256(f"{cogna['id']}|{text}".encode("utf-8")).hexdigest()
+
+    if voice_backend == "elevenlabs":
+        voice_id = cogna.get("elevenlabs_voice_id")
+        if not voice_id:
+            raise HTTPException(status_code=400, detail="No ElevenLabs voice ID set for this Cogna")
+        audio_filename = f"{cache_key}.mp3"
+        audio_path = CACHE_DIR / audio_filename
+        if not audio_path.exists():
+            tmp = _elevenlabs_tts(text, voice_id)
+            audio_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(tmp), str(audio_path))
+    elif voice_backend == "seed_vc":
+        audio_filename = f"{cache_key}.wav"
+        audio_path = CACHE_DIR / audio_filename
+        if not audio_path.exists():
+            base_audio = _text_to_speech(text)
+            voice_ref = None
+            if cogna.get("voice_sample"):
+                vpath = ROOT / cogna["voice_sample"]
+                voice_ref = vpath if vpath.exists() else None
+            _seed_vc_convert(base_audio, cogna["name"], audio_path, voice_ref)
+    else:  # tts fallback (macOS say → WAV)
+        audio_filename = f"{cache_key}.wav"
+        audio_path = CACHE_DIR / audio_filename
+        if not audio_path.exists():
+            base_audio = _text_to_speech(text)
+            audio_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(base_audio, audio_path)
+
+    return f"/audio/{audio_filename}"
+
+
+def _generate_text_response(system_prompt: str, messages: List[Dict]) -> str:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=300,
+        temperature=0.7,
+        system=system_prompt,
+        messages=messages,
+    )
+    return response.content[0].text
+
+
+def _transcribe_audio(upload: UploadFile) -> str:
+    if not openai_client:
+        raise RuntimeError("OPENAI_API_KEY is required to transcribe audio")
+
+    suffix = Path(upload.filename or "recording.webm").suffix or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(upload.file.read())
+        tmp_path = Path(tmp.name)
+
+    try:
+        with open(tmp_path, "rb") as f:
+            resp = openai_client.audio.transcriptions.create(model="whisper-1", file=f)
+        return getattr(resp, "text", None) or resp.get("text", "")
+    finally:
+        try:
+            tmp_path.unlink()
+        except Exception:
+            pass
+
+
+def _text_to_speech(text: str) -> Path:
+    """Use macOS built-in `say` command to generate speech, then convert to WAV for browser compatibility."""
+    import subprocess
+
+    aiff = tempfile.NamedTemporaryFile(suffix=".aiff", delete=False)
+    aiff_path = Path(aiff.name)
+    aiff.close()
+
+    wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    wav_path = Path(wav.name)
+    wav.close()
+
+    subprocess.run(["say", "-o", str(aiff_path), text], check=True, timeout=30)
+    subprocess.run(
+        ["afconvert", "-f", "WAVE", "-d", "LEI16", str(aiff_path), str(wav_path)],
+        check=True,
+        timeout=30,
+    )
+    aiff_path.unlink(missing_ok=True)
+    return wav_path
+
+
+def _elevenlabs_tts(text: str, voice_id: str) -> Path:
+    import requests as _requests
+
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key:
+        raise RuntimeError("ELEVENLABS_API_KEY not set")
+
+    model_id = CONFIG.get("voice_defaults", {}).get("elevenlabs_model", "eleven_monolingual_v1")
+    resp = _requests.post(
+        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+        headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+        json={"text": text, "model_id": model_id},
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+    out = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+    out_path = Path(out.name)
+    out.write(resp.content)
+    out.close()
+    return out_path
+
+
+# ----------------------------------------------------
+# Seed-VC singleton (lazy-loaded, lives for server lifetime)
+# ----------------------------------------------------
+
+_seed_vc_instance = None
+
+
+def _get_seed_vc():
+    global _seed_vc_instance
+    if _seed_vc_instance is None:
+        import sys
+        seed_vc_dir = ROOT.parent.parent / "vendor" / "seed-vc"
+        if str(seed_vc_dir) not in sys.path:
+            sys.path.insert(0, str(seed_vc_dir))
+        from seed_vc_wrapper import SeedVCWrapper
+        _seed_vc_instance = SeedVCWrapper()
+    return _seed_vc_instance
+
+
+def _seed_vc_convert(base_audio_path: Path, persona: str, out_path: Path, voice_reference: Optional[Path] = None):
+    """Convert base audio to target voice using Seed-VC. Falls back to plain TTS if anything fails."""
+    import subprocess as _sp
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if voice_reference is None or not voice_reference.exists():
+        shutil.copyfile(base_audio_path, out_path)
+        return
+
+    ref_wav_path: Optional[Path] = None
+    ref_path = voice_reference
+    if voice_reference.suffix.lower() in {".m4a", ".mp3", ".aac", ".ogg"}:
+        ref_wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        ref_wav_path = Path(ref_wav.name)
+        ref_wav.close()
+        _sp.run(
+            ["afconvert", "-f", "WAVE", "-d", "LEI16", str(voice_reference), str(ref_wav_path)],
+            check=True, timeout=30,
+        )
+        ref_path = ref_wav_path
+
+    try:
+        import torch
+        import torchaudio
+
+        wrapper = _get_seed_vc()
+
+        sr_out = 22050
+        audio_array = None
+
+        for _, full_audio in wrapper.convert_voice(
+            source=str(base_audio_path),
+            target=str(ref_path),
+            diffusion_steps=10,
+            length_adjust=1.0,
+            inference_cfg_rate=0.7,
+            f0_condition=False,
+            auto_f0_adjust=False,
+            pitch_shift=0,
+            stream_output=True,
+        ):
+            if full_audio is not None:
+                sr_out, audio_array = full_audio
+                break
+
+        if audio_array is not None:
+            audio_tensor = torch.from_numpy(audio_array).unsqueeze(0).float()
+            torchaudio.save(str(out_path), audio_tensor, sr_out)
+        else:
+            shutil.copyfile(base_audio_path, out_path)
+
+    except Exception:
+        shutil.copyfile(base_audio_path, out_path)
+
+    finally:
+        if ref_wav_path and ref_wav_path.exists():
+            ref_wav_path.unlink(missing_ok=True)
+
+
+# ----------------------------------------------------
+# Misc helpers
+# ----------------------------------------------------
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
+
+
+def _validate_upload(filename: Optional[str], allowed: set):
+    ext = Path(filename or "").suffix.lower()
+    if ext not in allowed:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()

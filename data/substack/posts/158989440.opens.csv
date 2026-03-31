@@ -1,0 +1,4 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+158989440,2025-03-13T13:52:06.415Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+158989440,2025-03-13T15:39:23.493Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+158989440,2025-03-14T03:25:18.487Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

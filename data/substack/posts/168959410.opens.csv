@@ -1,0 +1,13 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+168959410,2025-07-22T15:12:11.546Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168959410,2025-07-22T17:23:31.426Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168959410,2025-07-22T17:23:31.426Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168959410,2025-07-22T19:17:14.307Z,starcatdreamer@gmail.com,newsletter,everyone,true,US,,,,,,YahooMailProxy; https://help.yahoo.com/kb/yahoo-mail-proxy-SLN28749.html
+168959410,2025-07-22T20:24:01.608Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168959410,2025-07-22T22:27:52.878Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168959410,2025-07-23T05:14:54.950Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168959410,2025-07-23T19:26:43.023Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168959410,2025-07-24T03:31:58.648Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+168959410,2025-07-24T15:56:34.758Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+168959410,2025-07-27T14:53:57.255Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168959410,2025-07-31T22:33:22.030Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"

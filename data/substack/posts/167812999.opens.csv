@@ -1,0 +1,15 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+167812999,2025-07-08T14:42:26.410Z,jeanmariesart@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+167812999,2025-07-08T15:59:49.200Z,starcatdreamer@gmail.com,newsletter,everyone,true,US,,,,,,YahooMailProxy; https://help.yahoo.com/kb/yahoo-mail-proxy-SLN28749.html
+167812999,2025-07-08T16:26:22.497Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+167812999,2025-07-08T16:30:41.764Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+167812999,2025-07-08T16:45:18.701Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+167812999,2025-07-08T18:02:25.878Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+167812999,2025-07-08T18:02:25.878Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+167812999,2025-07-08T19:39:21.354Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+167812999,2025-07-08T19:48:09.674Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+167812999,2025-07-08T19:48:14.233Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+167812999,2025-07-09T06:55:33.846Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+167812999,2025-07-09T10:39:43.923Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+167812999,2025-07-10T02:07:39.287Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+167812999,2025-07-20T20:28:26.821Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0

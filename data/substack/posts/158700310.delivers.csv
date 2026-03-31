@@ -1,0 +1,3 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription
+158700310,2025-03-13T11:04:06.364Z,kremenapopov@gmail.com,newsletter,everyone,true
+158700310,2025-03-13T11:04:08.577Z,ctrounds@gmail.com,newsletter,everyone,false

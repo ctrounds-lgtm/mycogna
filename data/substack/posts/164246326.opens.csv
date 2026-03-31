@@ -1,0 +1,7 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+164246326,2025-05-30T11:23:38.275Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164246326,2025-05-30T13:25:15.450Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+164246326,2025-05-30T13:37:32.858Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+164246326,2025-05-30T22:02:13.523Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164246326,2025-05-30T22:02:13.523Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164246326,2025-05-31T13:23:48.667Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Write(*)",
+      "Edit(*)",
+      "NotebookEdit(*)",
+      "WebSearch",
+      "WebFetch(domain:www.skydivingexpeditions.com)",
+      "WebFetch(domain:www.ifuruisland.com)",
+      "WebFetch(domain:www.skydivingmaldives.com)",
+      "WebFetch(domain:dev.hume.ai)",
+      "WebFetch(domain:hume.ai)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

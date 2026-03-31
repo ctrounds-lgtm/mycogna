@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "REPLACE_WITH_RAILWAY_URL/api/$1"
+    }
+  ],
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/portal", "dest": "/static/portal.html" },
+    { "src": "/", "dest": "/static/index.html" }
+  ]
+}

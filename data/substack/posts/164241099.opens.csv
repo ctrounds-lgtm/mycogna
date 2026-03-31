@@ -1,0 +1,6 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+164241099,2025-05-26T11:53:20.478Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+164241099,2025-05-26T13:13:04.394Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+164241099,2025-05-26T19:01:52.944Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+164241099,2025-05-28T01:02:53.659Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+164241099,2025-06-10T16:29:07.222Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

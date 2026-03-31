@@ -1,0 +1,4 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+162622914,2025-05-02T03:59:57.988Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+162622914,2025-05-02T12:04:33.694Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+162622914,2025-05-02T14:03:37.286Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

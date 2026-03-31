@@ -1,0 +1,21 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+177886593,2025-11-04T04:14:17.889Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177886593,2025-11-04T04:43:49.820Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T05:32:07.137Z,elegarrison@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T06:22:37.198Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T06:31:44.542Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T07:30:14.072Z,gwenlisboa@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+177886593,2025-11-04T09:24:46.279Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+177886593,2025-11-04T12:41:25.739Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177886593,2025-11-04T14:06:10.979Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177886593,2025-11-04T15:51:22.283Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T15:51:22.283Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-04T16:07:30.553Z,ctrounds@gmail.com,newsletter,everyone,false,NL,,,,,,Mozilla/5.0
+177886593,2025-11-04T20:41:58.979Z,lists@shaf.me,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-05T08:54:37.808Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177886593,2025-11-05T18:48:50.119Z,dv1198@aol.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+177886593,2025-11-13T23:44:05.106Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-13T23:44:06.537Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177886593,2025-11-19T20:24:39.931Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+177886593,2025-11-19T20:25:19.051Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+177886593,2025-11-19T20:25:22.883Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"

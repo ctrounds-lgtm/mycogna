@@ -1,0 +1,10 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+164279667,2025-06-02T11:30:54.384Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164279667,2025-06-02T11:30:54.384Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164279667,2025-06-02T11:33:34.627Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+164279667,2025-06-02T11:35:52.733Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+164279667,2025-06-02T12:49:49.942Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+164279667,2025-06-02T13:36:13.230Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/4.0 (compatible; ms-office; MSOffice 16)
+164279667,2025-06-02T15:45:29.958Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+164279667,2025-06-08T14:49:54.503Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+164279667,2025-06-10T02:43:37.182Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

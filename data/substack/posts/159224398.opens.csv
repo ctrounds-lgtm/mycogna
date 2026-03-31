@@ -1,0 +1,4 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+159224398,2025-03-20T16:37:47.955Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+159224398,2025-03-20T17:16:12.727Z,haley.m.lawson1@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+159224398,2025-03-23T03:49:28.833Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

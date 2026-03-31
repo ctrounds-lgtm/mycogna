@@ -1,0 +1,4 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+164244322,2025-05-27T16:03:02.076Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+164244322,2025-05-28T02:14:40.936Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+164244322,2025-06-10T15:58:32.698Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

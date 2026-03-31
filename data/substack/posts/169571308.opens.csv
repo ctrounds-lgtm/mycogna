@@ -1,0 +1,15 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+169571308,2025-07-29T15:44:06.640Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+169571308,2025-07-29T15:44:51.231Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+169571308,2025-07-29T21:53:31.812Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+169571308,2025-07-30T03:42:59.801Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+169571308,2025-07-30T04:09:21.902Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+169571308,2025-07-30T15:16:10.143Z,gwenlisboa@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+169571308,2025-07-31T06:08:41.270Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+169571308,2025-07-31T08:06:12.071Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+169571308,2025-07-31T13:04:40.680Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+169571308,2025-07-31T14:46:22.473Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+169571308,2025-07-31T19:09:27.011Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+169571308,2025-07-31T22:22:12.222Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+169571308,2025-07-31T22:33:16.622Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+169571308,2025-07-31T22:33:21.999Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"

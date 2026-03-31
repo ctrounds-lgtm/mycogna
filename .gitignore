@@ -1,0 +1,11 @@
+# API keys — never commit
+.env
+
+# Seed-VC repo + downloaded model weights (~1.2 GB)
+vendor/
+
+# MyCogna local data (real user data — never commit)
+apps/cogna/data/
+
+# Seed-VC model checkpoints (~1.5 GB — never commit)
+apps/cogna/checkpoints/

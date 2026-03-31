@@ -1,0 +1,14 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+168783359,2025-07-20T15:55:25.498Z,gwenlisboa@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+168783359,2025-07-20T17:11:58.060Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168783359,2025-07-20T17:18:38.686Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168783359,2025-07-20T17:58:00.056Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+168783359,2025-07-20T18:32:04.467Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168783359,2025-07-20T19:45:59.335Z,laura.coopermartin@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168783359,2025-07-21T02:25:49.310Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168783359,2025-07-21T05:41:26.619Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+168783359,2025-07-21T08:56:38.105Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+168783359,2025-07-22T14:19:13.531Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168783359,2025-07-22T14:19:13.532Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+168783359,2025-07-23T01:45:11.353Z,kathybfletcher@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+168783359,2025-07-27T14:54:07.783Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)

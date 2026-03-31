@@ -1,0 +1,16 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+165018593,2025-06-10T12:13:34.838Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018593,2025-06-10T12:14:51.844Z,ctrounds@gmail.com,newsletter,everyone,false,NL,,,,,,Mozilla/5.0
+165018593,2025-06-10T12:15:04.476Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018593,2025-06-10T12:39:10.417Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018593,2025-06-10T12:43:18.478Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018593,2025-06-10T12:43:18.479Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018593,2025-06-10T16:49:38.240Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018593,2025-06-10T18:55:39.171Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018593,2025-06-10T22:00:12.099Z,cbauman1220@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018593,2025-06-11T01:44:18.103Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+165018593,2025-06-11T02:10:54.644Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165018593,2025-06-11T03:37:05.341Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165018593,2025-06-13T04:54:04.978Z,swzanussi@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+165018593,2025-06-13T16:47:00.584Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+165018593,2025-06-16T01:58:23.260Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0

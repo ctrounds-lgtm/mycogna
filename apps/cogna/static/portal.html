@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCogna — Guardian Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/portal.css">
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<section id="authScreen" class="screen">
+  <div class="auth-wrap">
+    <div class="auth-header">
+      <div class="eyebrow">MyCogna</div>
+      <h1 class="display-title">Your companion circle<br><em>starts here</em></h1>
+      <p class="auth-sub">Create voices for the people who matter most.</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" id="tabLogin" onclick="portal.switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="tabRegister" onclick="portal.switchTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login form -->
+    <form id="loginForm" class="auth-form">
+      <div class="field">
+        <label class="field-label">Email</label>
+        <input type="email" id="loginEmail" class="text-input" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input type="password" id="loginPassword" class="text-input" placeholder="••••••••" required>
+      </div>
+      <div id="loginError" class="form-error hidden"></div>
+      <button type="submit" class="save-btn">Sign In →</button>
+    </form>
+
+    <!-- Register form -->
+    <form id="registerForm" class="auth-form hidden">
+      <div class="field">
+        <label class="field-label">Your name</label>
+        <input type="text" id="registerName" class="text-input" placeholder="Christy" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Email</label>
+        <input type="email" id="registerEmail" class="text-input" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input type="password" id="registerPassword" class="text-input" placeholder="••••••••" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Confirm password</label>
+        <input type="password" id="registerConfirm" class="text-input" placeholder="••••••••" required>
+      </div>
+      <div class="setup-type-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="setupForChild">
+          <span>I'm setting this up for someone else (child, parent, loved one)</span>
+        </label>
+      </div>
+      <div id="registerError" class="form-error hidden"></div>
+      <button type="submit" class="save-btn">Create Account →</button>
+    </form>
+  </div>
+</section>
+
+<!-- ===== DASHBOARD SCREEN ===== -->
+<section id="dashboardScreen" class="screen hidden">
+  <div class="portal-wrap">
+    <div class="portal-header">
+      <div>
+        <div class="eyebrow">MyCogna</div>
+        <h1 class="display-title" id="dashWelcome">Welcome back</h1>
+      </div>
+      <button class="ghost-btn" onclick="portal.logout()">Sign out</button>
+    </div>
+
+    <!-- Access code box -->
+    <div id="accessCodeBox" class="access-code-box">
+      <div class="access-code-label">Child access code</div>
+      <div class="access-code-row">
+        <span class="access-code-value" id="accessCodeValue">COGNA-????</span>
+        <button class="copy-btn" onclick="portal.copyAccessCode()" id="copyBtn">Copy</button>
+      </div>
+      <p class="access-code-hint">Give this code to your child or the person using MyCogna. They'll enter it in the app to see all the voices you've built.</p>
+    </div>
+
+    <div class="section-header-row">
+      <h2 class="section-title">Your Cognas</h2>
+      <button class="add-btn" onclick="portal.showCreateCogna()">+ Add a Cogna</button>
+    </div>
+
+    <div id="cognaGrid" class="cogna-grid">
+      <div class="empty-state">
+        <p>No Cognas yet.</p>
+        <p>Each Cogna is one voice — Mom, a friend, a coach. Add one to get started.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CREATE COGNA SCREEN ===== -->
+<section id="createCognaScreen" class="screen hidden">
+  <div class="card">
+    <!-- Header (matches reference design exactly) -->
+    <div class="header">
+      <div class="header-eyebrow">MyCogna · Voice Setup</div>
+      <h1 class="header-title">Shape your <em>companion's</em> voice</h1>
+      <p class="header-sub">Every slider shapes how this Cogna speaks. Tune until it feels right.</p>
+    </div>
+
+    <!-- Name + avatar row -->
+    <div class="name-row">
+      <div class="avatar" id="cognaAvatar">?</div>
+      <div class="name-inputs">
+        <div class="field-label">Voice name</div>
+        <input type="text" id="cognaName" class="text-input" placeholder="e.g. Mom, Kenzie, Dillon…"
+               oninput="portal.updateAvatar(this.value)">
+      </div>
+    </div>
+
+    <!-- Relationship + term of endearment -->
+    <div class="endearment-row">
+      <div class="field">
+        <div class="field-label">Relationship</div>
+        <input type="text" id="cognaRelationship" class="text-input" placeholder="e.g. Mother, Friend, Coach…">
+      </div>
+      <div class="field">
+        <div class="field-label">Term of endearment</div>
+        <input type="text" id="cognaTOE" class="text-input" placeholder="e.g. Sweetie, My Dear, Bro…">
+        <div class="hint-text">(You can also use a nickname)</div>
+      </div>
+    </div>
+
+    <!-- Divider + sliders -->
+    <div class="divider"></div>
+    <div class="params-section">
+      <div class="section-label">Relational Parameters</div>
+
+      <!-- Warmth -->
+      <div class="param-block">
+        <div class="param-name">
+          <span class="dot" style="background:#C9963A"></span>
+          Warmth
+          <span class="value-badge" id="warmthBadge">50</span>
+        </div>
+        <div class="slider-row">
+          <span class="pole">Warm</span>
+          <div class="slider-wrap">
+            <div class="slider-track"></div>
+            <div class="slider-fill" id="warmthFill" style="--fill-color:#C9963A; width:50%"></div>
+            <input type="range" min="0" max="100" value="50" id="sliderWarmth"
+                   style="--thumb-color:#C9963A"
+                   oninput="portal.updateSlider('warmth',this.value)">
+          </div>
+          <span class="pole right">Direct</span>
+        </div>
+        <p class="param-desc" id="warmthDesc">Balanced between warmth and directness.</p>
+      </div>
+
+      <!-- Validation -->
+      <div class="param-block">
+        <div class="param-name">
+          <span class="dot" style="background:#3A7B72"></span>
+          Validation
+          <span class="value-badge" id="validationBadge">50</span>
+        </div>
+        <div class="slider-row">
+          <span class="pole">Affirm</span>
+          <div class="slider-wrap">
+            <div class="slider-track"></div>
+            <div class="slider-fill" id="validationFill" style="--fill-color:#3A7B72; width:50%"></div>
+            <input type="range" min="0" max="100" value="50" id="sliderValidation"
+                   style="--thumb-color:#3A7B72"
+                   oninput="portal.updateSlider('validation',this.value)">
+          </div>
+          <span class="pole right">Challenge</span>
+        </div>
+        <p class="param-desc" id="validationDesc">Balanced between affirming and challenging.</p>
+      </div>
+
+      <!-- Tone -->
+      <div class="param-block">
+        <div class="param-name">
+          <span class="dot" style="background:#C45E4A"></span>
+          Tone
+          <span class="value-badge" id="toneBadge">50</span>
+        </div>
+        <div class="slider-row">
+          <span class="pole">Playful</span>
+          <div class="slider-wrap">
+            <div class="slider-track"></div>
+            <div class="slider-fill" id="toneFill" style="--fill-color:#C45E4A; width:50%"></div>
+            <input type="range" min="0" max="100" value="50" id="sliderTone"
+                   style="--thumb-color:#C45E4A"
+                   oninput="portal.updateSlider('tone',this.value)">
+          </div>
+          <span class="pole right">Serious</span>
+        </div>
+        <p class="param-desc" id="toneDesc">Balanced between playful and serious.</p>
+      </div>
+
+      <!-- Structure -->
+      <div class="param-block">
+        <div class="param-name">
+          <span class="dot" style="background:#5A7EA8"></span>
+          Structure
+          <span class="value-badge" id="structureBadge">50</span>
+        </div>
+        <div class="slider-row">
+          <span class="pole">Steps</span>
+          <div class="slider-wrap">
+            <div class="slider-track"></div>
+            <div class="slider-fill" id="structureFill" style="--fill-color:#5A7EA8; width:50%"></div>
+            <input type="range" min="0" max="100" value="50" id="sliderStructure"
+                   style="--thumb-color:#5A7EA8"
+                   oninput="portal.updateSlider('structure',this.value)">
+          </div>
+          <span class="pole right">Explore</span>
+        </div>
+        <p class="param-desc" id="structureDesc">Balanced between step-by-step guidance and open exploration.</p>
+      </div>
+
+      <!-- Stance -->
+      <div class="param-block">
+        <div class="param-name">
+          <span class="dot" style="background:#6E5A8A"></span>
+          Stance
+          <span class="value-badge" id="stanceBadge">50</span>
+        </div>
+        <div class="slider-row">
+          <span class="pole">Protect</span>
+          <div class="slider-wrap">
+            <div class="slider-track"></div>
+            <div class="slider-fill" id="stanceFill" style="--fill-color:#6E5A8A; width:50%"></div>
+            <input type="range" min="0" max="100" value="50" id="sliderStance"
+                   style="--thumb-color:#6E5A8A"
+                   oninput="portal.updateSlider('stance',this.value)">
+          </div>
+          <span class="pole right">Empower</span>
+        </div>
+        <p class="param-desc" id="stanceDesc">Balanced between protecting and empowering.</p>
+      </div>
+    </div>
+
+    <!-- Voice backend -->
+    <div class="voice-backend-section">
+      <div class="section-label" style="padding-top:0">Voice source</div>
+      <div class="radio-group">
+        <label class="radio-label">
+          <input type="radio" name="voiceBackend" value="tts" checked onchange="portal.updateVoiceBackend(this.value)">
+          <span>Text-to-speech (basic)</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="voiceBackend" value="seed_vc" onchange="portal.updateVoiceBackend(this.value)">
+          <span>Upload a voice recording (Seed-VC)</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="voiceBackend" value="elevenlabs" onchange="portal.updateVoiceBackend(this.value)">
+          <span>ElevenLabs voice ID</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="voiceBackend" value="hume" onchange="portal.updateVoiceBackend(this.value)">
+          <span>Hume (cloned voice)</span>
+        </label>
+      </div>
+      <div id="elevenlabsField" class="hidden" style="margin-top:12px">
+        <div class="field-label">ElevenLabs voice ID</div>
+        <input type="text" id="elevenlabsVoiceId" class="text-input" placeholder="e.g. 0adOamoIGIflthunGKJ1">
+      </div>
+      <div id="humeField" class="hidden" style="margin-top:12px">
+        <div class="field-label">Hume voice ID</div>
+        <input type="text" id="humeVoiceId" class="text-input" placeholder="e.g. 81339f54-b1f3-4647-b56c-7aa2ab9527fb">
+        <p class="hint-text" style="margin-top:6px">Find this in your <a href="https://platform.hume.ai" target="_blank" style="color:var(--gold)">Hume dashboard</a> under Voices. Voice cloning must be set up separately via <code>scripts/setup_hume.py</code>.</p>
+      </div>
+    </div>
+
+    <!-- Save button -->
+    <div class="footer">
+      <div id="createCognaError" class="form-error hidden"></div>
+      <button class="save-btn" onclick="portal.saveCogna()">Save this Cogna voice →</button>
+      <button class="ghost-btn back-btn" onclick="portal.showDashboard()">← Back to dashboard</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COGNA DETAIL SCREEN ===== -->
+<section id="cognaDetailScreen" class="screen hidden">
+  <div class="portal-wrap">
+    <button class="ghost-btn back-link" onclick="portal.showDashboard()">← Back</button>
+
+    <div class="detail-header">
+      <div class="detail-avatar" id="detailAvatar">?</div>
+      <div>
+        <h2 class="detail-name" id="detailName">Cogna Name</h2>
+        <p class="detail-relationship" id="detailRelationship"></p>
+      </div>
+      <button class="ghost-btn small" onclick="portal.editCogna()">Edit</button>
+    </div>
+
+    <!-- Completion checklist -->
+    <div class="panel">
+      <h3 class="panel-title">Setup progress</h3>
+      <div class="checklist">
+        <div class="check-item" id="checkVoice"><span class="check-icon">⚠️</span> Voice sample</div>
+        <div class="check-item" id="checkPhoto"><span class="check-icon">⚠️</span> Photo</div>
+        <div class="check-item" id="checkTested"><span class="check-icon">⚠️</span> Voice tested</div>
+      </div>
+    </div>
+
+    <!-- Voice sample upload -->
+    <div class="panel">
+      <h3 class="panel-title">Voice sample</h3>
+      <p class="panel-sub">Upload a recording in this person's voice. iPhone Voice Memos work great — just AirDrop the .m4a file. MP3, WAV, M4A, MP4, and WEBM are all accepted.</p>
+      <div id="voiceSavedBanner" class="saved-banner hidden">✅ Voice sample saved</div>
+      <form id="voiceSampleForm">
+        <label class="upload-label">
+          <input type="file" id="voiceSampleFile" accept=".mp3,.wav,.m4a,.webm,.mp4" onchange="portal.onVoiceFileChange(this)">
+          <span class="upload-btn">Choose file</span>
+          <span class="upload-filename" id="voiceFilename">No file chosen</span>
+        </label>
+        <button type="submit" id="voiceUploadBtn" class="save-btn" style="margin-top:12px">Upload voice sample</button>
+      </form>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="panel">
+      <h3 class="panel-title">Photo</h3>
+      <p class="panel-sub">Upload a photo Christopher will see when this Cogna responds.</p>
+      <div id="photoPreview" class="photo-preview hidden"></div>
+      <form id="photoForm">
+        <label class="upload-label">
+          <input type="file" id="photoFile" accept=".png,.jpg,.jpeg,.webp" onchange="portal.onPhotoFileChange(this)">
+          <span class="upload-btn">Choose photo</span>
+          <span class="upload-filename" id="photoFilename">No file chosen</span>
+        </label>
+        <button type="submit" class="save-btn" style="margin-top:12px">Upload photo</button>
+      </form>
+    </div>
+
+    <!-- Test voice -->
+    <div class="panel">
+      <h3 class="panel-title">Test this voice</h3>
+      <p class="panel-sub">Generate a sample response to hear how this Cogna will sound.</p>
+      <form id="testVoiceForm">
+        <div class="field">
+          <div class="field-label">Message</div>
+          <textarea id="testMessage" class="text-input textarea" rows="3"
+            placeholder="Hey there, I hope you're having a great day!"></textarea>
+        </div>
+        <button type="submit" class="save-btn" style="margin-top:12px">Generate test audio</button>
+      </form>
+      <div id="testResult" class="hidden" style="margin-top:16px"></div>
+    </div>
+
+    <div id="detailStatus" class="status-msg hidden"></div>
+  </div>
+</section>
+
+<!-- ===== HUME CONSENT MODAL ===== -->
+<div id="humeConsentModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="humeConsentTitle">
+  <div class="modal-card">
+    <h2 class="modal-title" id="humeConsentTitle">Before enabling Hume voice</h2>
+    <p class="modal-body">
+      Hume AI delivers emotionally intelligent voice conversations using their cloud infrastructure.
+      When this Cogna speaks, <strong>real-time audio is transmitted to and processed by Hume AI's servers</strong> — outside of MyCogna's direct control.
+    </p>
+    <p class="modal-body">
+      For Cognas used by <strong>minors or adults with cognitive impairment</strong> (such as someone with Alzheimer's), this means their voice and words will be sent to a third-party service. You are responsible for reviewing
+      <a href="https://www.hume.ai/privacy" target="_blank" style="color:var(--gold)">Hume's privacy policy</a> and determining whether this is appropriate for your situation.
+    </p>
+    <p class="modal-body">
+      You can revoke this at any time by editing the Cogna and switching to a different voice source.
+    </p>
+    <label class="checkbox-label" style="margin:16px 0;display:flex;gap:10px;align-items:flex-start">
+      <input type="checkbox" id="humeConsentCheck" style="margin-top:3px;flex-shrink:0">
+      <span>I have read the above, I am authorized to consent on behalf of the person using this Cogna, and I agree to Hume AI processing audio for this Cogna.</span>
+    </label>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="save-btn" onclick="portal.confirmHumeConsent()" id="humeConsentConfirmBtn" style="flex:1">Enable Hume voice</button>
+      <button class="ghost-btn" onclick="portal.cancelHumeConsent()" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/portal.js"></script>
+</body>
+</html>

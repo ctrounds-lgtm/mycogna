@@ -1,0 +1,15 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+170270053,2025-08-06T13:59:31.712Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+170270053,2025-08-06T14:38:25.514Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+170270053,2025-08-06T15:59:09.623Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+170270053,2025-08-06T22:00:22.951Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+170270053,2025-08-07T03:41:45.147Z,bettyboop13079@yahoo.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+170270053,2025-08-07T06:18:04.707Z,gwenlisboa@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+170270053,2025-08-07T22:03:41.030Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+170270053,2025-08-08T06:41:09.300Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+170270053,2025-08-10T04:08:26.655Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+170270053,2025-08-11T13:19:08.733Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+170270053,2025-08-14T20:30:58.191Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+170270053,2025-08-14T20:31:58.175Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+170270053,2025-08-14T20:37:40.363Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+170270053,2025-08-18T20:45:21.361Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"

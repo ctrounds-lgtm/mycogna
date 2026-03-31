@@ -1,0 +1,3 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+163773510,2025-05-17T18:31:49.496Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+163773510,2025-05-18T14:40:45.846Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

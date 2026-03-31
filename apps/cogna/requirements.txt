@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+requests
+python-dotenv
+anthropic
+openai
+python-multipart
+hume
+httpx
+supabase

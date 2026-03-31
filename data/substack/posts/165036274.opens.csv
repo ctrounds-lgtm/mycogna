@@ -1,0 +1,19 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+165036274,2025-06-12T12:14:06.531Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165036274,2025-06-12T12:24:49.344Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165036274,2025-06-12T12:34:39.458Z,kremenapopov@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165036274,2025-06-12T12:44:14.434Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165036274,2025-06-12T12:52:16.720Z,lrgatley@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165036274,2025-06-12T13:11:36.216Z,lrgatley@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165036274,2025-06-12T13:21:23.611Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165036274,2025-06-12T13:40:11.284Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+165036274,2025-06-12T17:06:41.370Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+165036274,2025-06-12T17:08:12.741Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+165036274,2025-06-12T17:29:49.747Z,jeanmariesart@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+165036274,2025-06-12T20:33:03.363Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+165036274,2025-06-12T20:33:03.424Z,zsara@mac.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+165036274,2025-06-12T21:24:39.120Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+165036274,2025-06-13T00:39:02.458Z,jeanmariesart@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+165036274,2025-06-13T02:04:06.230Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+165036274,2025-06-13T04:54:04.880Z,swzanussi@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+165036274,2025-06-13T17:48:09.465Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0

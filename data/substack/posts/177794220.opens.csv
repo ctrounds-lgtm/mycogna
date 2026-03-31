@@ -1,0 +1,41 @@
+post_id,timestamp,email,post_type,post_audience,active_subscription,country,city,region,device_type,client_os,client_type,user_agent
+177794220,2025-11-02T14:29:42.729Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T14:33:55.069Z,swzanussi@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T14:50:44.738Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T15:05:10.044Z,lists@shaf.me,newsletter,everyone,true,GB,,,,,,Mozilla/5.0
+177794220,2025-11-02T15:55:29.974Z,elegarrison@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T16:10:02.175Z,savagemanolo1295nomads1369@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-02T16:41:01.440Z,ctrounds@gmail.com,newsletter,everyone,false,NL,,,,,,Mozilla/5.0
+177794220,2025-11-02T16:54:18.932Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T17:09:30.396Z,gwenlisboa@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T17:36:09.083Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Linux; Android 16; SM-S921U Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36"
+177794220,2025-11-02T17:41:18.699Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-02T17:49:30.544Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Linux; Android 16; SM-S921U Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36"
+177794220,2025-11-02T17:49:58.609Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Linux; Android 16; SM-S921U Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36"
+177794220,2025-11-02T17:49:58.758Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,Dalvik/2.1.0 (Linux; U; Android 16; SM-S921U Build/BP2A.250605.031.A3)
+177794220,2025-11-02T17:49:58.886Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,Dalvik/2.1.0 (Linux; U; Android 16; SM-S921U Build/BP2A.250605.031.A3)
+177794220,2025-11-02T17:49:59.043Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,Dalvik/2.1.0 (Linux; U; Android 16; SM-S921U Build/BP2A.250605.031.A3)
+177794220,2025-11-02T21:58:50.405Z,busragungork230@gmail.com,newsletter,everyone,true,TR,,,,,,Mozilla/5.0
+177794220,2025-11-02T22:02:03.226Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-02T22:51:01.994Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-03T00:18:26.880Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Linux; Android 16; SM-S921U Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.7390.122 Mobile Safari/537.36"
+177794220,2025-11-03T01:48:32.859Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-03T02:26:03.419Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-03T03:33:00.249Z,bettyboop13079@yahoo.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-03T08:17:24.663Z,rahma@rahmathassan.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-03T08:19:15.956Z,gwenlisboa@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+177794220,2025-11-03T13:02:29.706Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-03T13:10:58.654Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-03T19:18:25.149Z,busragungork230@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-04T14:08:55.618Z,kathybfletcher@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)
+177794220,2025-11-04T20:23:00.880Z,swzanussi@gmail.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+177794220,2025-11-04T20:23:00.881Z,zsara@mac.com,newsletter,everyone,true,NL,,,,,,Mozilla/5.0
+177794220,2025-11-05T10:43:03.124Z,dv1198@aol.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-07T05:09:31.826Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,Dalvik/2.1.0 (Linux; U; Android 16; SM-S921U Build/BP2A.250605.031.A3)
+177794220,2025-11-13T23:44:05.101Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-13T23:44:06.531Z,donjma4@gmail.com,newsletter,everyone,true,US,,,,,,Mozilla/5.0
+177794220,2025-11-19T20:23:27.770Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+177794220,2025-11-19T20:24:52.899Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+177794220,2025-11-19T20:25:22.883Z,tlkuhn1@charter.net,newsletter,everyone,true,US,,,,,,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+177794220,2025-11-21T03:24:02.418Z,ctrounds@gmail.com,newsletter,everyone,false,US,,,,,,Mozilla/5.0
+177794220,2025-11-22T04:13:38.123Z,phoenixt@msn.com,newsletter,everyone,true,US,,,,,,Dalvik/2.1.0 (Linux; U; Android 16; SM-S921U Build/BP2A.250605.031.A3)
