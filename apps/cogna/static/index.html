@@ -460,7 +460,7 @@
         <div class="conv-wave-bar"></div>
       </div>
 
-      <button class="conv-mic-btn" id="convMicBtn" aria-label="Microphone">🎙️</button>
+      <button class="conv-mic-btn" id="convMicBtn" aria-label="Microphone" onclick="app.startMic()" disabled>🎙️</button>
       <p class="conv-mic-hint" id="convMicHint">Just speak</p>
 
       <button class="conv-end-btn" onclick="app.endConversation()">End conversation</button>
@@ -504,6 +504,7 @@
       nextPlayTime: 0,      // gapless scheduling cursor
       activeSources: [],    // AudioBufferSourceNodes (stoppable on interruption)
       sessionStart: null,
+      micStarted: false,    // true once user has tapped the mic button
     };
 
     function showScreen(id) {
@@ -718,6 +719,8 @@
 
         appState.history = [];
         appState.sessionStart = new Date();
+        appState.micStarted = false;
+        document.getElementById('convMicBtn').disabled = true;
         document.getElementById('convMicBtn').classList.remove('recording');
         document.getElementById('convCrisis').classList.add('hidden');
         document.getElementById('convWaveform').classList.add('hidden');
@@ -742,23 +745,19 @@
         appState.eviWs = ws;
 
         ws.onopen = async () => {
-          // Override system prompt and voice for this Cogna
+          // Send session configuration to Hume
           const settings = {
             type: 'session_settings',
             system_prompt: config.system_prompt,
             custom_session_id: appState.selectedIds[0] + '_' + Date.now(),
+            audio: { encoding: 'linear16', sample_rate: 16000, channels: 1 },
           };
-          if (config.voice_id) settings.voice_id = config.voice_id;
+          if (config.voice_id) settings.voice = { id: config.voice_id };
           ws.send(JSON.stringify(settings));
 
-          // Start streaming mic audio
-          try {
-            await _startMicStream(ws);
-            _setLabel('Just speak.');
-            document.getElementById('convMicBtn').classList.add('recording');
-          } catch {
-            _setLabel('Mic access failed.');
-          }
+          // Wait for user to tap the mic button — do not auto-start
+          _setLabel('Tap the mic to begin.');
+          document.getElementById('convMicBtn').disabled = false;
         };
 
         ws.onmessage = (event) => {
@@ -769,9 +768,26 @@
 
         ws.onclose = (e) => {
           _stopMic();
+          appState.micStarted = false;
           document.getElementById('convMicBtn').classList.remove('recording');
-          if (e.code !== 1000) _setLabel('Disconnected.');
+          if (e.code !== 1000) _setLabel(`Disconnected (code ${e.code}).`);
         };
+      },
+
+      async startMic() {
+        if (appState.micStarted) return;  // already running
+        if (!appState.eviWs || appState.eviWs.readyState !== WebSocket.OPEN) {
+          _setLabel('Not connected. Please try again.');
+          return;
+        }
+        try {
+          await _startMicStream(appState.eviWs);
+          appState.micStarted = true;
+          document.getElementById('convMicBtn').classList.add('recording');
+          _setLabel('Just speak.');
+        } catch {
+          _setLabel('Mic access denied. Please allow microphone and try again.');
+        }
       },
 
       endConversation() {
