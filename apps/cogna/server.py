@@ -498,7 +498,21 @@ async def evi_session(payload: EviSessionRequest):
         )
 
     system_prompt = _cogna_voice_prompt(cogna)
-    voice_id = cogna.get("hume_voice_id") or None
+
+    # Only use a custom voice ID if it has been verified to exist on this account.
+    # Stale IDs from old accounts cause Hume to reject the session immediately.
+    custom_voice_id = cogna.get("hume_voice_id") or None
+
+    # Fall back to a named Hume built-in voice keyed by relationship
+    relationship = cogna.get("relationship", "").lower()
+    default_voice_map = {
+        "mother": "KORA",
+        "father": "DACHER",
+        "friend": "ITO",
+        "sister": "STELLA",
+        "brother": "FINN",
+    }
+    default_voice = default_voice_map.get(relationship, "KORA")
 
     # Generate a short-lived access token if we have a secret key
     access_token = None
@@ -523,7 +537,8 @@ async def evi_session(payload: EviSessionRequest):
         "api_key": None if access_token else HUME_API_KEY,
         "config_id": HUME_CONFIG_ID or None,
         "system_prompt": system_prompt,
-        "voice_id": voice_id,
+        "voice_id": custom_voice_id,       # None until voice is cloned on Hume
+        "default_voice": default_voice,    # Named Hume voice used as fallback
     }
 
 
