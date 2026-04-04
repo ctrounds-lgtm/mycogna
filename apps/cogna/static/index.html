@@ -540,11 +540,35 @@
     // ── mic streaming ─────────────────────────────────────────────────────────
 
     async function _startMicStream(ws) {
+      // Check permission state before attempting (diagnostic only — doesn't block)
+      if (navigator.permissions) {
+        try {
+          const perm = await navigator.permissions.query({ name: 'microphone' });
+          console.log('[MyCogna] Mic permission state:', perm.state);
+        } catch (e) {
+          console.log('[MyCogna] permissions.query not supported:', e.message);
+        }
+      }
+
+      console.log('[MyCogna] Calling getUserMedia...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[MyCogna] getUserMedia succeeded. Tracks:', stream.getAudioTracks().map(t => t.label));
+
+      console.log('[MyCogna] Creating AudioContext at 16kHz...');
       const ctx = new AudioContext({ sampleRate: 16000 });
+      console.log('[MyCogna] AudioContext state:', ctx.state, '| actual sampleRate:', ctx.sampleRate);
+
+      // Resume context if suspended (required after user gesture on some browsers)
+      if (ctx.state === 'suspended') {
+        console.log('[MyCogna] AudioContext suspended — resuming...');
+        await ctx.resume();
+        console.log('[MyCogna] AudioContext resumed. State:', ctx.state);
+      }
+
       const source = ctx.createMediaStreamSource(stream);
       // 1600 samples = 100 ms at 16 kHz — Hume's recommended web buffer window
       const processor = ctx.createScriptProcessor(1600, 1, 1);
+      console.log('[MyCogna] Audio pipeline created. Starting stream...');
 
       processor.onaudioprocess = (e) => {
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -777,8 +801,10 @@
 
       async startMic() {
         if (appState.micStarted) return;  // already running
+        console.log('[MyCogna] startMic called. WS state:', appState.eviWs?.readyState);
         if (!appState.eviWs || appState.eviWs.readyState !== WebSocket.OPEN) {
           _setLabel('Not connected. Please try again.');
+          console.warn('[MyCogna] startMic: WebSocket not open');
           return;
         }
         try {
@@ -786,8 +812,14 @@
           appState.micStarted = true;
           document.getElementById('convMicBtn').classList.add('recording');
           _setLabel('Just speak.');
-        } catch {
-          _setLabel('Mic access denied. Please allow microphone and try again.');
+          console.log('[MyCogna] Mic started successfully.');
+        } catch (err) {
+          console.error('[MyCogna] Mic error:', err.name, err.message, err);
+          const msg = err.name === 'NotAllowedError'  ? 'Mic access denied — please allow microphone in browser settings.' :
+                      err.name === 'NotFoundError'    ? 'No microphone found. Please connect a mic and try again.' :
+                      err.name === 'NotReadableError' ? 'Mic is in use by another app. Please close it and try again.' :
+                      `Mic error (${err.name}): ${err.message}`;
+          _setLabel(msg);
         }
       },
 
