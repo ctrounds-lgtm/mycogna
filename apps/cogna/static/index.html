@@ -566,8 +566,8 @@
       }
 
       const source = ctx.createMediaStreamSource(stream);
-      // 1600 samples = 100 ms at 16 kHz — Hume's recommended web buffer window
-      const processor = ctx.createScriptProcessor(1600, 1, 1);
+      // 2048 samples = 128 ms at 16 kHz (must be power of two; closest to Hume's recommended 100ms)
+      const processor = ctx.createScriptProcessor(2048, 1, 1);
       console.log('[MyCogna] Audio pipeline created. Starting stream...');
 
       processor.onaudioprocess = (e) => {
