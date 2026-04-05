@@ -772,10 +772,10 @@
           // Send session configuration to Hume
           const settings = {
             type: 'session_settings',
-            system_prompt: config.system_prompt,
             custom_session_id: appState.selectedIds[0] + '_' + Date.now(),
             audio: { encoding: 'linear16', sample_rate: 16000, channels: 1 },
           };
+          if (!config.config_id && config.system_prompt) settings.system_prompt = config.system_prompt;
           if (config.voice_id) settings.voice = { id: config.voice_id };
           else if (config.default_voice && !config.config_id) settings.voice = { name: config.default_voice };
           ws.send(JSON.stringify(settings));
