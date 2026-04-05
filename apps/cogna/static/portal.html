@@ -35,6 +35,9 @@
       </div>
       <div id="loginError" class="form-error hidden"></div>
       <button type="submit" class="save-btn">Sign In →</button>
+      <p style="text-align:center;margin-top:12px;font-size:0.85rem">
+        <a href="#" onclick="portal.showForgotPassword();return false;" style="color:var(--gold);opacity:0.8">Forgot password?</a>
+      </p>
     </form>
 
     <!-- Register form -->
@@ -63,6 +66,51 @@
       </div>
       <div id="registerError" class="form-error hidden"></div>
       <button type="submit" class="save-btn">Create Account →</button>
+    </form>
+  </div>
+</section>
+
+<!-- ===== FORGOT PASSWORD SCREEN ===== -->
+<section id="forgotScreen" class="screen hidden">
+  <div class="auth-wrap">
+    <div class="auth-header">
+      <div class="eyebrow">MyCogna</div>
+      <h1 class="display-title">Reset your<br><em>password</em></h1>
+      <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
+    </div>
+    <form id="forgotForm" class="auth-form">
+      <div class="field">
+        <label class="field-label">Email</label>
+        <input type="email" id="forgotEmail" class="text-input" placeholder="you@example.com" required>
+      </div>
+      <div id="forgotError" class="form-error hidden"></div>
+      <div id="forgotSuccess" class="hidden" style="color:#7aab8a;margin-bottom:12px;font-size:0.9rem"></div>
+      <button type="submit" class="save-btn">Send reset link →</button>
+      <p style="text-align:center;margin-top:12px;font-size:0.85rem">
+        <a href="#" onclick="portal.showLogin();return false;" style="color:var(--gold);opacity:0.8">Back to sign in</a>
+      </p>
+    </form>
+  </div>
+</section>
+
+<!-- ===== RESET PASSWORD SCREEN ===== -->
+<section id="resetScreen" class="screen hidden">
+  <div class="auth-wrap">
+    <div class="auth-header">
+      <div class="eyebrow">MyCogna</div>
+      <h1 class="display-title">Choose a new<br><em>password</em></h1>
+    </div>
+    <form id="resetForm" class="auth-form">
+      <div class="field">
+        <label class="field-label">New password</label>
+        <input type="password" id="resetPassword" class="text-input" placeholder="••••••••" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Confirm new password</label>
+        <input type="password" id="resetConfirm" class="text-input" placeholder="••••••••" required>
+      </div>
+      <div id="resetError" class="form-error hidden"></div>
+      <button type="submit" class="save-btn">Set new password →</button>
     </form>
   </div>
 </section>
@@ -255,26 +303,18 @@
           <span>Text-to-speech (basic)</span>
         </label>
         <label class="radio-label">
-          <input type="radio" name="voiceBackend" value="seed_vc" onchange="portal.updateVoiceBackend(this.value)">
-          <span>Upload a voice recording (Seed-VC)</span>
-        </label>
-        <label class="radio-label">
-          <input type="radio" name="voiceBackend" value="elevenlabs" onchange="portal.updateVoiceBackend(this.value)">
-          <span>ElevenLabs voice ID</span>
-        </label>
-        <label class="radio-label">
           <input type="radio" name="voiceBackend" value="hume" onchange="portal.updateVoiceBackend(this.value)">
-          <span>Hume (cloned voice)</span>
+          <span>Hume EVI (voice conversation)</span>
         </label>
       </div>
-      <div id="elevenlabsField" class="hidden" style="margin-top:12px">
-        <div class="field-label">ElevenLabs voice ID</div>
-        <input type="text" id="elevenlabsVoiceId" class="text-input" placeholder="e.g. 0adOamoIGIflthunGKJ1">
+      <div id="elevenlabsField" class="hidden">
+        <input type="text" id="elevenlabsVoiceId" class="text-input">
       </div>
       <div id="humeField" class="hidden" style="margin-top:12px">
-        <div class="field-label">Hume voice ID</div>
-        <input type="text" id="humeVoiceId" class="text-input" placeholder="e.g. 81339f54-b1f3-4647-b56c-7aa2ab9527fb">
-        <p class="hint-text" style="margin-top:6px">Find this in your <a href="https://platform.hume.ai" target="_blank" style="color:var(--gold)">Hume dashboard</a> under Voices. Voice cloning must be set up separately via <code>scripts/setup_hume.py</code>.</p>
+        <div class="field-label">Hume EVI Config ID</div>
+        <input type="text" id="humeConfigId" class="text-input" placeholder="e.g. 38294f22-eb0d-496f-ac3a-eff77d3f5c48">
+        <p class="hint-text" style="margin-top:6px">Find this in your <a href="https://platform.hume.ai" target="_blank" style="color:var(--gold)">Hume dashboard</a> under EVI → Configurations.</p>
+        <input type="hidden" id="humeVoiceId">
       </div>
     </div>
 
@@ -353,6 +393,7 @@
         </div>
         <button type="submit" class="save-btn" style="margin-top:12px">Generate test audio</button>
       </form>
+      <p id="humeTestHint" class="hint-text hidden">This Cogna uses a Hume EVI config — voice and personality are handled by Hume. Start a conversation on the child app to hear how they sound.</p>
       <div id="testResult" class="hidden" style="margin-top:16px"></div>
     </div>
 
