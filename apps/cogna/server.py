@@ -992,7 +992,9 @@ def _cogna_voice_prompt(cogna: Dict[str, Any]) -> str:
         f"In terms of tone, {tone_desc}. "
         f"For guidance, {structure_desc}. "
         f"Your stance is to {stance_desc}. "
-        f"Keep responses warm, concise, and human — 2 to 4 sentences unless more is needed. "
+        f"Keep responses warm, concise, and human — 1 to 3 sentences. "
+        f"Ask only one question at a time, then stop and wait. "
+        f"Never pile on multiple questions or continue speaking into silence. "
         f"Never use emojis or emoticons — your words are spoken aloud."
     )
 
