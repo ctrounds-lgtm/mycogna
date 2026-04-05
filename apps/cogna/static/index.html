@@ -718,9 +718,12 @@
         const grid = document.getElementById('cognaSelectGrid');
         grid.innerHTML = appState.cognas.map(c => {
           const initial = (c.name || '?')[0].toUpperCase();
+          const avatarInner = c.photo
+            ? `<img src="${c.photo}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            : initial;
           return `
             <div class="cogna-select-card" data-id="${c.id}" onclick="app.toggleCogna('${c.id}', this)">
-              <div class="select-avatar">${initial}</div>
+              <div class="select-avatar">${avatarInner}</div>
               <div class="select-name">${c.name}</div>
               <div class="select-rel">${c.relationship || ''}</div>
               <div class="select-check">✓</div>
