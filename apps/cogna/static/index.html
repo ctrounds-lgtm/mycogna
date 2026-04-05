@@ -777,7 +777,7 @@
             audio: { encoding: 'linear16', sample_rate: 16000, channels: 1 },
           };
           if (config.voice_id) settings.voice = { id: config.voice_id };
-          else if (config.default_voice) settings.voice = { name: config.default_voice };
+          else if (config.default_voice && !config.config_id) settings.voice = { name: config.default_voice };
           ws.send(JSON.stringify(settings));
 
           // Wait for user to tap the mic button — do not auto-start

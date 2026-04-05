@@ -535,7 +535,7 @@ async def evi_session(payload: EviSessionRequest):
     return {
         "access_token": access_token,
         "api_key": None if access_token else HUME_API_KEY,
-        "config_id": HUME_CONFIG_ID or None,
+        "config_id": cogna.get("hume_config_id") or HUME_CONFIG_ID or None,
         "system_prompt": system_prompt,
         "voice_id": custom_voice_id,       # None until voice is cloned on Hume
         "default_voice": default_voice,    # Named Hume voice used as fallback
