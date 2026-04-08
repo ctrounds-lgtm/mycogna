@@ -36,6 +36,11 @@ try:
 except ImportError:
     OpenAI = None
 
+try:
+    import resend as resend_sdk
+except ImportError:
+    resend_sdk = None
+
 
 # ----------------------------------------------------
 # Config / Paths
@@ -87,6 +92,13 @@ HUME_API_KEY = os.getenv("HUME_API_KEY", "")
 HUME_SECRET_KEY = os.getenv("HUME_SECRET_KEY", "")
 HUME_CONFIG_ID = os.getenv("HUME_CONFIG_ID", "")
 
+# Resend (email) setup
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM = os.getenv("RESEND_FROM", "MyCogna <noreply@mycogna.org>")
+APP_URL = os.getenv("APP_URL", "https://mycogna.org")
+if resend_sdk and RESEND_API_KEY:
+    resend_sdk.api_key = RESEND_API_KEY
+
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
@@ -116,24 +128,35 @@ class FamilyLoginRequest(BaseModel):
     password: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    password: str
+
+
 class CognaCreateRequest(BaseModel):
     name: str
     relationship: str = ""
     term_of_endearment: str = ""
-    params: Dict[str, int] = {}
+    params: Dict[str, Any] = {}
     voice_backend: str = "tts"
     elevenlabs_voice_id: Optional[str] = None
     hume_voice_id: Optional[str] = None
+    hume_config_id: Optional[str] = None
 
 
 class CognaUpdateRequest(BaseModel):
     name: Optional[str] = None
     relationship: Optional[str] = None
     term_of_endearment: Optional[str] = None
-    params: Optional[Dict[str, int]] = None
+    params: Optional[Dict[str, Any]] = None
     voice_backend: Optional[str] = None
     elevenlabs_voice_id: Optional[str] = None
     hume_voice_id: Optional[str] = None
+    hume_config_id: Optional[str] = None
 
 
 class TestVoiceRequest(BaseModel):
@@ -264,6 +287,76 @@ def get_access_code(authorization: Optional[str] = Header(default=None)):
     return {"access_code": user.get("child_access_code", "")}
 
 
+@app.post("/api/auth/request-reset")
+def auth_request_reset(payload: PasswordResetRequest):
+    from datetime import timedelta
+    email = payload.email.strip().lower()
+    user = _get_user(email)
+    # Always return success to avoid leaking whether an account exists
+    if not user:
+        return {"ok": True}
+
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    _update_user(email, {"password_reset_token": token, "password_reset_expires": expires})
+
+    reset_url = f"{APP_URL}/portal?reset_token={token}"
+    if resend_sdk and RESEND_API_KEY:
+        resend_sdk.Emails.send({
+            "from": RESEND_FROM,
+            "to": [email],
+            "subject": "Reset your MyCogna password",
+            "html": (
+                f"<p>Hi {user.get('name', '')}!</p>"
+                f"<p>Click the link below to reset your MyCogna password. "
+                f"This link expires in 1 hour.</p>"
+                f"<p><a href='{reset_url}'>{reset_url}</a></p>"
+                f"<p>If you didn't request this, you can ignore this email.</p>"
+            ),
+        })
+    else:
+        print(f"[DEV] Password reset link for {email}: {reset_url}")
+
+    return {"ok": True}
+
+
+@app.post("/api/auth/reset-password")
+def auth_reset_password(payload: PasswordResetConfirm):
+    # Find user by token
+    if supabase:
+        r = supabase.table("users").select("*").eq("password_reset_token", payload.token).maybe_single().execute()
+        user = r.data
+    else:
+        db = _load_db()
+        user = next((u for u in db["users"].values() if u.get("password_reset_token") == payload.token), None)
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    expires_str = user.get("password_reset_expires")
+    if not expires_str:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+    expires = datetime.fromisoformat(expires_str)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+
+    new_salt = secrets.token_hex(8)
+    new_hash = _hash_password(payload.password, new_salt)
+    _update_user(user["email"], {
+        "password_salt": new_salt,
+        "password_hash": new_hash,
+        "password_reset_token": None,
+        "password_reset_expires": None,
+    })
+
+    return {"ok": True}
+
+
 # ----------------------------------------------------
 # Cogna CRUD endpoints
 # ----------------------------------------------------
@@ -284,7 +377,9 @@ def create_cogna(
 
     cogna_id = "cogna_" + secrets.token_hex(6)
     default_params = {"warmth": 50, "validation": 50, "tone": 50, "structure": 50, "stance": 50}
-    params = {**default_params, **{k: max(0, min(100, v)) for k, v in payload.params.items()}}
+    params = {**default_params}
+    for k, v in payload.params.items():
+        params[k] = max(0, min(100, v)) if isinstance(v, int) else v
 
     cogna = {
         "id": cogna_id,
@@ -296,6 +391,7 @@ def create_cogna(
         "voice_backend": payload.voice_backend,
         "elevenlabs_voice_id": payload.elevenlabs_voice_id,
         "hume_voice_id": payload.hume_voice_id,
+        "hume_config_id": payload.hume_config_id,
         "voice_sample": None,
         "photo": None,
         "hume_consent": None,
@@ -340,7 +436,7 @@ def update_cogna(
     if payload.params is not None:
         existing_params = cogna.get("params", {})
         for k, v in payload.params.items():
-            existing_params[k] = max(0, min(100, v))
+            existing_params[k] = max(0, min(100, v)) if isinstance(v, int) else v
         updates["params"] = existing_params
     if payload.voice_backend is not None:
         updates["voice_backend"] = payload.voice_backend
@@ -348,6 +444,8 @@ def update_cogna(
         updates["elevenlabs_voice_id"] = payload.elevenlabs_voice_id
     if payload.hume_voice_id is not None:
         updates["hume_voice_id"] = payload.hume_voice_id
+    if payload.hume_config_id is not None:
+        updates["hume_config_id"] = payload.hume_config_id
 
     if updates:
         _update_cogna(cogna_id, updates)
@@ -730,6 +828,16 @@ def _create_user(user: Dict[str, Any]):
     _save_db(db)
 
 
+def _update_user(email: str, updates: Dict[str, Any]):
+    if supabase:
+        supabase.table("users").update(updates).eq("email", email).execute()
+        return
+    db = _load_db()
+    if email in db["users"]:
+        db["users"][email].update(updates)
+    _save_db(db)
+
+
 def _get_cogna(cogna_id: str) -> Dict[str, Any]:
     if supabase:
         r = supabase.table("cognas").select("*").eq("id", cogna_id).maybe_single().execute()
@@ -1029,13 +1137,14 @@ def _generate_cogna_audio(cogna: Dict[str, Any], text: str) -> str:
                 vpath = ROOT / cogna["voice_sample"]
                 voice_ref = vpath if vpath.exists() else None
             _seed_vc_convert(base_audio, cogna["name"], audio_path, voice_ref)
-    else:  # tts fallback (macOS say → WAV)
-        audio_filename = f"{cache_key}.wav"
+    else:  # tts — OpenAI TTS
+        audio_filename = f"{cache_key}.mp3"
         audio_path = CACHE_DIR / audio_filename
         if not audio_path.exists():
-            base_audio = _text_to_speech(text)
+            tts_voice = cogna.get("params", {}).get("tts_voice", "nova")
+            base_audio = _text_to_speech(text, tts_voice)
             audio_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(base_audio, audio_path)
+            shutil.move(str(base_audio), str(audio_path))
 
     return f"/audio/{audio_filename}"
 
@@ -1071,26 +1180,22 @@ def _transcribe_audio(upload: UploadFile) -> str:
             pass
 
 
-def _text_to_speech(text: str) -> Path:
-    """Use macOS built-in `say` command to generate speech, then convert to WAV for browser compatibility."""
-    import subprocess
+def _text_to_speech(text: str, voice: str = "nova") -> Path:
+    """Generate speech using OpenAI TTS."""
+    if not openai_client:
+        raise RuntimeError("OPENAI_API_KEY is required for text-to-speech")
 
-    aiff = tempfile.NamedTemporaryFile(suffix=".aiff", delete=False)
-    aiff_path = Path(aiff.name)
-    aiff.close()
+    out = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+    out_path = Path(out.name)
+    out.close()
 
-    wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    wav_path = Path(wav.name)
-    wav.close()
-
-    subprocess.run(["say", "-o", str(aiff_path), text], check=True, timeout=30)
-    subprocess.run(
-        ["afconvert", "-f", "WAVE", "-d", "LEI16", str(aiff_path), str(wav_path)],
-        check=True,
-        timeout=30,
+    response = openai_client.audio.speech.create(
+        model="tts-1",
+        voice=voice,
+        input=text,
     )
-    aiff_path.unlink(missing_ok=True)
-    return wav_path
+    response.stream_to_file(out_path)
+    return out_path
 
 
 def _elevenlabs_tts(text: str, voice_id: str) -> Path:

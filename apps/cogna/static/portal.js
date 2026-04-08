@@ -8,7 +8,7 @@ const state = {
   humeConsentGiven: false,  // true once guardian confirms the consent modal this session
 };
 
-const screens = ['authScreen', 'dashboardScreen', 'createCognaScreen', 'cognaDetailScreen'];
+const screens = ['authScreen', 'forgotScreen', 'resetScreen', 'dashboardScreen', 'createCognaScreen', 'cognaDetailScreen'];
 
 // ── Slider descriptions ──
 const sliderDescs = {
@@ -113,7 +113,7 @@ function renderCognaGrid(cognas) {
   }
   grid.innerHTML = cognas.map(c => {
     const initial = (c.name || '?')[0].toUpperCase();
-    const voiceOk = (c.voice_sample || c.elevenlabs_voice_id) ? '✅' : '⚠️';
+    const voiceOk = (c.voice_sample || c.elevenlabs_voice_id || c.hume_config_id || c.hume_voice_id) ? '✅' : '⚠️';
     const photoOk = c.photo ? '✅' : '⚠️';
     return `
       <div class="cogna-card" onclick="portal.openCogna('${c.id}')">
@@ -135,9 +135,10 @@ async function openCognaDetail(cogna) {
   document.getElementById('detailName').textContent = cogna.name;
   document.getElementById('detailRelationship').textContent = cogna.relationship || '';
 
-  const hasVoice = !!(cogna.voice_sample || cogna.elevenlabs_voice_id);
+  const isHumeEVI = !!(cogna.hume_config_id || cogna.hume_voice_id);
+  const hasVoice = !!(cogna.voice_sample || cogna.elevenlabs_voice_id || isHumeEVI);
   const hasPhoto = !!cogna.photo;
-  const hasTested = !!cogna.last_tested_at;
+  const hasTested = isHumeEVI || !!cogna.last_tested_at;
 
   function setCheck(id, ok, label) {
     const el = document.getElementById(id);
@@ -165,6 +166,15 @@ async function openCognaDetail(cogna) {
   }
 
   document.getElementById('testResult').classList.add('hidden');
+  const testForm = document.getElementById('testVoiceForm');
+  const testHint = document.getElementById('humeTestHint');
+  if (isHumeEVI) {
+    testForm.classList.add('hidden');
+    if (testHint) testHint.classList.remove('hidden');
+  } else {
+    testForm.classList.remove('hidden');
+    if (testHint) testHint.classList.add('hidden');
+  }
   document.getElementById('voiceSampleFile').value = '';
   document.getElementById('voiceFilename').textContent = 'No file chosen';
   document.getElementById('photoFile').value = '';
@@ -183,9 +193,12 @@ function resetCreateForm() {
     portal.updateSlider(p, 50);
   });
   document.querySelectorAll('input[name=voiceBackend]')[0].checked = true;
+  document.getElementById('ttsVoiceField').classList.remove('hidden');
+  document.getElementById('ttsVoice').value = 'nova';
   document.getElementById('elevenlabsField').classList.add('hidden');
   document.getElementById('elevenlabsVoiceId').value = '';
   document.getElementById('humeField').classList.add('hidden');
+  document.getElementById('humeConfigId').value = '';
   document.getElementById('humeVoiceId').value = '';
   state.humeConsentGiven = false;
   clearError('createCognaError');
@@ -208,6 +221,18 @@ function getSliderValues() {
 
 // ── Public portal API ──
 const portal = {
+  showLogin() {
+    showScreen('authScreen');
+    this.switchTab('login');
+  },
+
+  showForgotPassword() {
+    clearError('forgotError');
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('forgotSuccess').classList.add('hidden');
+    showScreen('forgotScreen');
+  },
+
   switchTab(tab) {
     document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
     document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
@@ -238,6 +263,7 @@ const portal = {
   },
 
   updateVoiceBackend(val) {
+    document.getElementById('ttsVoiceField').classList.toggle('hidden', val !== 'tts');
     document.getElementById('elevenlabsField').classList.toggle('hidden', val !== 'elevenlabs');
     document.getElementById('humeField').classList.toggle('hidden', val !== 'hume');
     if (val === 'hume' && !state.humeConsentGiven) {
@@ -291,15 +317,20 @@ const portal = {
     const humeVoiceId = voiceBackend === 'hume'
       ? document.getElementById('humeVoiceId').value.trim() || null
       : null;
+    const humeConfigId = voiceBackend === 'hume'
+      ? document.getElementById('humeConfigId').value.trim() || null
+      : null;
 
+    const ttsVoice = voiceBackend === 'tts' ? document.getElementById('ttsVoice').value : null;
     const payload = {
       name,
       relationship: document.getElementById('cognaRelationship').value.trim(),
       term_of_endearment: document.getElementById('cognaTOE').value.trim(),
-      params: getSliderValues(),
+      params: { ...getSliderValues(), ...(ttsVoice ? { tts_voice: ttsVoice } : {}) },
       voice_backend: voiceBackend,
       elevenlabs_voice_id: elevenlabsVoiceId,
       hume_voice_id: humeVoiceId,
+      hume_config_id: humeConfigId,
     };
 
     try {
@@ -352,7 +383,9 @@ const portal = {
     if (backend === 'hume' && c.hume_consent?.accepted) state.humeConsentGiven = true;
     document.querySelectorAll('input[name=voiceBackend]').forEach(r => { r.checked = r.value === backend; });
     portal.updateVoiceBackend(backend);
+    if (c.params?.tts_voice) document.getElementById('ttsVoice').value = c.params.tts_voice;
     if (c.elevenlabs_voice_id) document.getElementById('elevenlabsVoiceId').value = c.elevenlabs_voice_id;
+    if (c.hume_config_id) document.getElementById('humeConfigId').value = c.hume_config_id;
     if (c.hume_voice_id) document.getElementById('humeVoiceId').value = c.hume_voice_id;
 
     state.editingCognaId = state.currentCognaId;
@@ -386,15 +419,20 @@ const portal = {
     const humeVoiceId = voiceBackend === 'hume'
       ? document.getElementById('humeVoiceId').value.trim() || null
       : null;
+    const humeConfigId = voiceBackend === 'hume'
+      ? document.getElementById('humeConfigId').value.trim() || null
+      : null;
 
+    const ttsVoice = voiceBackend === 'tts' ? document.getElementById('ttsVoice').value : null;
     const payload = {
       name,
       relationship: document.getElementById('cognaRelationship').value.trim(),
       term_of_endearment: document.getElementById('cognaTOE').value.trim(),
-      params: getSliderValues(),
+      params: { ...getSliderValues(), ...(ttsVoice ? { tts_voice: ttsVoice } : {}) },
       voice_backend: voiceBackend,
       elevenlabs_voice_id: elevenlabsVoiceId,
       hume_voice_id: humeVoiceId,
+      hume_config_id: humeConfigId,
     };
 
     try {
@@ -554,8 +592,62 @@ document.getElementById('testVoiceForm').addEventListener('submit', async e => {
   }
 });
 
+document.getElementById('forgotForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearError('forgotError');
+  document.getElementById('forgotSuccess').classList.add('hidden');
+  try {
+    await req(`${api}/auth/request-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: document.getElementById('forgotEmail').value }),
+    });
+    const successEl = document.getElementById('forgotSuccess');
+    successEl.textContent = 'Check your email for a reset link. It expires in 1 hour.';
+    successEl.classList.remove('hidden');
+    document.querySelector('#forgotForm button[type=submit]').disabled = true;
+  } catch (err) {
+    showError('forgotError', err.message);
+  }
+});
+
+document.getElementById('resetForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearError('resetError');
+  const password = document.getElementById('resetPassword').value;
+  const confirm = document.getElementById('resetConfirm').value;
+  if (password !== confirm) { showError('resetError', 'Passwords do not match.'); return; }
+  if (password.length < 8) { showError('resetError', 'Password must be at least 8 characters.'); return; }
+  const token = new URLSearchParams(window.location.search).get('reset_token');
+  try {
+    await req(`${api}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+    // Strip token from URL and go to login
+    history.replaceState({}, '', window.location.pathname);
+    portal.showLogin();
+    document.getElementById('loginError').textContent = '';
+    // Show a one-time success hint on the login form
+    const hint = document.createElement('p');
+    hint.style.cssText = 'color:#7aab8a;font-size:0.9rem;margin-bottom:8px';
+    hint.textContent = 'Password updated! Sign in with your new password.';
+    document.getElementById('loginForm').prepend(hint);
+    setTimeout(() => hint.remove(), 8000);
+  } catch (err) {
+    showError('resetError', err.message);
+  }
+});
+
 // ── Init ──
 async function init() {
+  // Check for password reset token in URL
+  const resetToken = new URLSearchParams(window.location.search).get('reset_token');
+  if (resetToken) {
+    showScreen('resetScreen');
+    return;
+  }
   if (!state.token) { showScreen('authScreen'); return; }
   try {
     await loadDashboard();

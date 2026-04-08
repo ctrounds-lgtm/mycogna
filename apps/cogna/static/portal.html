@@ -300,12 +300,23 @@
       <div class="radio-group">
         <label class="radio-label">
           <input type="radio" name="voiceBackend" value="tts" checked onchange="portal.updateVoiceBackend(this.value)">
-          <span>Text-to-speech (basic)</span>
+          <span>Text-to-speech (OpenAI)</span>
         </label>
         <label class="radio-label">
           <input type="radio" name="voiceBackend" value="hume" onchange="portal.updateVoiceBackend(this.value)">
           <span>Hume EVI (voice conversation)</span>
         </label>
+      </div>
+      <div id="ttsVoiceField" style="margin-top:12px">
+        <div class="field-label">Voice</div>
+        <select id="ttsVoice" class="text-input">
+          <option value="nova">Nova — warm, expressive (female)</option>
+          <option value="shimmer">Shimmer — clear, bright (female)</option>
+          <option value="alloy">Alloy — neutral, balanced</option>
+          <option value="echo">Echo — natural (male)</option>
+          <option value="fable">Fable — expressive (male)</option>
+          <option value="onyx">Onyx — deep, authoritative (male)</option>
+        </select>
       </div>
       <div id="elevenlabsField" class="hidden">
         <input type="text" id="elevenlabsVoiceId" class="text-input">
