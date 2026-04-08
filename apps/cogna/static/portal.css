@@ -25,6 +25,7 @@ body {
 
 /* ── Utility ── */
 .hidden { display: none !important; }
+.auth-form.hidden { display: none !important; }
 
 /* ── Screens ── */
 .screen { display: block; }
