@@ -23,6 +23,9 @@ body {
   min-height: 100vh;
 }
 
+/* ── Utility ── */
+.hidden { display: none !important; }
+
 /* ── Screens ── */
 .screen { display: block; }
 .screen.hidden { display: none; }
