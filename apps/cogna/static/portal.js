@@ -455,6 +455,19 @@ const portal = {
     }
   },
 
+  async deleteCogna() {
+    const cognaId = state.currentCognaId;
+    const name = document.getElementById('detailName').textContent;
+    if (!cognaId) return;
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      await req(`${api}/cognas/${cognaId}`, { method: 'DELETE', headers: authHeaders() });
+      await portal.showDashboard();
+    } catch (err) {
+      alert('Could not delete: ' + err.message);
+    }
+  },
+
   copyAccessCode() {
     const code = document.getElementById('accessCodeValue').textContent;
     navigator.clipboard.writeText(code).then(() => {
