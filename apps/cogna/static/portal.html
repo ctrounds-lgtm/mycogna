@@ -126,27 +126,75 @@
       <button class="ghost-btn" onclick="portal.logout()">Sign out</button>
     </div>
 
-    <!-- Access code box -->
-    <div id="accessCodeBox" class="access-code-box">
-      <div class="access-code-label">User access code</div>
-      <div class="access-code-row">
-        <span class="access-code-value" id="accessCodeValue">COGNA-????</span>
-        <button class="copy-btn" onclick="portal.copyAccessCode()" id="copyBtn">Copy</button>
-      </div>
-      <p class="access-code-hint">Give this code to your child or the person using MyCogna. They'll enter it in the app to see all the voices you've built.</p>
+    <!-- Dashboard tabs -->
+    <div class="dash-tabs">
+      <button class="dash-tab active" id="dashTabCognas" onclick="portal.switchDashTab('cognas')">Cognas</button>
+      <button class="dash-tab" id="dashTabStories" onclick="portal.switchDashTab('stories')">Storyteller</button>
     </div>
 
-    <div class="section-header-row">
-      <h2 class="section-title">Your Cognas</h2>
-      <button class="add-btn" onclick="portal.showCreateCogna()">+ Add a Cogna</button>
-    </div>
+    <!-- ── COGNAS PANEL ── -->
+    <div id="cognasPanel">
+      <!-- Access code box -->
+      <div id="accessCodeBox" class="access-code-box">
+        <div class="access-code-label">User access code</div>
+        <div class="access-code-row">
+          <span class="access-code-value" id="accessCodeValue">COGNA-????</span>
+          <button class="copy-btn" onclick="portal.copyAccessCode()" id="copyBtn">Copy</button>
+        </div>
+        <p class="access-code-hint">Give this code to your child or the person using MyCogna. They'll enter it in the app to see all the voices you've built.</p>
+      </div>
 
-    <div id="cognaGrid" class="cogna-grid">
-      <div class="empty-state">
-        <p>No Cognas yet.</p>
-        <p>Each Cogna is one voice — Mom, a friend, a coach. Add one to get started.</p>
+      <div class="section-header-row">
+        <h2 class="section-title">Your Cognas</h2>
+        <button class="add-btn" onclick="portal.showCreateCogna()">+ Add a Cogna</button>
+      </div>
+
+      <div id="cognaGrid" class="cogna-grid">
+        <div class="empty-state">
+          <p>No Cognas yet.</p>
+          <p>Each Cogna is one voice — Mom, a friend, a coach. Add one to get started.</p>
+        </div>
       </div>
     </div>
+
+    <!-- ── STORIES PANEL ── -->
+    <div id="storiesPanel" class="hidden">
+
+      <!-- Promo Codes -->
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">Promo Codes</h2>
+        <button class="add-btn" onclick="portal.generatePromoCode()">+ Generate Code</button>
+      </div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:16px">Share a promo code with each person you want to invite to record a story.</p>
+      <div id="promoCodesList" class="stories-list">
+        <div class="empty-state"><p>No codes yet. Generate one to get started.</p></div>
+      </div>
+
+      <!-- Story Prompts -->
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Story Prompts</h2>
+      </div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:16px">The active prompt is shown to everyone who records. Only one can be active at a time.</p>
+      <div class="add-prompt-row">
+        <textarea id="newPromptText" class="text-input textarea" rows="3"
+          placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
+        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
+      </div>
+      <div id="promptsList" class="stories-list" style="margin-top:16px">
+        <div class="empty-state"><p>No prompts yet.</p></div>
+      </div>
+
+      <!-- Recordings -->
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Recordings</h2>
+        <button class="add-btn" onclick="portal.loadStories()">Refresh</button>
+      </div>
+      <div id="recordingsList" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No recordings yet.</p></div>
+      </div>
+
+    </div><!-- /storiesPanel -->
+
   </div>
 </section>
 

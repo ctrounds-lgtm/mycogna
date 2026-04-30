@@ -73,6 +73,8 @@ PORTAL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PORTAL_DB_PATH = PORTAL_DATA_DIR / "family_portal.json"
 SESSIONS_DIR = PORTAL_DATA_DIR / "sessions"
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+STORY_RECORDINGS_DIR = PORTAL_DATA_DIR / "story_recordings"
+STORY_RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 SESSIONS: Dict[str, str] = {}
 
@@ -184,6 +186,18 @@ class SaveSessionRequest(BaseModel):
     duration_seconds: int = 0
 
 
+class StoryValidateRequest(BaseModel):
+    promo_code: str
+
+
+class StoryPromptCreate(BaseModel):
+    text: str
+
+
+class PromoCodeCreate(BaseModel):
+    description: str = ""
+
+
 # ----------------------------------------------------
 # FastAPI app
 # ----------------------------------------------------
@@ -204,6 +218,16 @@ def index():
 @app.get("/portal")
 def portal():
     return FileResponse(ROOT / "static" / "portal.html")
+
+
+@app.get("/companion")
+def companion():
+    return FileResponse(ROOT / "static" / "companion.html")
+
+
+@app.get("/storyteller")
+def storyteller():
+    return FileResponse(ROOT / "static" / "storyteller.html")
 
 
 @app.get("/api/health")
@@ -768,6 +792,208 @@ def list_sessions(
 
 
 # ----------------------------------------------------
+# Storyteller endpoints (no auth required for capture)
+# ----------------------------------------------------
+
+@app.post("/api/storyteller/validate")
+def storyteller_validate(payload: StoryValidateRequest):
+    code = payload.promo_code.strip().upper()
+    pc = _get_promo_code(code)
+    if not pc:
+        raise HTTPException(status_code=404, detail="Promo code not found or inactive")
+    prompt = _get_active_prompt()
+    if not prompt:
+        raise HTTPException(status_code=404, detail="No active story prompt. Ask a collaborator to set one up.")
+    return {"valid": True, "prompt_id": prompt["id"], "prompt_text": prompt["text"]}
+
+
+@app.post("/api/storyteller/record")
+async def storyteller_record(
+    promo_code: str = Form(...),
+    prompt_id: str = Form(...),
+    audio: UploadFile = File(...),
+):
+    code = promo_code.strip().upper()
+    pc = _get_promo_code(code)
+    if not pc:
+        raise HTTPException(status_code=403, detail="Invalid or inactive promo code")
+
+    transcript = _transcribe_audio(audio)
+
+    audio.file.seek(0)
+    recording_id = "rec_" + secrets.token_hex(8)
+    audio_url = _save_story_audio(recording_id, audio)
+
+    if supabase:
+        supabase.table("story_recordings").insert({
+            "id": recording_id,
+            "promo_code": code,
+            "prompt_id": prompt_id,
+            "transcript": transcript,
+            "audio_url": audio_url,
+        }).execute()
+    else:
+        db = _load_db()
+        db["story_recordings"][recording_id] = {
+            "id": recording_id,
+            "promo_code": code,
+            "prompt_id": prompt_id,
+            "transcript": transcript,
+            "audio_url": audio_url,
+            "created_at": _utc_now(),
+        }
+        _save_db(db)
+
+    return {"ok": True, "transcript": transcript, "recording_id": recording_id}
+
+
+@app.get("/api/storyteller/prompts")
+def list_story_prompts(authorization: Optional[str] = Header(default=None)):
+    _auth_user(authorization)
+    if supabase:
+        r = supabase.table("story_prompts").select("*").order("created_at", desc=True).execute()
+        return {"prompts": r.data or []}
+    db = _load_db()
+    prompts = sorted(db["story_prompts"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"prompts": list(prompts)}
+
+
+@app.post("/api/storyteller/prompts")
+def create_story_prompt(
+    payload: StoryPromptCreate,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Prompt text is required")
+    prompt_id = "prompt_" + secrets.token_hex(6)
+    prompt = {
+        "id": prompt_id,
+        "text": text,
+        "active": False,
+        "created_by": user["email"],
+        "created_at": _utc_now(),
+    }
+    if supabase:
+        supabase.table("story_prompts").insert(prompt).execute()
+    else:
+        db = _load_db()
+        db["story_prompts"][prompt_id] = prompt
+        _save_db(db)
+    return {"prompt": prompt}
+
+
+@app.put("/api/storyteller/prompts/{prompt_id}/activate")
+def activate_story_prompt(
+    prompt_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    _auth_user(authorization)
+    if supabase:
+        supabase.table("story_prompts").update({"active": False}).neq("id", prompt_id).execute()
+        supabase.table("story_prompts").update({"active": True}).eq("id", prompt_id).execute()
+    else:
+        db = _load_db()
+        for pid, p in db["story_prompts"].items():
+            p["active"] = pid == prompt_id
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.delete("/api/storyteller/prompts/{prompt_id}")
+def delete_story_prompt(
+    prompt_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    _auth_user(authorization)
+    if supabase:
+        supabase.table("story_prompts").delete().eq("id", prompt_id).execute()
+    else:
+        db = _load_db()
+        db["story_prompts"].pop(prompt_id, None)
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.get("/api/storyteller/promo-codes")
+def list_promo_codes(authorization: Optional[str] = Header(default=None)):
+    _auth_user(authorization)
+    if supabase:
+        r = supabase.table("promo_codes").select("*").order("created_at", desc=True).execute()
+        return {"codes": r.data or []}
+    db = _load_db()
+    codes = sorted(db["promo_codes"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"codes": list(codes)}
+
+
+@app.post("/api/storyteller/promo-codes")
+def create_promo_code(
+    payload: PromoCodeCreate,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    code = _generate_story_promo_code()
+    record = {
+        "code": code,
+        "description": payload.description.strip(),
+        "active": True,
+        "created_by": user["email"],
+        "created_at": _utc_now(),
+    }
+    if supabase:
+        supabase.table("promo_codes").insert(record).execute()
+    else:
+        db = _load_db()
+        db["promo_codes"][code] = record
+        _save_db(db)
+    return {"code": record}
+
+
+@app.delete("/api/storyteller/promo-codes/{code}")
+def deactivate_promo_code(
+    code: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    _auth_user(authorization)
+    code = code.upper()
+    if supabase:
+        supabase.table("promo_codes").update({"active": False}).eq("code", code).execute()
+    else:
+        db = _load_db()
+        if code in db["promo_codes"]:
+            db["promo_codes"][code]["active"] = False
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.get("/api/storyteller/recordings")
+def list_recordings(authorization: Optional[str] = Header(default=None)):
+    _auth_user(authorization)
+    if supabase:
+        r = (supabase.table("story_recordings")
+             .select("id, promo_code, prompt_id, transcript, created_at")
+             .order("created_at", desc=True)
+             .limit(50)
+             .execute())
+        return {"recordings": r.data or []}
+    db = _load_db()
+    recs = sorted(db["story_recordings"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"recordings": list(recs)[:50]}
+
+
+@app.get("/story-audio/{filename}")
+def serve_story_audio(filename: str):
+    audio_path = STORY_RECORDINGS_DIR / "audio" / filename
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Not found")
+    ext = Path(filename).suffix.lower()
+    mime_map = {".webm": "audio/webm", ".mp3": "audio/mpeg", ".wav": "audio/wav",
+                ".ogg": "audio/ogg", ".m4a": "audio/mp4"}
+    return FileResponse(audio_path, media_type=mime_map.get(ext, "audio/webm"))
+
+
+# ----------------------------------------------------
 # Legacy /api/respond (single-Cogna, backward compat)
 # ----------------------------------------------------
 
@@ -968,6 +1194,67 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 
 
 # ----------------------------------------------------
+# Storyteller data helpers
+# ----------------------------------------------------
+
+def _get_active_prompt() -> Optional[Dict[str, Any]]:
+    if supabase:
+        r = supabase.table("story_prompts").select("*").eq("active", True).maybe_single().execute()
+        return r.data
+    db = _load_db()
+    for p in db["story_prompts"].values():
+        if p.get("active"):
+            return p
+    return None
+
+
+def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:
+    if supabase:
+        r = (supabase.table("promo_codes").select("*")
+             .eq("code", code).eq("active", True).maybe_single().execute())
+        return r.data
+    db = _load_db()
+    record = db["promo_codes"].get(code)
+    return record if record and record.get("active") else None
+
+
+def _generate_story_promo_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    for _ in range(20):
+        suffix = "".join(secrets.choice(chars) for _ in range(4))
+        code = f"STORY-{suffix}"
+        if not _get_promo_code(code):
+            return code
+    return f"STORY-{''.join(secrets.choice(chars) for _ in range(6))}"
+
+
+def _save_story_audio(recording_id: str, file: UploadFile) -> str:
+    ext = Path(file.filename or "audio.webm").suffix.lower() or ".webm"
+    filename = f"{recording_id}{ext}"
+    content = file.file.read()
+
+    if supabase:
+        storage_path = f"recordings/{filename}"
+        mime = {
+            ".webm": "audio/webm", ".mp3": "audio/mpeg", ".wav": "audio/wav",
+            ".m4a": "audio/mp4", ".ogg": "audio/ogg",
+        }.get(ext, "audio/webm")
+        supabase.storage.from_("story-audio").upload(
+            path=storage_path,
+            file=content,
+            file_options={"content-type": mime, "upsert": "true"},
+        )
+        return supabase.storage.from_("story-audio").get_public_url(storage_path)
+
+    out_dir = STORY_RECORDINGS_DIR / "audio"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / filename
+    with open(out_path, "wb") as f:
+        f.write(content)
+    return f"/story-audio/{filename}"
+
+
+# ----------------------------------------------------
 # Auth helpers
 # ----------------------------------------------------
 
@@ -1040,13 +1327,16 @@ def _save_cogna_upload(cogna_id: str, kind: str, file: UploadFile) -> str:
 
 def _load_db() -> Dict[str, Any]:
     if not PORTAL_DB_PATH.exists():
-        db = {"users": {}, "cognas": {}, "created_at": _utc_now()}
+        db = {"users": {}, "cognas": {}, "story_prompts": {}, "promo_codes": {}, "story_recordings": {}, "created_at": _utc_now()}
         _save_db(db)
         return db
     with open(PORTAL_DB_PATH, "r", encoding="utf-8") as f:
         db = json.load(f)
     db.setdefault("users", {})
     db.setdefault("cognas", {})
+    db.setdefault("story_prompts", {})
+    db.setdefault("promo_codes", {})
+    db.setdefault("story_recordings", {})
     return db
 
 
@@ -1103,7 +1393,8 @@ def _cogna_voice_prompt(cogna: Dict[str, Any]) -> str:
         f"Keep responses warm, concise, and human — 1 to 3 sentences. "
         f"Ask only one question at a time, then stop and wait. "
         f"Never pile on multiple questions or continue speaking into silence. "
-        f"Never use emojis or emoticons — your words are spoken aloud."
+        f"Never use emojis or emoticons — your words are spoken aloud. "
+        f"Maintain a steady emotional presence — let the overall mood of the conversation guide your tone, not any single sentence or word. Do not dramatically shift energy between sentences; stay grounded and consistent."
     )
 
 

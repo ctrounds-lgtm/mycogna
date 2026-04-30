@@ -62,7 +62,7 @@ async function req(path, opts = {}) {
   const res = await fetch(path, { ...opts, headers: opts.headers || {} });
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
-    try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
+    try { const b = await res.json(); if (b.detail) detail = typeof b.detail === 'string' ? b.detail : Array.isArray(b.detail) ? b.detail.map(e => e.msg || String(e)).join('; ') : JSON.stringify(b.detail); } catch {}
     throw new Error(detail);
   }
   return res.json();
@@ -483,6 +483,160 @@ const portal = {
 
   onPhotoFileChange(input) {
     document.getElementById('photoFilename').textContent = input.files[0]?.name || 'No file chosen';
+  },
+
+  // ── Stories / Storyteller ──
+
+  switchDashTab(tab) {
+    document.getElementById('dashTabCognas').classList.toggle('active', tab === 'cognas');
+    document.getElementById('dashTabStories').classList.toggle('active', tab === 'stories');
+    document.getElementById('cognasPanel').classList.toggle('hidden', tab !== 'cognas');
+    document.getElementById('storiesPanel').classList.toggle('hidden', tab !== 'stories');
+    if (tab === 'stories') portal.loadStories();
+  },
+
+  async loadStories() {
+    try {
+      const [codesData, promptsData, recsData] = await Promise.all([
+        req(`${api}/storyteller/promo-codes`, { headers: authHeaders() }),
+        req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
+        req(`${api}/storyteller/recordings`, { headers: authHeaders() }),
+      ]);
+      portal._renderPromoCodes(codesData.codes || []);
+      portal._renderPrompts(promptsData.prompts || []);
+      portal._renderRecordings(recsData.recordings || []);
+    } catch (err) {
+      console.error('loadStories error:', err.message);
+    }
+  },
+
+  _renderPromoCodes(codes) {
+    const el = document.getElementById('promoCodesList');
+    if (!codes.length) {
+      el.innerHTML = '<div class="empty-state"><p>No codes yet. Generate one to get started.</p></div>';
+      return;
+    }
+    el.innerHTML = codes.map(c => `
+      <div class="story-item">
+        <div class="story-item-main">
+          <div class="story-item-code">${c.code}${c.active ? '' : ' <span style="opacity:0.4;font-size:11px;font-weight:400">(inactive)</span>'}</div>
+          ${c.description ? `<div class="story-item-desc">${c.description}</div>` : ''}
+        </div>
+        <div class="story-item-actions">
+          <button class="copy-code-btn" onclick="portal.copyCode('${c.code}', this)">Copy</button>
+          ${c.active ? `<button class="story-action-btn" onclick="portal.deactivateCode('${c.code}')">Deactivate</button>` : ''}
+        </div>
+      </div>`).join('');
+  },
+
+  _renderPrompts(prompts) {
+    const el = document.getElementById('promptsList');
+    if (!prompts.length) {
+      el.innerHTML = '<div class="empty-state"><p>No prompts yet.</p></div>';
+      return;
+    }
+    el.innerHTML = prompts.map(p => `
+      <div class="story-item">
+        <div class="story-item-main">
+          <div class="story-item-text">${p.text}${p.active ? '<span class="active-badge">Active</span>' : ''}</div>
+          <div class="story-item-meta">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
+        </div>
+        <div class="story-item-actions">
+          ${!p.active ? `<button class="story-action-btn activate" onclick="portal.activatePrompt('${p.id}')">Set Active</button>` : ''}
+          <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>
+        </div>
+      </div>`).join('');
+  },
+
+  _renderRecordings(recs) {
+    const el = document.getElementById('recordingsList');
+    if (!recs.length) {
+      el.innerHTML = '<div class="empty-state"><p>No recordings yet.</p></div>';
+      return;
+    }
+    el.innerHTML = recs.map(r => `
+      <div class="story-item">
+        <div class="story-item-main">
+          <div class="story-item-meta" style="margin-bottom:4px">Code: <strong style="color:var(--gold)">${r.promo_code}</strong> &nbsp;·&nbsp; ${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</div>
+          <div class="recording-transcript">${r.transcript || '<em style="opacity:0.4">No transcript</em>'}</div>
+        </div>
+      </div>`).join('');
+  },
+
+  async generatePromoCode() {
+    const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
+    try {
+      await req(`${api}/storyteller/promo-codes`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc }),
+      });
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  copyCode(code, btn) {
+    navigator.clipboard.writeText(code).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+  },
+
+  async deactivateCode(code) {
+    if (!confirm(`Deactivate code ${code}? Anyone who has this code won't be able to use it.`)) return;
+    try {
+      await req(`${api}/storyteller/promo-codes/${code}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async createPrompt() {
+    const text = document.getElementById('newPromptText').value.trim();
+    if (!text) { alert('Please enter a prompt.'); return; }
+    try {
+      await req(`${api}/storyteller/prompts`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      document.getElementById('newPromptText').value = '';
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async activatePrompt(promptId) {
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}/activate`, {
+        method: 'PUT',
+        headers: authHeaders(),
+      });
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async deletePrompt(promptId) {
+    if (!confirm('Delete this prompt?')) return;
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   },
 };
 

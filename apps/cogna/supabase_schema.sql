@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash     TEXT NOT NULL,
   setup_type        TEXT NOT NULL DEFAULT 'guardian',
   child_access_code TEXT NOT NULL UNIQUE,
+  password_reset_token   TEXT,
+  password_reset_expires TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -23,6 +25,7 @@ CREATE TABLE IF NOT EXISTS cognas (
   voice_backend       TEXT NOT NULL DEFAULT 'tts',
   elevenlabs_voice_id TEXT,
   hume_voice_id       TEXT,
+  hume_config_id      TEXT,
   voice_sample        TEXT,
   photo               TEXT,
   hume_consent        JSONB,
@@ -60,3 +63,53 @@ CREATE POLICY "Allow service uploads"
 CREATE POLICY "Allow public reads"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'cogna-uploads');
+
+
+-- ─────────────────────────────────────────────
+-- Storyteller feature (Tier 1)
+-- ─────────────────────────────────────────────
+
+-- Promo codes — gate access to the story capture flow
+CREATE TABLE IF NOT EXISTS promo_codes (
+  code         TEXT PRIMARY KEY,
+  description  TEXT NOT NULL DEFAULT '',
+  active       BOOLEAN NOT NULL DEFAULT true,
+  created_by   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Story prompts — collaborators set the question shown to recorders
+CREATE TABLE IF NOT EXISTS story_prompts (
+  id           TEXT PRIMARY KEY,
+  text         TEXT NOT NULL,
+  active       BOOLEAN NOT NULL DEFAULT false,
+  created_by   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS story_prompts_active_idx ON story_prompts(active);
+
+-- Story recordings — one row per submitted recording
+CREATE TABLE IF NOT EXISTS story_recordings (
+  id           TEXT PRIMARY KEY,
+  promo_code   TEXT NOT NULL REFERENCES promo_codes(code),
+  prompt_id    TEXT REFERENCES story_prompts(id),
+  transcript   TEXT NOT NULL DEFAULT '',
+  audio_url    TEXT NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS story_recordings_promo_idx ON story_recordings(promo_code);
+
+-- Storage bucket for story audio files
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('story-audio', 'story-audio', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Allow story audio uploads"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'story-audio');
+
+CREATE POLICY "Allow story audio reads"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'story-audio');

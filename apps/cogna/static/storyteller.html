@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Share Your Story — MyCogna</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #F9F5EF;
+      --ink: #1C1A17;
+      --gold: #C9963A;
+      --gold-pale: #F7F0E3;
+      --gold-light: #EDD9A8;
+      --teal: #3A7B72;
+      --border: rgba(28,26,23,0.12);
+      --error: #C45E4A;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: 480px; height: 480px; background: var(--gold); top: -100px; right: -80px; }
+    .blob-2 { width: 360px; height: 360px; background: var(--teal); bottom: -60px; left: -60px; }
+
+    /* ── Screens ── */
+    .screen {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px 80px;
+    }
+
+    .screen.hidden { display: none; }
+
+    .inner {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(30px, 7vw, 46px);
+      font-weight: 300;
+      line-height: 1.08;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    .headline em { font-style: italic; color: var(--gold); }
+
+    .sub {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(28,26,23,0.5);
+      margin-bottom: 36px;
+    }
+
+    /* ── Code input ── */
+    .code-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-align: center;
+      text-transform: uppercase;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+
+    .code-input:focus { border-color: var(--gold); }
+    .code-input::placeholder { color: rgba(28,26,23,0.22); font-weight: 400; font-size: 16px; letter-spacing: 0.05em; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-secondary {
+      margin-top: 12px;
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      color: rgba(28,26,23,0.5);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: rgba(28,26,23,0.3); }
+
+    .error-msg {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(196,94,74,0.08);
+      border: 1px solid rgba(196,94,74,0.2);
+      border-radius: 4px;
+      color: var(--error);
+      font-size: 13px;
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .error-msg.hidden { display: none; }
+
+    /* ── Prompt screen ── */
+    .prompt-card {
+      width: 100%;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 28px;
+      margin-bottom: 32px;
+      text-align: left;
+      box-shadow: 0 2px 20px rgba(28,26,23,0.06);
+    }
+
+    .prompt-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .prompt-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(20px, 4vw, 26px);
+      font-weight: 400;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+
+    /* ── Record button ── */
+    .record-btn {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+      box-shadow: 0 4px 24px rgba(28,26,23,0.2);
+      margin-bottom: 14px;
+    }
+
+    .record-btn:hover { transform: scale(1.04); }
+
+    .record-btn.recording {
+      background: #C45E4A;
+      box-shadow: 0 6px 32px rgba(196,94,74,0.45);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    .record-hint {
+      font-size: 13px;
+      color: rgba(28,26,23,0.45);
+      margin-bottom: 28px;
+    }
+
+    .record-timer {
+      font-family: 'Courier New', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+      min-height: 36px;
+    }
+
+    .record-timer.hidden { visibility: hidden; }
+
+    /* ── Waveform animation ── */
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 44px;
+      margin-bottom: 20px;
+    }
+
+    .waveform.hidden { opacity: 0; }
+
+    .wave-bar {
+      width: 4px;
+      border-radius: 2px;
+      background: var(--gold);
+      animation: wave 0.8s ease-in-out infinite alternate;
+    }
+
+    .wave-bar:nth-child(1) { height: 10px; animation-delay: 0.00s; }
+    .wave-bar:nth-child(2) { height: 22px; animation-delay: 0.10s; }
+    .wave-bar:nth-child(3) { height: 34px; animation-delay: 0.20s; }
+    .wave-bar:nth-child(4) { height: 44px; animation-delay: 0.05s; }
+    .wave-bar:nth-child(5) { height: 34px; animation-delay: 0.30s; }
+    .wave-bar:nth-child(6) { height: 20px; animation-delay: 0.15s; }
+    .wave-bar:nth-child(7) { height: 12px; animation-delay: 0.25s; }
+
+    @keyframes wave {
+      from { transform: scaleY(0.35); opacity: 0.45; }
+      to   { transform: scaleY(1);    opacity: 1; }
+    }
+
+    /* ── Processing ── */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--gold-light);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Transcript preview ── */
+    .transcript-box {
+      width: 100%;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 20px;
+      margin-bottom: 24px;
+      text-align: left;
+      box-shadow: 0 2px 12px rgba(28,26,23,0.05);
+    }
+
+    .transcript-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(28,26,23,0.4);
+      margin-bottom: 10px;
+    }
+
+    .transcript-text {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink);
+    }
+
+    /* ── Thank you ── */
+    .check-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #EBF5F0;
+      border: 2px solid #7aab8a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px;
+    }
+
+    .thank-headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .thank-sub {
+      font-size: 15px;
+      line-height: 1.65;
+      color: rgba(28,26,23,0.55);
+      margin-bottom: 32px;
+      max-width: 360px;
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <!-- ── SCREEN 1: Enter promo code ── -->
+  <div class="screen" id="screenCode">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h1 class="headline">Share your<br><em>story</em></h1>
+      <p class="sub">Enter the code you received to get started.<br>Your voice matters. Take your time.</p>
+
+      <input type="text" id="promoCodeInput" class="code-input"
+             placeholder="STORY-XXXX" maxlength="20"
+             oninput="st.formatCode(this)"
+             onkeydown="if(event.key==='Enter') st.submitCode()">
+
+      <div id="codeError" class="error-msg hidden"></div>
+
+      <button class="btn-primary" onclick="st.submitCode()" id="codeBtn">Continue →</button>
+
+      <button class="btn-secondary" onclick="window.location='/'">← Back to home</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: Prompt + record ── -->
+  <div class="screen hidden" id="screenRecord">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+
+      <div class="prompt-card" id="promptCard">
+        <div class="prompt-label">Your prompt</div>
+        <div class="prompt-text" id="promptText">Loading…</div>
+      </div>
+
+      <div class="record-timer hidden" id="recordTimer">0:00</div>
+
+      <div class="waveform hidden" id="waveform">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+
+      <button class="record-btn" id="recordBtn" onclick="st.toggleRecord()">🎙️</button>
+      <p class="record-hint" id="recordHint">Tap to start recording</p>
+
+      <div id="recordError" class="error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: Processing ── -->
+  <div class="screen hidden" id="screenProcessing">
+    <div class="inner">
+      <div class="spinner"></div>
+      <div class="eyebrow">Processing</div>
+      <h2 class="headline" style="font-size:28px">Transcribing<br><em>your story…</em></h2>
+      <p class="sub">This usually takes 10–30 seconds.</p>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 4: Confirmation ── -->
+  <div class="screen hidden" id="screenDone">
+    <div class="inner">
+      <div class="check-circle">✓</div>
+      <h2 class="thank-headline">Thank you!</h2>
+      <p class="thank-sub">Your story has been saved. The people who receive it will treasure it.</p>
+
+      <div class="transcript-box" id="doneTranscriptBox">
+        <div class="transcript-label">What you shared</div>
+        <div class="transcript-text" id="doneTranscript"></div>
+      </div>
+
+      <button class="btn-primary" onclick="st.recordAnother()">Record another story</button>
+      <button class="btn-secondary" onclick="window.location='/'">← Back to home</button>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin + '/api/storyteller';
+
+    const stState = {
+      promoCode: '',
+      promptId: '',
+      promptText: '',
+      mediaRecorder: null,
+      audioChunks: [],
+      recording: false,
+      timerInterval: null,
+      seconds: 0,
+    };
+
+    function showScreen(id) {
+      ['screenCode', 'screenRecord', 'screenProcessing', 'screenDone'].forEach(s => {
+        document.getElementById(s).classList.toggle('hidden', s !== id);
+      });
+    }
+
+    async function apiFetch(path, opts = {}) {
+      const res = await fetch(API + path, opts);
+      if (!res.ok) {
+        let detail = `Error ${res.status}`;
+        try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
+        throw new Error(detail);
+      }
+      return res.json();
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    const st = {
+      formatCode(input) {
+        input.value = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+      },
+
+      async submitCode() {
+        const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+        const errEl = document.getElementById('codeError');
+        errEl.classList.add('hidden');
+        if (!code) { errEl.textContent = 'Please enter your code.'; errEl.classList.remove('hidden'); return; }
+
+        const btn = document.getElementById('codeBtn');
+        btn.textContent = 'Checking…';
+        btn.disabled = true;
+
+        try {
+          const result = await apiFetch('/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ promo_code: code }),
+          });
+          stState.promoCode = code;
+          stState.promptId = result.prompt_id;
+          stState.promptText = result.prompt_text;
+          document.getElementById('promptText').textContent = result.prompt_text;
+          showScreen('screenRecord');
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.remove('hidden');
+          btn.textContent = 'Continue →';
+          btn.disabled = false;
+        }
+      },
+
+      async toggleRecord() {
+        if (stState.recording) {
+          st.stopRecording();
+        } else {
+          await st.startRecording();
+        }
+      },
+
+      async startRecording() {
+        const errEl = document.getElementById('recordError');
+        errEl.classList.add('hidden');
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+          const msg = err.name === 'NotAllowedError'
+            ? 'Microphone access denied. Please allow microphone permission and try again.'
+            : err.name === 'NotFoundError'
+            ? 'No microphone found. Please connect a microphone and try again.'
+            : `Microphone error: ${err.message}`;
+          errEl.textContent = msg;
+          errEl.classList.remove('hidden');
+          return;
+        }
+
+        stState.audioChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : '';
+
+        stState.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+        stState.mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) stState.audioChunks.push(e.data);
+        };
+        stState.mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          st._submitRecording();
+        };
+
+        stState.mediaRecorder.start(250);
+        stState.recording = true;
+        stState.seconds = 0;
+
+        const btn = document.getElementById('recordBtn');
+        btn.classList.add('recording');
+        btn.textContent = '⏹';
+        document.getElementById('recordHint').textContent = 'Tap to stop recording';
+        document.getElementById('waveform').classList.remove('hidden');
+
+        const timerEl = document.getElementById('recordTimer');
+        timerEl.classList.remove('hidden');
+        timerEl.textContent = '0:00';
+        stState.timerInterval = setInterval(() => {
+          stState.seconds++;
+          timerEl.textContent = formatTime(stState.seconds);
+        }, 1000);
+      },
+
+      stopRecording() {
+        if (!stState.mediaRecorder || stState.mediaRecorder.state === 'inactive') return;
+        clearInterval(stState.timerInterval);
+        stState.recording = false;
+        stState.mediaRecorder.stop();
+
+        const btn = document.getElementById('recordBtn');
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️';
+        btn.disabled = true;
+        document.getElementById('recordHint').textContent = 'Processing your recording…';
+        document.getElementById('waveform').classList.add('hidden');
+      },
+
+      async _submitRecording() {
+        showScreen('screenProcessing');
+
+        const mimeType = stState.audioChunks[0]?.type || 'audio/webm';
+        const ext = mimeType.includes('ogg') ? '.ogg' : mimeType.includes('mp4') ? '.mp4' : '.webm';
+        const blob = new Blob(stState.audioChunks, { type: mimeType });
+
+        const formData = new FormData();
+        formData.append('promo_code', stState.promoCode);
+        formData.append('prompt_id', stState.promptId);
+        formData.append('audio', blob, `recording${ext}`);
+
+        try {
+          const result = await fetch(API + '/record', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!result.ok) {
+            let detail = `Error ${result.status}`;
+            try { const b = await result.json(); if (b.detail) detail = b.detail; } catch {}
+            throw new Error(detail);
+          }
+          const data = await result.json();
+          document.getElementById('doneTranscript').textContent = data.transcript || '(No transcript available)';
+          showScreen('screenDone');
+        } catch (err) {
+          showScreen('screenRecord');
+          const errEl = document.getElementById('recordError');
+          errEl.textContent = `Submission failed: ${err.message}. Please try again.`;
+          errEl.classList.remove('hidden');
+          const btn = document.getElementById('recordBtn');
+          btn.disabled = false;
+          btn.textContent = '🎙️';
+          document.getElementById('recordHint').textContent = 'Tap to start recording';
+          document.getElementById('recordTimer').classList.add('hidden');
+        }
+      },
+
+      recordAnother() {
+        stState.audioChunks = [];
+        stState.recording = false;
+        stState.seconds = 0;
+        const btn = document.getElementById('recordBtn');
+        btn.disabled = false;
+        btn.textContent = '🎙️';
+        btn.classList.remove('recording');
+        document.getElementById('recordHint').textContent = 'Tap to start recording';
+        document.getElementById('recordTimer').classList.add('hidden');
+        document.getElementById('waveform').classList.add('hidden');
+        document.getElementById('recordError').classList.add('hidden');
+        showScreen('screenRecord');
+      },
+    };
+  </script>
+</body>
+</html>
