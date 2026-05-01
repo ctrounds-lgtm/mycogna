@@ -348,8 +348,8 @@ def auth_request_reset(payload: PasswordResetRequest):
 def auth_reset_password(payload: PasswordResetConfirm):
     # Find user by token
     if supabase:
-        r = supabase.table("users").select("*").eq("password_reset_token", payload.token).maybe_single().execute()
-        user = r.data
+        r = supabase.table("users").select("*").eq("password_reset_token", payload.token).limit(1).execute()
+        user = r.data[0] if r.data else None
     else:
         db = _load_db()
         user = next((u for u in db["users"].values() if u.get("password_reset_token") == payload.token), None)
@@ -1039,8 +1039,8 @@ async def respond(
 
 def _get_user(email: str) -> Optional[Dict[str, Any]]:
     if supabase:
-        r = supabase.table("users").select("*").eq("email", email).maybe_single().execute()
-        return r.data
+        r = supabase.table("users").select("*").eq("email", email).limit(1).execute()
+        return r.data[0] if r.data else None
     db = _load_db()
     return db["users"].get(email)
 
@@ -1066,8 +1066,8 @@ def _update_user(email: str, updates: Dict[str, Any]):
 
 def _get_cogna(cogna_id: str) -> Dict[str, Any]:
     if supabase:
-        r = supabase.table("cognas").select("*").eq("id", cogna_id).maybe_single().execute()
-        cogna = r.data
+        r = supabase.table("cognas").select("*").eq("id", cogna_id).limit(1).execute()
+        cogna = r.data[0] if r.data else None
     else:
         db = _load_db()
         cogna = db["cognas"].get(cogna_id)
@@ -1122,8 +1122,8 @@ def _delete_cogna(cogna_id: str):
 
 def _find_user_by_code(code: str) -> Optional[Dict[str, Any]]:
     if supabase:
-        r = supabase.table("users").select("*").eq("child_access_code", code).maybe_single().execute()
-        return r.data
+        r = supabase.table("users").select("*").eq("child_access_code", code).limit(1).execute()
+        return r.data[0] if r.data else None
     db = _load_db()
     for user in db["users"].values():
         if user.get("child_access_code", "").upper() == code:
@@ -1199,8 +1199,8 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 
 def _get_active_prompt() -> Optional[Dict[str, Any]]:
     if supabase:
-        r = supabase.table("story_prompts").select("*").eq("active", True).maybe_single().execute()
-        return r.data
+        r = supabase.table("story_prompts").select("*").eq("active", True).limit(1).execute()
+        return r.data[0] if r.data else None
     db = _load_db()
     for p in db["story_prompts"].values():
         if p.get("active"):
@@ -1211,8 +1211,8 @@ def _get_active_prompt() -> Optional[Dict[str, Any]]:
 def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:
     if supabase:
         r = (supabase.table("promo_codes").select("*")
-             .eq("code", code).eq("active", True).maybe_single().execute())
-        return r.data
+             .eq("code", code).eq("active", True).limit(1).execute())
+        return r.data[0] if r.data else None
     db = _load_db()
     record = db["promo_codes"].get(code)
     return record if record and record.get("active") else None
