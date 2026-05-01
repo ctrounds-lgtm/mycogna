@@ -542,7 +542,7 @@ const portal = {
           <div class="story-item-meta">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
         </div>
         <div class="story-item-actions">
-          ${!p.active ? `<button class="story-action-btn activate" onclick="portal.activatePrompt('${p.id}')">Set Active</button>` : ''}
+          <button class="story-action-btn${p.active ? '' : ' activate'}" onclick="portal.activatePrompt('${p.id}')">${p.active ? 'Deactivate' : 'Set Active'}</button>
           <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>
         </div>
       </div>`).join('');

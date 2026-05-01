@@ -365,10 +365,7 @@
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
 
-      <div class="prompt-card" id="promptCard">
-        <div class="prompt-label">Your prompt</div>
-        <div class="prompt-text" id="promptText">Loading…</div>
-      </div>
+      <div id="promptsContainer"></div>
 
       <div class="record-timer hidden" id="recordTimer">0:00</div>
 
@@ -422,7 +419,7 @@
     const stState = {
       promoCode: '',
       promptId: '',
-      promptText: '',
+      prompts: [],
       mediaRecorder: null,
       audioChunks: [],
       recording: false,
@@ -474,9 +471,14 @@
             body: JSON.stringify({ promo_code: code }),
           });
           stState.promoCode = code;
-          stState.promptId = result.prompt_id;
-          stState.promptText = result.prompt_text;
-          document.getElementById('promptText').textContent = result.prompt_text;
+          stState.prompts = result.prompts;
+          stState.promptId = result.prompts[0]?.id || '';
+          const container = document.getElementById('promptsContainer');
+          container.innerHTML = result.prompts.map((p, i) => `
+            <div class="prompt-card">
+              <div class="prompt-label">${result.prompts.length > 1 ? `Question ${i + 1}` : 'Your prompt'}</div>
+              <div class="prompt-text">${p.text}</div>
+            </div>`).join('');
           showScreen('screenRecord');
         } catch (err) {
           errEl.textContent = err.message;

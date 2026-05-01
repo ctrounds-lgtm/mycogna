@@ -804,10 +804,10 @@ def storyteller_validate(payload: StoryValidateRequest):
     pc = _get_promo_code(code)
     if not pc:
         raise HTTPException(status_code=404, detail="Promo code not found or inactive")
-    prompt = _get_active_prompt()
-    if not prompt:
+    prompts = _get_active_prompts()
+    if not prompts:
         raise HTTPException(status_code=404, detail="No active story prompt. Ask a collaborator to set one up.")
-    return {"valid": True, "prompt_id": prompt["id"], "prompt_text": prompt["text"]}
+    return {"valid": True, "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts]}
 
 
 @app.post("/api/storyteller/record")
@@ -894,12 +894,13 @@ def activate_story_prompt(
 ):
     _auth_user(authorization)
     if supabase:
-        supabase.table("story_prompts").update({"active": False}).neq("id", prompt_id).execute()
-        supabase.table("story_prompts").update({"active": True}).eq("id", prompt_id).execute()
+        r = supabase.table("story_prompts").select("active").eq("id", prompt_id).limit(1).execute()
+        current = r.data[0]["active"] if r.data else False
+        supabase.table("story_prompts").update({"active": not current}).eq("id", prompt_id).execute()
     else:
         db = _load_db()
-        for pid, p in db["story_prompts"].items():
-            p["active"] = pid == prompt_id
+        if prompt_id in db["story_prompts"]:
+            db["story_prompts"][prompt_id]["active"] = not db["story_prompts"][prompt_id].get("active", False)
         _save_db(db)
     return {"ok": True}
 
@@ -1200,15 +1201,12 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 # Storyteller data helpers
 # ----------------------------------------------------
 
-def _get_active_prompt() -> Optional[Dict[str, Any]]:
+def _get_active_prompts() -> List[Dict[str, Any]]:
     if supabase:
-        r = supabase.table("story_prompts").select("*").eq("active", True).limit(1).execute()
-        return r.data[0] if r.data else None
+        r = supabase.table("story_prompts").select("*").eq("active", True).order("created_at").execute()
+        return r.data or []
     db = _load_db()
-    for p in db["story_prompts"].values():
-        if p.get("active"):
-            return p
-    return None
+    return [p for p in db["story_prompts"].values() if p.get("active")]
 
 
 def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:
