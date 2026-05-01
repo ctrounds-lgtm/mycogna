@@ -401,7 +401,7 @@
     <div class="inner">
       <div class="check-circle">✓</div>
       <h2 class="thank-headline">Thank you!</h2>
-      <p class="thank-sub">Your story has been saved. The people who receive it will treasure it.</p>
+      <p class="thank-sub" id="thankSub">Your story has been saved. The people who receive it will treasure it.</p>
 
       <div class="transcript-box" id="doneTranscriptBox">
         <div class="transcript-label">What you shared</div>
@@ -420,6 +420,8 @@
       promoCode: '',
       promptId: '',
       prompts: [],
+      currentPromptIndex: 0,
+      transcripts: [],
       mediaRecorder: null,
       audioChunks: [],
       recording: false,
@@ -472,13 +474,9 @@
           });
           stState.promoCode = code;
           stState.prompts = result.prompts;
-          stState.promptId = result.prompts[0]?.id || '';
-          const container = document.getElementById('promptsContainer');
-          container.innerHTML = result.prompts.map((p, i) => `
-            <div class="prompt-card">
-              <div class="prompt-label">${result.prompts.length > 1 ? `Question ${i + 1}` : 'Your prompt'}</div>
-              <div class="prompt-text">${p.text}</div>
-            </div>`).join('');
+          stState.currentPromptIndex = 0;
+          stState.transcripts = [];
+          st._showCurrentPrompt();
           showScreen('screenRecord');
         } catch (err) {
           errEl.textContent = err.message;
@@ -486,6 +484,30 @@
           btn.textContent = 'Continue →';
           btn.disabled = false;
         }
+      },
+
+      _showCurrentPrompt() {
+        const i = stState.currentPromptIndex;
+        const total = stState.prompts.length;
+        const p = stState.prompts[i];
+        stState.promptId = p.id;
+        const label = total > 1 ? `Question ${i + 1} of ${total}` : 'Your prompt';
+        document.getElementById('promptsContainer').innerHTML = `
+          <div class="prompt-card">
+            <div class="prompt-label">${label}</div>
+            <div class="prompt-text">${p.text}</div>
+          </div>`;
+        const btn = document.getElementById('recordBtn');
+        btn.disabled = false;
+        btn.textContent = '🎙️';
+        btn.classList.remove('recording');
+        document.getElementById('recordHint').textContent = 'Tap to start recording';
+        document.getElementById('recordTimer').classList.add('hidden');
+        document.getElementById('waveform').classList.add('hidden');
+        document.getElementById('recordError').classList.add('hidden');
+        stState.audioChunks = [];
+        stState.recording = false;
+        stState.seconds = 0;
       },
 
       async toggleRecord() {
@@ -586,8 +608,21 @@
             throw new Error(detail);
           }
           const data = await result.json();
-          document.getElementById('doneTranscript').textContent = data.transcript || '(No transcript available)';
-          showScreen('screenDone');
+          stState.transcripts.push({ question: stState.prompts[stState.currentPromptIndex].text, transcript: data.transcript || '' });
+          stState.currentPromptIndex++;
+          if (stState.currentPromptIndex < stState.prompts.length) {
+            st._showCurrentPrompt();
+            showScreen('screenRecord');
+          } else {
+            const allText = stState.transcripts.map((t, i) =>
+              stState.transcripts.length > 1 ? `Q${i + 1}: ${t.transcript}` : t.transcript
+            ).join('\n\n');
+            document.getElementById('doneTranscript').textContent = allText || '(No transcript available)';
+            if (stState.transcripts.length > 1) {
+              document.getElementById('thankSub').textContent = `All ${stState.transcripts.length} responses saved. Thank you for sharing.`;
+            }
+            showScreen('screenDone');
+          }
         } catch (err) {
           showScreen('screenRecord');
           const errEl = document.getElementById('recordError');
@@ -602,17 +637,9 @@
       },
 
       recordAnother() {
-        stState.audioChunks = [];
-        stState.recording = false;
-        stState.seconds = 0;
-        const btn = document.getElementById('recordBtn');
-        btn.disabled = false;
-        btn.textContent = '🎙️';
-        btn.classList.remove('recording');
-        document.getElementById('recordHint').textContent = 'Tap to start recording';
-        document.getElementById('recordTimer').classList.add('hidden');
-        document.getElementById('waveform').classList.add('hidden');
-        document.getElementById('recordError').classList.add('hidden');
+        stState.currentPromptIndex = 0;
+        stState.transcripts = [];
+        st._showCurrentPrompt();
         showScreen('screenRecord');
       },
     };
