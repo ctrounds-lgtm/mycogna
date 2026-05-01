@@ -564,7 +564,10 @@ def test_cogna_voice(
     if not text:
         raise HTTPException(status_code=400, detail="Enter a test message")
 
-    audio_url = _generate_cogna_audio(cogna, text)
+    try:
+        audio_url = _generate_cogna_audio(cogna, text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audio generation failed: {type(e).__name__}: {e}")
     _update_cogna(cogna_id, {"last_tested_at": _utc_now()})
     return {"ok": True, "audio_url": audio_url}
 
