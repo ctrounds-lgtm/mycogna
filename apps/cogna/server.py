@@ -976,13 +976,20 @@ def list_recordings(authorization: Optional[str] = Header(default=None)):
     _auth_user(authorization)
     if supabase:
         r = (supabase.table("story_recordings")
-             .select("id, promo_code, prompt_id, transcript, created_at")
+             .select("id, promo_code, prompt_id, transcript, created_at, promo_codes(description)")
              .order("created_at", desc=True)
              .limit(50)
              .execute())
-        return {"recordings": r.data or []}
+        recordings = []
+        for rec in (r.data or []):
+            code_info = rec.pop("promo_codes", None) or {}
+            rec["promo_code_label"] = code_info.get("description", "")
+            recordings.append(rec)
+        return {"recordings": recordings}
     db = _load_db()
     recs = sorted(db["story_recordings"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    for rec in recs:
+        rec["promo_code_label"] = db["promo_codes"].get(rec.get("promo_code", ""), {}).get("description", "")
     return {"recordings": list(recs)[:50]}
 
 

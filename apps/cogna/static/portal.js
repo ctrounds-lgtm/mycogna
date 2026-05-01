@@ -557,7 +557,9 @@ const portal = {
     el.innerHTML = recs.map(r => `
       <div class="story-item">
         <div class="story-item-main">
-          <div class="story-item-meta" style="margin-bottom:4px">Code: <strong style="color:var(--gold)">${r.promo_code}</strong> &nbsp;·&nbsp; ${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</div>
+          <div class="story-item-meta" style="margin-bottom:4px">
+            ${r.promo_code_label ? `<strong style="color:var(--ink)">${r.promo_code_label}</strong> &nbsp;·&nbsp; ` : ''}<span style="color:var(--gold);font-family:'Courier New',monospace">${r.promo_code}</span> &nbsp;·&nbsp; ${r.created_at ? new Date(r.created_at).toLocaleString() : ''}
+          </div>
           <div class="recording-transcript">${r.transcript || '<em style="opacity:0.4">No transcript</em>'}</div>
         </div>
       </div>`).join('');
