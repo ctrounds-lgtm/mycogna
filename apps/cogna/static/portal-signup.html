@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrator Portal — MyCogna</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #F9F5EF;
+      --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.55);
+      --ink-faint: rgba(28,26,23,0.35);
+      --gold: #C9963A;
+      --gold-pale: #F7F0E3;
+      --gold-light: #EDD9A8;
+      --teal: #3A7B72;
+      --border: rgba(28,26,23,0.12);
+      --error: #C45E4A;
+    }
+
+    html, body { min-height: 100%; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+
+    .blob { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.18; pointer-events: none; z-index: 0; }
+    .blob-1 { width: 480px; height: 480px; background: var(--gold); top: -100px; right: -80px; }
+    .blob-2 { width: 360px; height: 360px; background: var(--teal); bottom: -60px; left: -60px; }
+
+    .page { position: relative; z-index: 1; min-height: 100vh; padding: 48px 24px 80px; display: flex; flex-direction: column; align-items: center; }
+
+    .wordmark { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; margin-bottom: 12px; }
+
+    .page-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; text-align: center; margin-bottom: 8px; }
+    .page-title em { font-style: italic; }
+    .page-sub { font-size: 15px; color: var(--ink-muted); text-align: center; max-width: 520px; margin-bottom: 48px; }
+
+    /* Plan picker */
+    .plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; width: 100%; max-width: 900px; margin-bottom: 48px; }
+
+    .plan-card {
+      background: rgba(255,255,255,0.55);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .plan-card:hover { border-color: var(--gold-light); box-shadow: 0 4px 20px rgba(201,150,58,0.12); }
+    .plan-card.selected { border-color: var(--gold); box-shadow: 0 4px 24px rgba(201,150,58,0.18); }
+    .plan-card.soon { opacity: 0.5; cursor: not-allowed; }
+
+    .plan-badge { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 8px; }
+    .plan-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; margin-bottom: 4px; }
+    .plan-price { font-size: 28px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+    .plan-price sup { font-size: 16px; font-weight: 400; vertical-align: super; }
+    .plan-period { font-size: 12px; color: var(--ink-muted); margin-bottom: 16px; }
+    .plan-divider { height: 1px; background: var(--border); margin-bottom: 16px; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .plan-features li { font-size: 13px; color: var(--ink-muted); }
+    .plan-features li::before { content: '✓ '; color: var(--gold); font-weight: 500; }
+    .plan-features li.soon::before { content: '○ '; color: var(--ink-faint); }
+
+    .plan-selector { position: absolute; top: 14px; right: 14px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); background: white; transition: all 0.2s; }
+    .plan-card.selected .plan-selector { border-color: var(--gold); background: var(--gold); }
+
+    /* Signup form */
+    .signup-wrap { width: 100%; max-width: 440px; }
+
+    .card {
+      background: rgba(255,255,255,0.55);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; margin-bottom: 6px; }
+    .plan-confirm { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--gold-pale); border: 1px solid var(--gold-light); border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--gold); letter-spacing: 0.03em; margin-bottom: 20px; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    label { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-muted); }
+    input { width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.7); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: var(--gold); }
+
+    .btn-primary { width: 100%; padding: 14px; background: var(--ink); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .error-msg { background: rgba(196,94,74,0.08); border: 1px solid rgba(196,94,74,0.3); border-radius: 8px; color: var(--error); font-size: 13px; padding: 10px 14px; margin-bottom: 14px; display: none; }
+    .error-msg.visible { display: block; }
+
+    .link-row { text-align: center; font-size: 14px; color: var(--ink-muted); margin-top: 20px; }
+    .link-row a { color: var(--ink); font-weight: 500; text-decoration: none; border-bottom: 1px solid var(--gold-light); }
+    .link-row a:hover { border-color: var(--gold); }
+
+    @media (max-width: 860px) { .plans { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .plans { grid-template-columns: 1fr; } .card { padding: 24px 18px; } }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="page">
+    <a href="/" class="wordmark">MYCOGNA</a>
+    <h1 class="page-title">Administrator <em>Portal</em></h1>
+    <p class="page-sub">Choose the plan that fits your needs. You can generate user codes for the people you support — at any tier you've unlocked.</p>
+
+    <!-- Plan picker -->
+    <div class="plans" id="planGrid">
+
+      <div class="plan-card" id="planA" onclick="selectPlan('A')">
+        <div class="plan-selector"></div>
+        <div class="plan-badge">Free</div>
+        <div class="plan-name">Try it out</div>
+        <div class="plan-price"><sup>$</sup>0</div>
+        <div class="plan-period">forever</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>1 story recording per month</li>
+          <li>Guided story prompts</li>
+          <li>Voice recording &amp; transcription</li>
+        </ul>
+      </div>
+
+      <div class="plan-card" id="planB" onclick="selectPlan('B')">
+        <div class="plan-selector"></div>
+        <div class="plan-badge">Storyteller</div>
+        <div class="plan-name">Unlimited</div>
+        <div class="plan-price"><sup>$</sup>5</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Unlimited story recordings</li>
+          <li>All story prompts</li>
+          <li>Voice recording &amp; transcription</li>
+          <li>Shareable story archive</li>
+        </ul>
+      </div>
+
+      <div class="plan-card soon" id="planC">
+        <div class="plan-selector"></div>
+        <div class="plan-badge">AI Assisted</div>
+        <div class="plan-name">Storyteller+</div>
+        <div class="plan-price"><sup>$</sup>10</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Everything in Unlimited</li>
+          <li class="soon">AI follow-up questions</li>
+          <li class="soon">Intelligent story editing</li>
+          <li class="soon">Extended story sessions</li>
+        </ul>
+      </div>
+
+      <div class="plan-card" id="planD" onclick="selectPlan('D')">
+        <div class="plan-selector"></div>
+        <div class="plan-badge">Full Access</div>
+        <div class="plan-name">AI Companion</div>
+        <div class="plan-price"><sup>$</sup>15</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Everything in Storyteller+</li>
+          <li>Unlimited Cogna companions</li>
+          <li>Custom voice per Cogna</li>
+          <li>Multi-voice conversations</li>
+          <li>Session transcripts saved</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Signup form (shown after plan selection) -->
+    <div class="signup-wrap" id="signupWrap" style="display:none">
+      <div class="card">
+        <div class="card-title">Create your account</div>
+        <div class="plan-confirm" id="planConfirm">Plan selected</div>
+
+        <div id="errorMsg" class="error-msg"></div>
+
+        <form id="signupForm" onsubmit="handleSignup(event)">
+          <div class="field">
+            <label for="name">Your name</label>
+            <input type="text" id="name" placeholder="First and last name" autocomplete="name" required />
+          </div>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8" />
+          </div>
+          <div class="field">
+            <label for="confirm">Confirm password</label>
+            <input type="password" id="confirm" placeholder="Same password again" autocomplete="new-password" required />
+          </div>
+          <input type="hidden" id="selectedTier" value="" />
+          <button type="submit" class="btn-primary" id="submitBtn">Create administrator account</button>
+        </form>
+      </div>
+
+      <div class="link-row">Already have an account? <a href="/portal">Sign in</a></div>
+    </div>
+  </div>
+
+  <script>
+    const PLAN_LABELS = {
+      A: 'Free — Try it out ($0)',
+      B: 'Storyteller Unlimited ($5/mo)',
+      C: 'Storyteller+ AI ($10/mo)',
+      D: 'AI Companion ($15/mo)',
+    };
+
+    let selectedTier = null;
+
+    // If already logged into portal, redirect
+    const existingToken = localStorage.getItem('portalToken');
+    if (existingToken) {
+      fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + existingToken } })
+        .then(r => { if (r.ok) window.location.href = '/portal'; })
+        .catch(() => {});
+    }
+
+    function selectPlan(tier) {
+      selectedTier = tier;
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('plan' + tier).classList.add('selected');
+      document.getElementById('selectedTier').value = tier;
+      document.getElementById('planConfirm').textContent = PLAN_LABELS[tier];
+      document.getElementById('signupWrap').style.display = 'block';
+      document.getElementById('signupWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('errorMsg');
+      errEl.className = 'error-msg';
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+      const tier = document.getElementById('selectedTier').value;
+      const btn = document.getElementById('submitBtn');
+
+      if (!tier) { errEl.textContent = 'Please select a plan above.'; errEl.className = 'error-msg visible'; return; }
+      if (password !== confirm) { errEl.textContent = "Passwords don't match."; errEl.className = 'error-msg visible'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, tier, setup_type: 'guardian' }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errEl.textContent = data.detail || 'Something went wrong. Please try again.';
+          errEl.className = 'error-msg visible';
+          btn.disabled = false;
+          btn.textContent = 'Create administrator account';
+          return;
+        }
+
+        localStorage.setItem('portalToken', data.token);
+        window.location.href = '/portal';
+      } catch (err) {
+        errEl.textContent = 'Network error. Please check your connection and try again.';
+        errEl.className = 'error-msg visible';
+        btn.disabled = false;
+        btn.textContent = 'Create administrator account';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -100,8 +100,28 @@ async function loadDashboard() {
   document.getElementById('dashWelcome').textContent = `Welcome back, ${state.user.name}`;
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
-  const cognaData = await req(`${api}/cognas`, { headers: authHeaders() });
-  renderCognaGrid(cognaData.cognas);
+  // Set up tab locking based on tier
+  const tier = state.user.tier || 'A';
+  const tierOrder = ['A', 'B', 'C', 'D'];
+  const userTierIdx = tierOrder.indexOf(tier);
+
+  tierOrder.forEach((t, idx) => {
+    const btn = document.getElementById('dashTab' + t);
+    if (idx > userTierIdx) {
+      btn.classList.add('locked');
+      btn.title = 'Upgrade to unlock';
+    }
+  });
+
+  // Start on the highest unlocked tab (skip C if locked since it's coming soon)
+  const startTab = tier === 'D' ? 'D' : tier === 'C' ? 'B' : tier;
+  portal.switchDashTab(startTab);
+
+  if (tier === 'D' || userTierIdx >= 3) {
+    const cognaData = await req(`${api}/cognas`, { headers: authHeaders() });
+    renderCognaGrid(cognaData.cognas);
+  }
+
   showScreen('dashboardScreen');
 }
 
@@ -488,32 +508,75 @@ const portal = {
   // ── Stories / Storyteller ──
 
   switchDashTab(tab) {
-    document.getElementById('dashTabCognas').classList.toggle('active', tab === 'cognas');
-    document.getElementById('dashTabStories').classList.toggle('active', tab === 'stories');
-    document.getElementById('cognasPanel').classList.toggle('hidden', tab !== 'cognas');
-    document.getElementById('storiesPanel').classList.toggle('hidden', tab !== 'stories');
-    if (tab === 'stories') portal.loadStories();
-  },
+    const tier = (state.user && state.user.tier) || 'A';
+    const tierOrder = ['A', 'B', 'C', 'D'];
+    const userTierIdx = tierOrder.indexOf(tier);
+    const tabIdx = tierOrder.indexOf(tab);
 
-  async loadStories() {
-    try {
-      const [codesData, promptsData, recsData] = await Promise.all([
-        req(`${api}/storyteller/user-codes`, { headers: authHeaders() }),
-        req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
-        req(`${api}/storyteller/recordings`, { headers: authHeaders() }),
-      ]);
-      portal._renderPromoCodes(codesData.codes || []);
-      portal._renderPrompts(promptsData.prompts || []);
-      portal._renderRecordings(recsData.recordings || []);
-    } catch (err) {
-      console.error('loadStories error:', err.message);
+    ['A', 'B', 'C', 'D'].forEach(t => {
+      document.getElementById('dashTab' + t).classList.toggle('active', t === tab);
+      const panel = document.getElementById('panel' + t);
+      if (panel) panel.classList.add('hidden');
+    });
+    document.getElementById('panelLocked').classList.add('hidden');
+
+    // C tab is coming soon for everyone — show its panel (not locked)
+    if (tab === 'C') {
+      document.getElementById('panelC').classList.remove('hidden');
+      return;
+    }
+
+    // Check if this tab is above the user's tier
+    if (tabIdx > userTierIdx) {
+      const labels = { A: 'Free Storyteller', B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion' };
+      document.getElementById('lockedTitle').textContent = `Upgrade to unlock ${labels[tab]}`;
+      document.getElementById('lockedBody').textContent = `Your current plan doesn't include the ${labels[tab]} tier. Upgrade to access this feature.`;
+      document.getElementById('panelLocked').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('panel' + tab).classList.remove('hidden');
+
+    if (tab === 'A') portal.loadStoryPanel('A');
+    else if (tab === 'B') portal.loadStoryPanel('B');
+    else if (tab === 'D' && state.user) {
+      req(`${api}/cognas`, { headers: authHeaders() })
+        .then(d => renderCognaGrid(d.cognas))
+        .catch(err => console.error(err.message));
     }
   },
 
-  _renderPromoCodes(codes) {
-    const el = document.getElementById('promoCodesList');
+  async loadStoryPanel(tier) {
+    try {
+      const [codesData, promptsData, recsData] = await Promise.all([
+        req(`${api}/storyteller/user-codes?tier=${tier}`, { headers: authHeaders() }),
+        req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
+        req(`${api}/storyteller/recordings?tier=${tier}`, { headers: authHeaders() }),
+      ]);
+      portal._renderPromoCodes(codesData.codes || [], tier);
+      if (tier === 'A') portal._renderPrompts(promptsData.prompts || []);
+      portal._renderRecordings(recsData.recordings || [], tier);
+
+      // Enforce free tier: disable generate button if already has 1 active code
+      if (tier === 'A') {
+        const activeCount = (codesData.codes || []).filter(c => c.active).length;
+        const btn = document.getElementById('generateBtnA');
+        if (btn) { btn.disabled = activeCount >= 1; btn.title = activeCount >= 1 ? 'Free tier allows 1 active code' : ''; }
+      }
+    } catch (err) {
+      console.error('loadStoryPanel error:', err.message);
+    }
+  },
+
+  // Legacy alias
+  async loadStories() { return portal.loadStoryPanel('A'); },
+
+  _renderPromoCodes(codes, tier) {
+    const suffix = tier || 'A';
+    const el = document.getElementById('promoCodesList' + suffix);
+    if (!el) return;
     if (!codes.length) {
-      el.innerHTML = '<div class="empty-state"><p>No codes yet. Generate one to get started.</p></div>';
+      el.innerHTML = `<div class="empty-state"><p>No ${suffix}-codes yet. Generate one to get started.</p></div>`;
       return;
     }
     el.innerHTML = codes.map(c => `
@@ -524,7 +587,7 @@ const portal = {
         </div>
         <div class="story-item-actions">
           <button class="copy-code-btn" onclick="portal.copyCode('${c.code}', this)">Copy</button>
-          ${c.active ? `<button class="story-action-btn" onclick="portal.deactivateCode('${c.code}')">Deactivate</button>` : ''}
+          ${c.active ? `<button class="story-action-btn" onclick="portal.deactivateCode('${c.code}', '${suffix}')">Deactivate</button>` : ''}
         </div>
       </div>`).join('');
   },
@@ -571,15 +634,15 @@ const portal = {
     }
   },
 
-  _renderRecordings(recs) {
-    portal._allRecordings = recs;
+  _renderRecordings(recs, tier) {
+    const t = tier || 'A';
+    portal['_allRecordings_' + t] = recs;
 
-    // Build filter dropdown
-    const filterRow = document.getElementById('recordingsFilterRow');
-    const filterEl = document.getElementById('recordingsFilter');
-    if (recs.length) {
+    const filterRow = document.getElementById('recordingsFilterRow' + t);
+    const filterEl = document.getElementById('recordingsFilter' + t);
+    if (recs.length && filterRow && filterEl) {
       const seen = new Set();
-      const options = [{ code: '', label: 'All codes' }];
+      const options = [{ code: '', label: `All ${t}-codes` }];
       recs.forEach(r => {
         if (!seen.has(r.promo_code)) {
           seen.add(r.promo_code);
@@ -588,17 +651,19 @@ const portal = {
       });
       filterEl.innerHTML = options.map(o => `<option value="${o.code}">${o.label}</option>`).join('');
       filterRow.classList.remove('hidden');
-    } else {
+    } else if (filterRow) {
       filterRow.classList.add('hidden');
     }
 
-    portal._renderRecordingRows(recs);
+    portal._renderRecordingRows(recs, t);
   },
 
-  _renderRecordingRows(recs) {
-    const el = document.getElementById('recordingsList');
+  _renderRecordingRows(recs, tier) {
+    const t = tier || 'A';
+    const el = document.getElementById('recordingsList' + t);
+    if (!el) return;
     if (!recs.length) {
-      el.innerHTML = '<div class="empty-state"><p>No recordings for this code yet.</p></div>';
+      el.innerHTML = '<div class="empty-state"><p>No recordings yet.</p></div>';
       return;
     }
     el.innerHTML = recs.map(r => `
@@ -612,20 +677,22 @@ const portal = {
       </div>`).join('');
   },
 
-  filterRecordings(code) {
-    const recs = portal._allRecordings || [];
-    portal._renderRecordingRows(code ? recs.filter(r => r.promo_code === code) : recs);
+  filterRecordings(code, tier) {
+    const t = tier || 'A';
+    const recs = portal['_allRecordings_' + t] || [];
+    portal._renderRecordingRows(code ? recs.filter(r => r.promo_code === code) : recs, t);
   },
 
-  async generatePromoCode() {
+  async generatePromoCode(tier) {
+    const t = tier || 'A';
     const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
     try {
       await req(`${api}/storyteller/user-codes`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc }),
+        body: JSON.stringify({ description: desc, tier: t }),
       });
-      await portal.loadStories();
+      await portal.loadStoryPanel(t);
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -639,14 +706,14 @@ const portal = {
     });
   },
 
-  async deactivateCode(code) {
+  async deactivateCode(code, tier) {
     if (!confirm(`Deactivate user code ${code}? New accounts can no longer be created with this code. Existing accounts are unaffected.`)) return;
     try {
       await req(`${api}/storyteller/user-codes/${code}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
-      await portal.loadStories();
+      await portal.loadStoryPanel(tier || 'A');
     } catch (err) {
       alert('Error: ' + err.message);
     }

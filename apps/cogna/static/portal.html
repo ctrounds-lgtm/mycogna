@@ -126,29 +126,99 @@
       <button class="ghost-btn" onclick="portal.logout()">Sign out</button>
     </div>
 
-    <!-- Dashboard tabs -->
-    <div class="dash-tabs">
-      <button class="dash-tab active" id="dashTabCognas" onclick="portal.switchDashTab('cognas')">Cognas</button>
-      <button class="dash-tab" id="dashTabStories" onclick="portal.switchDashTab('stories')">Storyteller</button>
+    <!-- Dashboard tabs: one per tier -->
+    <div class="dash-tabs" id="dashTabs">
+      <button class="dash-tab" id="dashTabA" onclick="portal.switchDashTab('A')">Free</button>
+      <button class="dash-tab" id="dashTabB" onclick="portal.switchDashTab('B')">Unlimited</button>
+      <button class="dash-tab" id="dashTabC" onclick="portal.switchDashTab('C')">AI Assisted</button>
+      <button class="dash-tab" id="dashTabD" onclick="portal.switchDashTab('D')">AI Companion</button>
     </div>
 
-    <!-- ── COGNAS PANEL ── -->
-    <div id="cognasPanel">
+    <!-- ── PANEL A — Free Storyteller ── -->
+    <div id="panelA" class="hidden">
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Free tier — max 1 active)</span></h2>
+        <button class="add-btn" id="generateBtnA" onclick="portal.generatePromoCode('A')">+ Generate Code</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share an A-code with someone to give them free storytelling access (1 story/month).</p>
+      <div id="promoCodesListA" class="stories-list">
+        <div class="empty-state"><p>No A-codes yet.</p></div>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Story Prompts</h2>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Active prompts are shown to all storyteller users. Toggle each one on or off independently.</p>
+      <div class="add-prompt-row">
+        <textarea id="newPromptText" class="text-input textarea" rows="3" placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
+        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
+      </div>
+      <div id="promptsList" class="stories-list" style="margin-top:16px">
+        <div class="empty-state"><p>No prompts yet.</p></div>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Recordings</h2>
+        <button class="add-btn" onclick="portal.loadStoryPanel('A')">Refresh</button>
+      </div>
+      <div id="recordingsFilterRowA" class="hidden" style="margin-bottom:12px">
+        <select id="recordingsFilterA" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'A')">
+          <option value="">All A-codes</option>
+        </select>
+      </div>
+      <div id="recordingsListA" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No recordings yet.</p></div>
+      </div>
+    </div>
+
+    <!-- ── PANEL B — Unlimited Storyteller ── -->
+    <div id="panelB" class="hidden">
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Unlimited)</span></h2>
+        <button class="add-btn" onclick="portal.generatePromoCode('B')">+ Generate Code</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a B-code with someone to give them unlimited storytelling access.</p>
+      <div id="promoCodesListB" class="stories-list">
+        <div class="empty-state"><p>No B-codes yet.</p></div>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Recordings</h2>
+        <button class="add-btn" onclick="portal.loadStoryPanel('B')">Refresh</button>
+      </div>
+      <div id="recordingsFilterRowB" class="hidden" style="margin-bottom:12px">
+        <select id="recordingsFilterB" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'B')">
+          <option value="">All B-codes</option>
+        </select>
+      </div>
+      <div id="recordingsListB" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No recordings yet.</p></div>
+      </div>
+    </div>
+
+    <!-- ── PANEL C — AI Assisted (Coming Soon) ── -->
+    <div id="panelC" class="hidden">
+      <div style="text-align:center;padding:80px 24px">
+        <div style="font-size:40px;margin-bottom:16px">✦</div>
+        <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:12px">Storyteller + AI</h2>
+        <p style="color:var(--ink-muted);max-width:400px;margin:0 auto 24px">AI-assisted follow-up questions, intelligent story editing, and extended session support are coming soon.</p>
+        <span style="display:inline-block;padding:8px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:20px;font-size:13px;color:var(--gold);font-weight:500">Coming soon</span>
+      </div>
+    </div>
+
+    <!-- ── PANEL D — AI Companion ── -->
+    <div id="panelD" class="hidden">
       <!-- Access code box -->
       <div id="accessCodeBox" class="access-code-box">
         <div class="access-code-label">User access code</div>
         <div class="access-code-row">
-          <span class="access-code-value" id="accessCodeValue">COGNA-????</span>
+          <span class="access-code-value" id="accessCodeValue">D-????</span>
           <button class="copy-btn" onclick="portal.copyAccessCode()" id="copyBtn">Copy</button>
         </div>
-        <p class="access-code-hint">Give this code to your child or the person using MyCogna. They'll enter it in the app to see all the voices you've built.</p>
+        <p class="access-code-hint">Give this code to the person using MyCogna. They'll enter it in the app to access all the voices you've built.</p>
       </div>
 
       <div class="section-header-row">
         <h2 class="section-title">Your Cognas</h2>
         <button class="add-btn" onclick="portal.showCreateCogna()">+ Add a Cogna</button>
       </div>
-
       <div id="cognaGrid" class="cogna-grid">
         <div class="empty-state">
           <p>No Cognas yet.</p>
@@ -157,46 +227,15 @@
       </div>
     </div>
 
-    <!-- ── STORIES PANEL ── -->
-    <div id="storiesPanel" class="hidden">
-
-      <!-- User Codes -->
-      <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">User Codes</h2>
-        <button class="add-btn" onclick="portal.generatePromoCode()">+ Generate Code</button>
+    <!-- ── LOCKED OVERLAY (shown for tabs above user tier) ── -->
+    <div id="panelLocked" class="hidden">
+      <div style="text-align:center;padding:80px 24px">
+        <div style="font-size:32px;margin-bottom:16px">🔒</div>
+        <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:12px" id="lockedTitle">Upgrade to unlock</h2>
+        <p style="color:var(--ink-muted);max-width:400px;margin:0 auto 24px" id="lockedBody">This tier requires a higher plan.</p>
+        <a href="/portal/signup" style="display:inline-block;padding:10px 24px;background:var(--ink);color:white;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">View plans</a>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a user code with each person you want to invite to record a story.</p>
-      <div id="promoCodesList" class="stories-list">
-        <div class="empty-state"><p>No codes yet. Generate one to get started.</p></div>
-      </div>
-
-      <!-- Story Prompts -->
-      <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Story Prompts</h2>
-      </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">All active prompts are shown to recorders. Toggle each one on or off independently.</p>
-      <div class="add-prompt-row">
-        <textarea id="newPromptText" class="text-input textarea" rows="3"
-          placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
-        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
-      </div>
-      <div id="promptsList" class="stories-list" style="margin-top:16px">
-        <div class="empty-state"><p>No prompts yet.</p></div>
-      </div>
-
-      <!-- Recordings -->
-      <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Recordings</h2>
-        <button class="add-btn" onclick="portal.loadStories()">Refresh</button>
-      </div>
-      <div id="recordingsFilterRow" class="hidden" style="margin-bottom:12px">
-        <select id="recordingsFilter" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value)">
-          <option value="">All codes</option>
-        </select>
-      </div>
-      <div id="recordingsList" class="stories-list" style="margin-bottom:40px">
-        <div class="empty-state"><p>No recordings yet.</p></div>
-      </div>
+    </div>
 
     </div><!-- /storiesPanel -->
 

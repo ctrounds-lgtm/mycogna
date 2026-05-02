@@ -8,11 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
   password_salt     TEXT NOT NULL,
   password_hash     TEXT NOT NULL,
   setup_type        TEXT NOT NULL DEFAULT 'guardian',
+  tier              TEXT NOT NULL DEFAULT 'A',
   child_access_code TEXT NOT NULL UNIQUE,
   password_reset_token   TEXT,
   password_reset_expires TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'A';
 
 -- Cognas
 CREATE TABLE IF NOT EXISTS cognas (
@@ -77,11 +80,14 @@ ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL D
 -- Promo codes — gate access to the story capture flow
 CREATE TABLE IF NOT EXISTS promo_codes (
   code         TEXT PRIMARY KEY,
+  tier         TEXT NOT NULL DEFAULT 'A',
   description  TEXT NOT NULL DEFAULT '',
   active       BOOLEAN NOT NULL DEFAULT true,
   created_by   TEXT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'A';
 
 -- Story prompts — collaborators set the question shown to recorders
 CREATE TABLE IF NOT EXISTS story_prompts (

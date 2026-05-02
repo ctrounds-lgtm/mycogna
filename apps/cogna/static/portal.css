@@ -891,6 +891,13 @@ input[type=range]:focus { outline: none; }
   border-bottom-color: var(--gold);
 }
 
+.dash-tab.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dash-tab.locked:hover { color: rgba(28,26,23,0.4); }
+
 /* ── Stories panel ── */
 .stories-list {
   display: flex;

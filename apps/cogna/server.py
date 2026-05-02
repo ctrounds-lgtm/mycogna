@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional
 
 import anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -124,6 +124,7 @@ class FamilyRegisterRequest(BaseModel):
     password: str
     name: str
     setup_type: str = "guardian"  # "guardian" or "self"
+    tier: str = "A"  # A=Free, B=Unlimited, C=AI Assisted, D=AI Companion
 
 
 class FamilyLoginRequest(BaseModel):
@@ -201,6 +202,7 @@ class PromptsReorderRequest(BaseModel):
 
 class PromoCodeCreate(BaseModel):
     description: str = ""
+    tier: str = "A"
 
 
 class StorySignupRequest(BaseModel):
@@ -262,6 +264,11 @@ def signup_page():
     return FileResponse(ROOT / "static" / "signup.html")
 
 
+@app.get("/portal/signup")
+def portal_signup_page():
+    return FileResponse(ROOT / "static" / "portal-signup.html")
+
+
 @app.get("/login")
 def login_page():
     return FileResponse(ROOT / "static" / "login.html")
@@ -303,6 +310,7 @@ def auth_register(payload: FamilyRegisterRequest):
         raise HTTPException(status_code=400, detail="Account already exists")
 
     setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
+    tier = payload.tier if payload.tier in {"A", "B", "C", "D"} else "A"
     salt = secrets.token_hex(8)
     password_hash = _hash_password(payload.password, salt)
 
@@ -312,7 +320,8 @@ def auth_register(payload: FamilyRegisterRequest):
         "password_salt": salt,
         "password_hash": password_hash,
         "setup_type": setup_type,
-        "child_access_code": _generate_child_access_code(),
+        "tier": tier,
+        "child_access_code": _generate_child_access_code(tier),
         "created_at": _utc_now(),
     }
 
@@ -1138,13 +1147,21 @@ def reorder_story_prompts(
 
 
 @app.get("/api/storyteller/user-codes")
-def list_promo_codes(authorization: Optional[str] = Header(default=None)):
+def list_promo_codes(
+    authorization: Optional[str] = Header(default=None),
+    tier: Optional[str] = Query(default=None),
+):
     _auth_user(authorization)
     if supabase:
-        r = supabase.table("promo_codes").select("*").order("created_at", desc=True).execute()
+        q = supabase.table("promo_codes").select("*").order("created_at", desc=True)
+        if tier:
+            q = q.eq("tier", tier.upper())
+        r = q.execute()
         return {"codes": r.data or []}
     db = _load_db()
     codes = sorted(db["promo_codes"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    if tier:
+        codes = [c for c in codes if c.get("tier", "A").upper() == tier.upper()]
     return {"codes": list(codes)}
 
 
@@ -1154,9 +1171,11 @@ def create_promo_code(
     authorization: Optional[str] = Header(default=None),
 ):
     user = _auth_user(authorization)
-    code = _generate_story_promo_code()
+    tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D"} else "A"
+    code = _generate_story_promo_code(tier)
     record = {
         "code": code,
+        "tier": tier,
         "description": payload.description.strip(),
         "active": True,
         "created_by": user["email"],
@@ -1189,25 +1208,37 @@ def deactivate_promo_code(
 
 
 @app.get("/api/storyteller/recordings")
-def list_recordings(authorization: Optional[str] = Header(default=None)):
+def list_recordings(
+    authorization: Optional[str] = Header(default=None),
+    tier: Optional[str] = Query(default=None),
+):
     _auth_user(authorization)
     if supabase:
-        r = (supabase.table("story_recordings")
-             .select("id, promo_code, prompt_id, transcript, created_at, promo_codes(description)")
+        q = (supabase.table("story_recordings")
+             .select("id, promo_code, prompt_id, transcript, created_at, promo_codes(description, tier)")
              .order("created_at", desc=True)
-             .limit(50)
-             .execute())
+             .limit(200))
+        r = q.execute()
         recordings = []
         for rec in (r.data or []):
             code_info = rec.pop("promo_codes", None) or {}
             rec["promo_code_label"] = code_info.get("description", "")
+            rec["tier"] = code_info.get("tier", "A")
+            if tier and rec["tier"] != tier.upper():
+                continue
             recordings.append(rec)
-        return {"recordings": recordings}
+        return {"recordings": recordings[:50]}
     db = _load_db()
     recs = sorted(db["story_recordings"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    result = []
     for rec in recs:
-        rec["promo_code_label"] = db["promo_codes"].get(rec.get("promo_code", ""), {}).get("description", "")
-    return {"recordings": list(recs)[:50]}
+        code_info = db["promo_codes"].get(rec.get("promo_code", ""), {})
+        rec["promo_code_label"] = code_info.get("description", "")
+        rec["tier"] = code_info.get("tier", "A")
+        if tier and rec["tier"] != tier.upper():
+            continue
+        result.append(rec)
+    return {"recordings": result[:50]}
 
 
 @app.get("/story-audio/{filename}")
@@ -1494,14 +1525,15 @@ def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:
     return record if record and record.get("active") else None
 
 
-def _generate_story_promo_code() -> str:
+def _generate_story_promo_code(tier: str = "A") -> str:
     chars = string.ascii_uppercase + string.digits
+    prefix = tier.upper() if tier.upper() in {"A", "B", "C", "D"} else "A"
     for _ in range(20):
         suffix = "".join(secrets.choice(chars) for _ in range(4))
-        code = f"STORY-{suffix}"
+        code = f"{prefix}-{suffix}"
         if not _get_promo_code(code):
             return code
-    return f"STORY-{''.join(secrets.choice(chars) for _ in range(6))}"
+    return f"{prefix}-{''.join(secrets.choice(chars) for _ in range(6))}"
 
 
 def _save_story_audio(recording_id: str, file: UploadFile) -> str:
@@ -1558,6 +1590,7 @@ def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "email": user["email"],
         "name": user.get("name", ""),
         "setup_type": user.get("setup_type", "guardian"),
+        "tier": user.get("tier", "A"),
         "child_access_code": user.get("child_access_code", ""),
     }
 
@@ -1675,9 +1708,12 @@ def _cogna_voice_prompt(cogna: Dict[str, Any]) -> str:
     )
 
 
-def _generate_child_access_code() -> str:
+def _generate_child_access_code(tier: str = "D") -> str:
     chars = string.ascii_uppercase + string.digits
     suffix = "".join(secrets.choice(chars) for _ in range(4))
+    # D-tier gets D-XXXX; other tiers keep COGNA- prefix for backward compat
+    if tier == "D":
+        return f"D-{suffix}"
     return f"COGNA-{suffix}"
 
 
