@@ -66,6 +66,11 @@ CREATE POLICY "Allow public reads"
 
 
 -- ─────────────────────────────────────────────
+-- Migration: add sort_order to story_prompts
+-- ─────────────────────────────────────────────
+ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+
+-- ─────────────────────────────────────────────
 -- Storyteller feature (Tier 1)
 -- ─────────────────────────────────────────────
 

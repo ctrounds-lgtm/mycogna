@@ -955,6 +955,29 @@ input[type=range]:focus { outline: none; }
   margin-left: 8px;
 }
 
+.story-item-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.reorder-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 28px;
+  height: 24px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.reorder-btn:hover:not(:disabled) { color: var(--gold); border-color: var(--gold); }
+.reorder-btn:disabled { opacity: 0.25; cursor: default; }
+
 .story-item-actions {
   display: flex;
   gap: 8px;

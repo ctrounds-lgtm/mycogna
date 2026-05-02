@@ -194,6 +194,10 @@ class StoryPromptCreate(BaseModel):
     text: str
 
 
+class PromptsReorderRequest(BaseModel):
+    ids: List[str]
+
+
 class PromoCodeCreate(BaseModel):
     description: str = ""
 
@@ -854,10 +858,10 @@ async def storyteller_record(
 def list_story_prompts(authorization: Optional[str] = Header(default=None)):
     _auth_user(authorization)
     if supabase:
-        r = supabase.table("story_prompts").select("*").order("created_at", desc=True).execute()
+        r = supabase.table("story_prompts").select("*").order("sort_order").order("created_at").execute()
         return {"prompts": r.data or []}
     db = _load_db()
-    prompts = sorted(db["story_prompts"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    prompts = sorted(db["story_prompts"].values(), key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
     return {"prompts": list(prompts)}
 
 
@@ -871,10 +875,18 @@ def create_story_prompt(
     if not text:
         raise HTTPException(status_code=400, detail="Prompt text is required")
     prompt_id = "prompt_" + secrets.token_hex(6)
+    if supabase:
+        r = supabase.table("story_prompts").select("sort_order").order("sort_order", desc=True).limit(1).execute()
+        next_order = (r.data[0]["sort_order"] + 1) if r.data else 0
+    else:
+        db_tmp = _load_db()
+        orders = [p.get("sort_order", 0) for p in db_tmp["story_prompts"].values()]
+        next_order = (max(orders) + 1) if orders else 0
     prompt = {
         "id": prompt_id,
         "text": text,
         "active": False,
+        "sort_order": next_order,
         "created_by": user["email"],
         "created_at": _utc_now(),
     }
@@ -916,6 +928,24 @@ def delete_story_prompt(
     else:
         db = _load_db()
         db["story_prompts"].pop(prompt_id, None)
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.post("/api/storyteller/prompts/reorder")
+def reorder_story_prompts(
+    payload: PromptsReorderRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    _auth_user(authorization)
+    if supabase:
+        for i, prompt_id in enumerate(payload.ids):
+            supabase.table("story_prompts").update({"sort_order": i}).eq("id", prompt_id).execute()
+    else:
+        db = _load_db()
+        for i, prompt_id in enumerate(payload.ids):
+            if prompt_id in db["story_prompts"]:
+                db["story_prompts"][prompt_id]["sort_order"] = i
         _save_db(db)
     return {"ok": True}
 
@@ -1210,10 +1240,11 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 
 def _get_active_prompts() -> List[Dict[str, Any]]:
     if supabase:
-        r = supabase.table("story_prompts").select("*").eq("active", True).order("created_at").execute()
+        r = supabase.table("story_prompts").select("*").eq("active", True).order("sort_order").order("created_at").execute()
         return r.data or []
     db = _load_db()
-    return [p for p in db["story_prompts"].values() if p.get("active")]
+    active = [p for p in db["story_prompts"].values() if p.get("active")]
+    return sorted(active, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
 
 
 def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:

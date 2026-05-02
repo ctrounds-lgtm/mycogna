@@ -531,12 +531,17 @@ const portal = {
 
   _renderPrompts(prompts) {
     const el = document.getElementById('promptsList');
+    portal._promptsOrder = prompts;
     if (!prompts.length) {
       el.innerHTML = '<div class="empty-state"><p>No prompts yet.</p></div>';
       return;
     }
-    el.innerHTML = prompts.map(p => `
+    el.innerHTML = prompts.map((p, i) => `
       <div class="story-item">
+        <div class="story-item-reorder">
+          <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','up')" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','down')" ${i === prompts.length - 1 ? 'disabled' : ''}>↓</button>
+        </div>
         <div class="story-item-main">
           <div class="story-item-text">${p.text}${p.active ? '<span class="active-badge">Active</span>' : ''}</div>
           <div class="story-item-meta">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
@@ -546,6 +551,24 @@ const portal = {
           <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>
         </div>
       </div>`).join('');
+  },
+
+  async movePrompt(promptId, direction) {
+    const prompts = portal._promptsOrder || [];
+    const idx = prompts.findIndex(p => p.id === promptId);
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= prompts.length) return;
+    [prompts[idx], prompts[newIdx]] = [prompts[newIdx], prompts[idx]];
+    portal._renderPrompts([...prompts]);
+    try {
+      await req(`${api}/storyteller/prompts/reorder`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: prompts.map(p => p.id) }),
+      });
+    } catch (err) {
+      console.error('Reorder failed:', err.message);
+    }
   },
 
   _renderRecordings(recs) {
