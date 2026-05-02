@@ -71,7 +71,7 @@
     .nav-links a:hover { color: var(--ink); }
 
     .nav-cta {
-      margin-left: 16px;
+      margin-left: 8px;
       padding: 8px 18px;
       background: var(--ink);
       color: white !important;
@@ -82,6 +82,20 @@
     }
 
     .nav-cta:hover { opacity: 0.82; }
+
+    .nav-btn-outline {
+      margin-left: 8px;
+      padding: 7px 18px;
+      background: transparent;
+      color: var(--ink) !important;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      transition: border-color 0.2s, color 0.2s !important;
+    }
+
+    .nav-btn-outline:hover { border-color: var(--ink); }
 
     .nav-hamburger {
       display: none;
@@ -801,8 +815,8 @@
       <li><a href="#products">Products</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="#my-story">My Story</a></li>
-      <li><a href="/login">Login</a></li>
-      <li><a href="/signup" class="nav-cta">Get started</a></li>
+      <li><a href="/login" class="nav-btn-outline">Login</a></li>
+      <li><a href="#pricing" class="nav-cta">Sign up</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu"
             onclick="document.getElementById('navLinks').classList.toggle('open')">
