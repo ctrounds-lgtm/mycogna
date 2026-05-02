@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyCogna — Preserve the voices you love</title>
+  <title>MyCogna — Every voice deserves to be heard</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,7 +34,7 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       height: var(--nav-h);
-      background: rgba(249,245,239,0.90);
+      background: rgba(249,245,239,0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
@@ -42,7 +42,6 @@
       display: flex;
       align-items: center;
       padding: 0 32px;
-      gap: 0;
     }
 
     .nav-logo {
@@ -64,10 +63,8 @@
 
     .nav-links a {
       font-size: 13px;
-      font-weight: 400;
       color: var(--ink-muted);
       text-decoration: none;
-      letter-spacing: 0.02em;
       transition: color 0.2s;
     }
 
@@ -84,7 +81,7 @@
       transition: opacity 0.2s !important;
     }
 
-    .nav-cta:hover { opacity: 0.82; color: white !important; }
+    .nav-cta:hover { opacity: 0.82; }
 
     .nav-hamburger {
       display: none;
@@ -96,133 +93,12 @@
       gap: 5px;
     }
 
-    .nav-hamburger span {
-      display: block;
-      width: 22px;
-      height: 1.5px;
-      background: var(--ink);
-      transition: 0.2s;
-    }
+    .nav-hamburger span { display: block; width: 22px; height: 1.5px; background: var(--ink); }
 
-    /* ── HERO ── */
-    .hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: calc(var(--nav-h) + 48px) 24px 80px;
-      position: relative;
-      overflow: hidden;
-    }
+    /* ── SHARED SECTION STYLES ── */
+    section { padding: 96px 24px; }
 
-    .blob {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.22;
-      pointer-events: none;
-    }
-
-    .blob-1 { width: 500px; height: 500px; background: #C9963A; top: -120px; right: -80px; }
-    .blob-2 { width: 400px; height: 400px; background: #3A7B72; bottom: -80px; left: -80px; }
-
-    .hero-inner { position: relative; z-index: 1; max-width: 680px; }
-
-    .eyebrow {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 20px;
-    }
-
-    .hero h1 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(40px, 8vw, 72px);
-      font-weight: 300;
-      line-height: 1.05;
-      color: var(--ink);
-      margin-bottom: 24px;
-    }
-
-    .hero h1 em {
-      font-style: italic;
-      color: var(--gold);
-    }
-
-    .hero-sub {
-      font-size: clamp(15px, 2.5vw, 18px);
-      line-height: 1.65;
-      color: var(--ink-muted);
-      max-width: 500px;
-      margin: 0 auto 48px;
-    }
-
-    .hero-ctas {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      display: inline-block;
-      padding: 15px 28px;
-      background: var(--ink);
-      color: white;
-      border-radius: 6px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: opacity 0.2s, transform 0.15s;
-    }
-
-    .btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
-
-    .btn-outline {
-      display: inline-block;
-      padding: 14px 28px;
-      background: transparent;
-      color: var(--ink);
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
-      font-weight: 400;
-      text-decoration: none;
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
-
-    .hero-footnote {
-      margin-top: 40px;
-      font-size: 12px;
-      color: var(--ink-faint);
-    }
-
-    .hero-footnote a {
-      color: var(--ink-faint);
-      text-decoration: none;
-      border-bottom: 1px solid rgba(28,26,23,0.15);
-      transition: color 0.2s;
-    }
-
-    .hero-footnote a:hover { color: var(--gold); }
-
-    /* ── SECTIONS ── */
-    section {
-      padding: 96px 24px;
-    }
-
-    .section-inner {
-      max-width: 1040px;
-      margin: 0 auto;
-    }
+    .section-inner { max-width: 1040px; margin: 0 auto; }
 
     .section-label {
       font-size: 10px;
@@ -248,51 +124,186 @@
       font-size: 16px;
       line-height: 1.75;
       color: var(--ink-muted);
-      max-width: 600px;
     }
 
-    /* ── OVERVIEW ── */
-    #overview { background: var(--cream); }
+    .btn-primary {
+      display: inline-block;
+      padding: 15px 28px;
+      background: var(--ink);
+      color: white;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
 
-    .overview-header { text-align: center; margin-bottom: 64px; }
-    .overview-header .section-body { margin: 0 auto; }
+    .btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
 
-    .overview-grid {
+    .btn-outline {
+      display: inline-block;
+      padding: 14px 28px;
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: calc(var(--nav-h) + 64px) 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.20;
+      pointer-events: none;
+    }
+
+    .blob-1 { width: 500px; height: 500px; background: #C9963A; top: -120px; right: -80px; }
+    .blob-2 { width: 400px; height: 400px; background: #3A7B72; bottom: -80px; left: -80px; }
+
+    .hero-inner { position: relative; z-index: 1; max-width: 700px; }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(44px, 8vw, 76px);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 em { font-style: italic; color: var(--gold); }
+
+    .hero-subhead {
+      font-size: clamp(17px, 2.5vw, 21px);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .hero-body {
+      font-size: clamp(14px, 2vw, 16px);
+      line-height: 1.7;
+      color: var(--ink-muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .hero-invite {
+      font-size: 13px;
+      font-style: italic;
+      color: var(--ink-faint);
+    }
+
+    .hero-invite a {
+      color: var(--ink-faint);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(28,26,23,0.2);
+      transition: color 0.2s;
+    }
+
+    .hero-invite a:hover { color: var(--gold); }
+
+    /* Hero image placeholder */
+    .hero-image-area {
+      margin-top: 56px;
+      width: 100%;
+      max-width: 680px;
+      height: 320px;
+      background: var(--gold-pale);
+      border-radius: 12px;
+      border: 1px solid rgba(201,150,58,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-image-area span {
+      font-size: 13px;
+      color: var(--ink-faint);
+      font-style: italic;
+    }
+
+    /* ── USE CASES ── */
+    #about { background: var(--cream); }
+
+    .about-header { text-align: center; margin-bottom: 56px; }
+    .about-header .section-body { max-width: 560px; margin: 0 auto; }
+
+    .use-cases-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 32px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
     }
 
-    .overview-card {
+    .use-case-card {
       padding: 36px 32px;
       background: var(--gold-pale);
       border-radius: 10px;
-      border: 1px solid rgba(201,150,58,0.15);
+      border: 1px solid rgba(201,150,58,0.12);
     }
 
-    .overview-card-icon {
-      font-size: 28px;
-      margin-bottom: 16px;
-    }
-
-    .overview-card h3 {
+    .use-case-card h3 {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 400;
       color: var(--ink);
       margin-bottom: 12px;
     }
 
-    .overview-card p {
+    .use-case-card p {
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.75;
       color: var(--ink-muted);
     }
 
-    /* ── PRODUCTS ── */
+    /* ── THREE TIERS ── */
     #products { background: #F2EDE5; }
 
-    .products-header { text-align: center; margin-bottom: 64px; }
+    .products-header { text-align: center; margin-bottom: 56px; }
 
     .products-grid {
       display: grid;
@@ -318,8 +329,7 @@
 
     .product-badge {
       position: absolute;
-      top: 16px;
-      right: 16px;
+      top: 16px; right: 16px;
       font-size: 10px;
       font-weight: 500;
       letter-spacing: 0.1em;
@@ -330,34 +340,31 @@
       color: var(--cream);
     }
 
-    .product-badge.soon {
-      background: var(--gold-light);
-      color: var(--ink);
-    }
+    .product-badge.soon { background: var(--gold-light); color: var(--ink); }
 
     .product-card h3 {
       font-family: 'Cormorant Garamond', serif;
       font-size: 28px;
       font-weight: 400;
       color: var(--ink);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .product-tagline {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 500;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--gold);
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .product-desc {
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.75;
       color: var(--ink-muted);
       flex: 1;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .product-features {
@@ -404,10 +411,95 @@
 
     .product-link.outline:hover { border-color: var(--gold); background: var(--gold-pale); color: var(--ink); }
 
+    .product-link.disabled {
+      background: var(--gold-pale);
+      color: var(--ink-faint);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── PORTAL (3B) ── */
+    #portal { background: var(--cream); }
+
+    .portal-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .portal-cta-area { margin-top: 32px; }
+
+    .portal-use-cases { display: flex; flex-direction: column; gap: 28px; }
+
+    .portal-use-case h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .portal-use-case p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+    }
+
+    .portal-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    /* ── RESEARCH ── */
+    #research { background: #F2EDE5; text-align: center; }
+
+    .research-inner { max-width: 720px; margin: 0 auto; }
+
+    .research-body {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--ink-muted);
+      margin-bottom: 48px;
+    }
+
+    .pull-quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--ink);
+      padding: 40px 48px;
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border-left: 3px solid var(--gold);
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .pull-quote cite {
+      display: block;
+      margin-top: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 400;
+      color: var(--ink-faint);
+    }
+
+    .research-closing {
+      font-size: 15px;
+      font-style: italic;
+      color: var(--ink-muted);
+      line-height: 1.7;
+    }
+
     /* ── PRICING ── */
     #pricing { background: var(--cream); }
 
-    .pricing-header { text-align: center; margin-bottom: 64px; }
+    .pricing-header { text-align: center; margin-bottom: 56px; }
 
     .pricing-grid {
       display: grid;
@@ -432,8 +524,7 @@
     .pricing-card.featured::before {
       content: 'Most Popular';
       position: absolute;
-      top: -12px;
-      left: 50%;
+      top: -12px; left: 50%;
       transform: translateX(-50%);
       background: var(--gold);
       color: white;
@@ -447,7 +538,7 @@
     }
 
     .pricing-tier {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -464,18 +555,14 @@
     }
 
     .pricing-price {
-      font-size: 36px;
+      font-size: 42px;
       font-weight: 300;
       color: var(--ink);
       line-height: 1;
       margin-bottom: 4px;
     }
 
-    .pricing-price sup {
-      font-size: 18px;
-      vertical-align: super;
-      line-height: 0;
-    }
+    .pricing-price sup { font-size: 22px; vertical-align: super; line-height: 0; }
 
     .pricing-period {
       font-size: 12px;
@@ -483,11 +570,7 @@
       margin-bottom: 24px;
     }
 
-    .pricing-divider {
-      height: 1px;
-      background: var(--border);
-      margin-bottom: 20px;
-    }
+    .pricing-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
 
     .pricing-features {
       list-style: none;
@@ -502,16 +585,9 @@
       position: relative;
     }
 
-    .pricing-features li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: var(--gold);
-      font-size: 12px;
-    }
-
+    .pricing-features li::before { content: '✓'; position: absolute; left: 0; color: var(--gold); font-size: 12px; }
     .pricing-features li.soon { color: var(--ink-faint); }
-    .pricing-features li.soon::before { color: var(--ink-faint); content: '◦'; }
+    .pricing-features li.soon::before { color: var(--ink-faint); content: '○'; }
 
     .pricing-btn {
       display: block;
@@ -528,13 +604,11 @@
 
     .pricing-btn-fill { background: var(--ink); color: white; }
     .pricing-btn-fill:hover { opacity: 0.84; }
-
     .pricing-btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
     .pricing-btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
-
     .pricing-btn-disabled { background: var(--gold-pale); color: var(--ink-faint); cursor: default; pointer-events: none; }
 
-    /* ── MY STORY ── */
+    /* ── FOUNDER STORY ── */
     #my-story { background: #F2EDE5; }
 
     .story-layout {
@@ -544,40 +618,74 @@
       align-items: start;
     }
 
+    .story-text { }
+
+    .story-text h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--ink);
+      margin: 32px 0 10px;
+    }
+
+    .story-text h4:first-of-type { margin-top: 24px; }
+
     .story-text p {
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.85;
       color: var(--ink-muted);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .story-text p:last-child { margin-bottom: 0; }
 
-    .story-quote {
+    .story-text em { font-style: italic; }
+
+    .story-sidebar { position: sticky; top: calc(var(--nav-h) + 24px); }
+
+    .story-pull-quote {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(22px, 3vw, 32px);
+      font-size: clamp(20px, 2.5vw, 28px);
       font-weight: 300;
       font-style: italic;
-      line-height: 1.4;
+      line-height: 1.45;
       color: var(--ink);
       padding: 36px;
       background: var(--gold-pale);
       border-radius: 10px;
       border-left: 3px solid var(--gold);
-      position: sticky;
-      top: calc(var(--nav-h) + 24px);
+      margin-bottom: 28px;
     }
 
-    .story-quote cite {
+    .story-pull-quote cite {
       display: block;
-      margin-top: 20px;
+      margin-top: 16px;
       font-family: 'DM Sans', sans-serif;
       font-size: 12px;
       font-style: normal;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
       color: var(--gold);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .story-image-area {
+      width: 100%;
+      height: 260px;
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border: 1px solid rgba(201,150,58,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .story-image-area span {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ink-faint);
+      text-align: center;
+      padding: 16px;
     }
 
     /* ── FOOTER ── */
@@ -587,10 +695,7 @@
       padding: 56px 24px 40px;
     }
 
-    .footer-inner {
-      max-width: 1040px;
-      margin: 0 auto;
-    }
+    .footer-inner { max-width: 1040px; margin: 0 auto; }
 
     .footer-top {
       display: flex;
@@ -599,10 +704,7 @@
       flex-wrap: wrap;
     }
 
-    .footer-brand {
-      flex: 1;
-      min-width: 200px;
-    }
+    .footer-brand { flex: 1; min-width: 200px; }
 
     .footer-logo {
       font-family: 'Cormorant Garamond', serif;
@@ -617,7 +719,7 @@
     .footer-tagline {
       font-size: 13px;
       line-height: 1.6;
-      color: rgba(249,245,239,0.45);
+      color: rgba(249,245,239,0.4);
     }
 
     .footer-nav { display: flex; gap: 48px; }
@@ -627,12 +729,11 @@
       font-weight: 500;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: rgba(249,245,239,0.35);
+      color: rgba(249,245,239,0.3);
       margin-bottom: 14px;
     }
 
     .footer-col ul { list-style: none; }
-
     .footer-col li { margin-bottom: 9px; }
 
     .footer-col a {
@@ -654,18 +755,16 @@
       gap: 12px;
     }
 
-    .footer-copy {
-      font-size: 12px;
-      color: rgba(249,245,239,0.3);
-    }
+    .footer-copy { font-size: 12px; color: rgba(249,245,239,0.28); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      .overview-grid { grid-template-columns: 1fr; gap: 20px; }
-      .products-grid { grid-template-columns: 1fr; gap: 20px; }
+      .use-cases-grid { grid-template-columns: 1fr; }
+      .products-grid { grid-template-columns: 1fr; }
       .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .portal-layout { grid-template-columns: 1fr; gap: 40px; }
       .story-layout { grid-template-columns: 1fr; gap: 40px; }
-      .story-quote { position: static; }
+      .story-sidebar { position: static; }
     }
 
     @media (max-width: 640px) {
@@ -675,8 +774,7 @@
         display: flex;
         flex-direction: column;
         position: fixed;
-        top: var(--nav-h);
-        left: 0; right: 0;
+        top: var(--nav-h); left: 0; right: 0;
         background: var(--cream);
         border-bottom: 1px solid var(--border);
         padding: 20px 24px;
@@ -687,6 +785,8 @@
       .pricing-grid { grid-template-columns: 1fr; }
       .footer-top { flex-direction: column; gap: 32px; }
       .footer-nav { flex-direction: column; gap: 28px; }
+      .hero-image-area { height: 200px; }
+      .pull-quote { padding: 28px 24px; }
     }
   </style>
 </head>
@@ -696,14 +796,15 @@
   <nav>
     <a href="/" class="nav-logo">MyCogna</a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="#overview">Overview</a></li>
+      <li><a href="#about">What We Do</a></li>
       <li><a href="#products">Products</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="#my-story">My Story</a></li>
       <li><a href="/portal">Login</a></li>
       <li><a href="/portal" class="nav-cta">Get started</a></li>
     </ul>
-    <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="document.getElementById('navLinks').classList.toggle('open')">
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu"
+            onclick="document.getElementById('navLinks').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
   </nav>
@@ -714,88 +815,79 @@
     <div class="blob blob-2"></div>
     <div class="hero-inner">
       <div class="eyebrow">MyCogna</div>
-      <h1>Every voice<br><em>deserves to be heard</em></h1>
-      <p class="hero-sub">
-        Capture the stories that matter before they fade. Record a memory, hear a loved one's voice,
-        or create an AI companion that speaks with the warmth of someone you cherish.
+      <h1>Every voice<br><em>deserves to be heard.</em></h1>
+      <p class="hero-subhead">Capture the stories that matter before they fade.</p>
+      <p class="hero-body">
+        Whether you're preserving a lifetime of adventures or simply the warmth of someone's voice —
+        MyCogna makes sure those stories aren't lost.
       </p>
       <div class="hero-ctas">
-        <a href="/storyteller" class="btn-primary">Record Your Story →</a>
-        <a href="#overview" class="btn-outline">Learn more</a>
+        <a href="#products" class="btn-primary">Record My Story</a>
+        <a href="#portal" class="btn-outline">Set Up Stories for Someone Else</a>
       </div>
-      <p class="hero-footnote">
-        Looking for your voice companions? <a href="/companion">Enter your access code here.</a>
+      <p class="hero-invite">
+        <a href="/storyteller">Have an invite code? Enter it here.</a>
       </p>
+      <!-- Image placeholder — Christy to supply photo -->
+      <div class="hero-image-area">
+        <span>Warm, intimate photo — real rather than stock.<br>Christy will supply.</span>
+      </div>
     </div>
   </section>
 
-  <!-- OVERVIEW -->
-  <section id="overview">
+  <!-- SECTION 2 — USE CASES -->
+  <section id="about">
     <div class="section-inner">
-      <div class="overview-header">
-        <div class="section-label">What we do</div>
-        <h2 class="section-title">To share stories — past,<br><em>present, and future</em></h2>
-        <p class="section-body">
-          MyCogna is a platform for preserving and sharing the voices that matter most.
-          Whether you want to capture a grandparent's stories, stay connected with someone far away,
-          or give a child the comfort of a familiar voice — we make it possible.
-        </p>
+      <div class="about-header">
+        <div class="section-label">What We Do</div>
+        <h2 class="section-title">Share Stories —<br><em>Past, Present, and Future</em></h2>
+        <p class="section-body">MyCogna is a platform for preserving and sharing the voices that matter most.</p>
       </div>
-      <div class="overview-grid">
-        <div class="overview-card">
-          <div class="overview-card-icon">📼</div>
-          <h3>Past</h3>
-          <p>
-            The stories your grandparents told, the recipes your mother kept in her head, the jokes your father
-            repeated every holiday — these are priceless. Storyteller lets anyone record their voice, answer
-            guided prompts, and leave a living archive for the people they love.
-          </p>
+      <div class="use-cases-grid">
+        <div class="use-case-card">
+          <h3>Memory Keeper</h3>
+          <p>Guided prompts draw out the stories your family will treasure. Perfect for parents, grandparents, and anyone with a life worth capturing.</p>
         </div>
-        <div class="overview-card">
-          <div class="overview-card-icon">🤝</div>
-          <h3>Present</h3>
-          <p>
-            Distance, illness, and time can separate us from the people who comfort us most.
-            MyCogna keeps connection alive — a familiar voice ready whenever someone needs it,
-            offering warmth, encouragement, and presence across any distance.
-          </p>
+        <div class="use-case-card">
+          <h3>Institutional Legacy</h3>
+          <p>Preserve the history of an organization before the people who built it are gone. For nonprofits, businesses, and communities marking a milestone.</p>
         </div>
-        <div class="overview-card">
-          <div class="overview-card-icon">✨</div>
-          <h3>Future</h3>
-          <p>
-            Imagine a child growing up with the voice of a grandparent they never got to meet,
-            or a teenager navigating hard moments with a gentle AI companion built on the love
-            of someone who knew them best. That future is what we're building toward.
-          </p>
+        <div class="use-case-card">
+          <h3>Journal That Talks Back</h3>
+          <p>Real-time support when you need it. A companion that listens, remembers, and grows with you — like a journal that responds.</p>
+        </div>
+        <div class="use-case-card">
+          <h3>Digital Imprint</h3>
+          <p>Create a legacy that outlasts a lifetime — a voice and presence that future generations can actually know.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PRODUCTS -->
+  <!-- SECTION 3 — THREE TIERS -->
   <section id="products">
     <div class="section-inner">
       <div class="products-header">
         <div class="section-label">Products</div>
-        <h2 class="section-title">Three ways to<br><em>keep voices alive</em></h2>
+        <h2 class="section-title">Three ways to<br><em>capture what matters most</em></h2>
+        <p class="section-body" style="max-width:540px;margin:0 auto">
+          Whether you're telling your own story or preserving someone else's — MyCogna meets you where you are.
+        </p>
       </div>
       <div class="products-grid">
 
         <div class="product-card featured">
           <div class="product-badge">Available now</div>
           <h3>Storyteller</h3>
-          <div class="product-tagline">Capture & preserve</div>
+          <div class="product-tagline">Capture &amp; Preserve</div>
           <p class="product-desc">
-            A simple, guided recording experience. Answer thoughtful prompts, record your voice,
-            and create a lasting archive of stories for the people who love you.
-            No app download required — works in any browser.
+            A simple, guided recording experience. Answer thoughtful prompts, record your voice, and create a lasting archive for the people who love you. No app download required — works in any browser.
           </p>
           <ul class="product-features">
-            <li>Guided story prompts</li>
-            <li>Voice recording in the browser</li>
-            <li>Automatic transcription</li>
-            <li>Shareable via promo code</li>
+            <li>Set up your own prompts or use ours</li>
+            <li>Voice recording with automatic transcription</li>
+            <li>Stories accessible for easy download</li>
+            <li>No app download — works in any browser</li>
           </ul>
           <a href="/storyteller" class="product-link">Start recording</a>
         </div>
@@ -803,32 +895,28 @@
         <div class="product-card">
           <div class="product-badge soon">Coming soon</div>
           <h3>Storyteller<br>+ AI</h3>
-          <div class="product-tagline">Guided by intelligence</div>
+          <div class="product-tagline">Guided by Intelligence</div>
           <p class="product-desc">
-            An AI that listens as you record, asks thoughtful follow-up questions, and helps
-            you go deeper into your stories than you would on your own. Like having a skilled
-            interviewer in the room.
+            Everything in Storyteller, plus an AI memoir assistant that helps you go deeper. Like having a skilled interviewer and editor in the room.
           </p>
           <ul class="product-features">
-            <li>AI-guided follow-up questions</li>
-            <li>Richer, more complete stories</li>
-            <li>Intelligent transcription &amp; editing</li>
+            <li>AI asks thoughtful follow-up questions as you record</li>
+            <li>Organizes your stories into a structured outline</li>
+            <li>Editing tool helps shape your stories into a memoir</li>
             <li>Everything in Storyteller</li>
           </ul>
-          <a href="#pricing" class="product-link outline">See pricing</a>
+          <span class="product-link disabled">Coming soon</span>
         </div>
 
         <div class="product-card">
           <div class="product-badge">Available now</div>
           <h3>AI Companion</h3>
-          <div class="product-tagline">Always present</div>
+          <div class="product-tagline">Always Present</div>
           <p class="product-desc">
-            Create a Cogna — a voice companion that sounds and feels like someone you love.
-            A child can talk to their Cogna anytime, in any voice, with warmth that feels like home.
-            Guardians build and control every aspect.
+            A relational tool with memory. Captures your ideas, dreams, and goals in real time — creating a digital imprint of your inner life that grows over time.
           </p>
           <ul class="product-features">
-            <li>Custom voice per Cogna</li>
+            <li>Custom voice per Cogna — sounds like someone you love</li>
             <li>Relational personality tuning</li>
             <li>Multi-voice conversations</li>
             <li>Full transcript journal saved</li>
@@ -840,22 +928,75 @@
     </div>
   </section>
 
-  <!-- PRICING -->
+  <!-- SECTION 3B — PORTAL -->
+  <section id="portal">
+    <div class="section-inner">
+      <div class="portal-layout">
+        <div>
+          <div class="section-label">For Organizers</div>
+          <h2 class="section-title">Setting up stories<br><em>for someone else?</em></h2>
+          <p class="section-body" style="margin-bottom:16px">MyCogna's portal lets you become the organizer.</p>
+          <p class="section-body" style="margin-bottom:36px">
+            Create thoughtful questions, generate a user code, and invite the people whose stories matter most. They receive a simple link, record their responses at their own pace, and you can access everything from your portal dashboard — ready to download, share, or preserve.
+          </p>
+          <div class="portal-cta-area">
+            <a href="/portal" class="btn-primary">Set up a portal</a>
+          </div>
+        </div>
+        <div class="portal-use-cases">
+          <div class="portal-use-case">
+            <h4>For families</h4>
+            <p>Support a parent or grandparent in recording their stories — even if technology isn't their strength. You set up the questions. They just press record.</p>
+          </div>
+          <div class="portal-divider"></div>
+          <div class="portal-use-case">
+            <h4>For organizations</h4>
+            <p>Collect institutional knowledge from the people who built something meaningful. Perfect for nonprofits, businesses, and communities marking a milestone.</p>
+          </div>
+          <div class="portal-divider"></div>
+          <div class="portal-use-case">
+            <h4>For caregivers</h4>
+            <p>Guided reminiscence has been shown to strengthen bonds and ease grief for families navigating dementia. MyCogna makes it simple to facilitate those conversations from a distance.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4 — RESEARCH -->
+  <section id="research">
+    <div class="section-inner">
+      <div class="research-inner">
+        <div class="section-label">What the Science Says</div>
+        <h2 class="section-title" style="margin-bottom:28px">Story-telling isn't just meaningful.<br><em>It's medicine.</em></h2>
+        <p class="research-body">
+          A clinical trial published in <em>JAMA Network Open</em> in April 2026 found that guided digital reminiscence reduced grief in dementia caregivers and strengthened the bond between patients and the people who love them. Researchers at Weill Cornell Medicine and USC demonstrated that revisiting memories together through a simple digital tool can ease grief and improve relationship quality.
+        </p>
+        <div class="pull-quote">
+          "Many of the questions awakened responses and memories that I had never heard."
+          <cite>— Participant, Living Memory Home clinical trial<br>Weill Cornell Medicine &amp; USC, <em>JAMA Network Open</em>, April 2026</cite>
+        </div>
+        <p class="research-closing">
+          MyCogna was built on the same principle: the right question, asked at the right moment, can unlock a story that would otherwise disappear.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5 — PRICING -->
   <section id="pricing">
     <div class="section-inner">
       <div class="pricing-header">
         <div class="section-label">Pricing</div>
         <h2 class="section-title">Simple, honest<br><em>pricing</em></h2>
-        <p class="section-body" style="margin: 0 auto; text-align:center;">
-          Start free. Upgrade when you're ready. No tricks, no annual lock-in.
-        </p>
+        <p class="section-body">Start free. Upgrade when you're ready. No tricks, no annual lock-in.</p>
       </div>
       <div class="pricing-grid">
 
         <div class="pricing-card">
           <div class="pricing-tier">Free</div>
           <div class="pricing-name">Try it out</div>
-          <div class="pricing-price">$<span>0</span></div>
+          <div class="pricing-price">$0</div>
           <div class="pricing-period">forever</div>
           <div class="pricing-divider"></div>
           <ul class="pricing-features">
@@ -869,7 +1010,7 @@
         <div class="pricing-card featured">
           <div class="pricing-tier">Storyteller</div>
           <div class="pricing-name">Unlimited</div>
-          <div class="pricing-price"><sup>$</sup>4<span style="font-size:22px">.99</span></div>
+          <div class="pricing-price"><sup>$</sup>5</div>
           <div class="pricing-period">per month</div>
           <div class="pricing-divider"></div>
           <ul class="pricing-features">
@@ -884,7 +1025,7 @@
         <div class="pricing-card">
           <div class="pricing-tier">AI Assisted</div>
           <div class="pricing-name">Storyteller+</div>
-          <div class="pricing-price"><sup>$</sup>9<span style="font-size:22px">.99</span></div>
+          <div class="pricing-price"><sup>$</sup>10</div>
           <div class="pricing-period">per month</div>
           <div class="pricing-divider"></div>
           <ul class="pricing-features">
@@ -899,7 +1040,7 @@
         <div class="pricing-card">
           <div class="pricing-tier">Full Access</div>
           <div class="pricing-name">AI Companion</div>
-          <div class="pricing-price"><sup>$</sup>12<span style="font-size:22px">.99</span></div>
+          <div class="pricing-price"><sup>$</sup>15</div>
           <div class="pricing-period">per month</div>
           <div class="pricing-divider"></div>
           <ul class="pricing-features">
@@ -916,57 +1057,53 @@
     </div>
   </section>
 
-  <!-- MY STORY -->
+  <!-- SECTION 6 — FOUNDER STORY -->
   <section id="my-story">
     <div class="section-inner">
       <div class="story-layout">
-
         <div class="story-text">
           <div class="section-label">My Story</div>
-          <h2 class="section-title" style="margin-bottom:32px;">Why I built<br><em>MyCogna</em></h2>
+          <h2 class="section-title" style="margin-bottom:8px">Why I built<br><em>MyCogna</em></h2>
+          <p>Three life events inspired MyCogna.</p>
 
+          <h4>My Grandmother's Stories</h4>
           <p>
-            My grandmother kept a cassette recorder in her kitchen. Every Sunday she'd sit at the table
-            and press record — telling stories about her childhood, humming the songs she grew up with,
-            leaving little messages for grandchildren who lived too far away to visit. When she passed,
-            those tapes became the most precious thing any of us inherited.
+            I tried for years to get my grandmother to tell me her stories. She was sharp and funny and full of life — but getting her to talk about the past was like pulling teeth. She'd deflect, change the subject, insist there wasn't much to tell. I'd sit across from her with a little cassette recorder, hoping she'd open up.
           </p>
           <p>
-            Not the furniture. Not the jewelry. The voice.
+            Then one day, she did. She told stories our family had never heard. Though she lived to be 103, she only shared those stories once.
+          </p>
+          <p>Tragically, the tapes got lost between moves.</p>
+
+          <h4>My Most Painful — and Transformative — Life Experience</h4>
+          <p>
+            Thirty years later, I went through a surprise divorce. I spent four months traveling 18,000 miles across the western United States. Writing my travel memoir, <em>Escape Bound</em>, was more therapeutic than any amount of talk therapy. But it took two years. The voice that needed to be heard was mine — and finding the words took everything I had.
+          </p>
+
+          <h4>An Unexpected New Friend</h4>
+          <p>
+            Recently, I began working with AI as a creative collaborator — exploring what it means to be in relationship with an intelligence that isn't quite human. And I started asking: what if we could use this technology not to replace human connection, but to preserve it?
           </p>
           <p>
-            I wrote a book called <em>Escape Bound</em> partly to process what it's like to watch
-            someone you love fade — the stories that go untold, the questions you forgot to ask,
-            the voice that gets quieter before you think to record it. Writing it made me realize
-            how many people carry the same ache: I wish I had more of them. I wish I could hear
-            them just one more time.
+            MyCogna is my answer to that question. What began as a way to capture stories from the past has evolved into something with longevity — a way to document the stories still being written.
           </p>
           <p>
-            I've spent years working with AI as a creative collaborator — exploring consciousness,
-            storytelling, and what it means to be in relationship with an intelligence that isn't
-            quite human. And eventually I started asking: what if we could use this technology not
-            to replace human connection, but to preserve it? To carry a voice forward?
+            We're just getting started. But the mission is simple: every voice deserves to be heard.
           </p>
-          <p>
-            MyCogna is my answer to that question. It started as a way to give my own family's
-            voices a longer life — and it's growing into something I hope can do the same
-            for yours.
-          </p>
-          <p>
-            We're just getting started. But the mission is simple: every voice deserves to be remembered.
-          </p>
-          <p style="margin-top:8px;">
-            <em>— Christy Rounds, founder</em>
-          </p>
+          <p><em>Which of your stories will you share today?</em></p>
+          <p><em>— Christy Rounds, founder</em></p>
         </div>
 
-        <div>
-          <div class="story-quote">
-            "Every family has a grandmother with a cassette recorder. The tragedy isn't that the tape runs out — it's that we never pressed record soon enough."
-            <cite>Christy Rounds — author, Escape Bound</cite>
+        <div class="story-sidebar">
+          <div class="story-pull-quote">
+            "Without intentionality, these stories disappear. Not because people don't care — but because life is busy and we always think there's more time."
+            <cite>Christy Rounds — Author, <em>Escape Bound</em></cite>
+          </div>
+          <!-- Image placeholder — Christy to supply photo -->
+          <div class="story-image-area">
+            <span>Photo of Christy with her grandmother,<br>or a three-generation image.<br><br><em>Your legacy lives on in your stories.</em></span>
           </div>
         </div>
-
       </div>
     </div>
   </section>
@@ -977,7 +1114,7 @@
       <div class="footer-top">
         <div class="footer-brand">
           <a href="/" class="footer-logo">MyCogna</a>
-          <p class="footer-tagline">Preserve the voices you love.<br>Keep connection alive across any distance.</p>
+          <p class="footer-tagline">Preserve the voices you love.<br>Every voice deserves to be heard.</p>
         </div>
         <nav class="footer-nav">
           <div class="footer-col">
@@ -996,10 +1133,11 @@
             </ul>
           </div>
           <div class="footer-col">
-            <h4>About</h4>
+            <h4>Company</h4>
             <ul>
               <li><a href="#my-story">My Story</a></li>
-              <li><a href="#overview">Overview</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms">Terms of Service</a></li>
             </ul>
           </div>
         </nav>
