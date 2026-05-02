@@ -208,6 +208,7 @@ class StorySignupRequest(BaseModel):
     email: str
     password: str
     first_name: str = ""
+    last_name: str = ""
 
 
 class StoryLoginRequest(BaseModel):
@@ -839,7 +840,7 @@ def storyteller_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_storyteller_user(authorization)
     prompts = _get_active_prompts()
     return {
-        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "signup_code": user.get("signup_code", "")},
+        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", "")},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -882,6 +883,7 @@ def storyteller_signup(payload: StorySignupRequest):
         "id": user_id,
         "email": email,
         "first_name": payload.first_name.strip(),
+        "last_name": payload.last_name.strip(),
         "password_salt": salt,
         "password_hash": pw_hash,
         "signup_code": code,
@@ -908,7 +910,7 @@ def storyteller_signup(payload: StorySignupRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": payload.first_name.strip(), "signup_code": code or ""},
+        "user": {"email": email, "first_name": payload.first_name.strip(), "last_name": payload.last_name.strip(), "signup_code": code or ""},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -927,7 +929,7 @@ def storyteller_login(payload: StoryLoginRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": user.get("first_name", ""), "signup_code": user.get("signup_code", "")},
+        "user": {"email": email, "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", "")},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 

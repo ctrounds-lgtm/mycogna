@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS storyteller_users (
   id                     TEXT PRIMARY KEY,
   email                  TEXT NOT NULL UNIQUE,
   first_name             TEXT NOT NULL DEFAULT '',
+  last_name              TEXT NOT NULL DEFAULT '',
   password_salt          TEXT NOT NULL,
   password_hash          TEXT NOT NULL,
   signup_code            TEXT REFERENCES promo_codes(code),
@@ -121,8 +122,9 @@ CREATE TABLE IF NOT EXISTS storyteller_users (
   created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Add first_name to existing tables
+-- Add name columns to existing tables
 ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS last_name TEXT NOT NULL DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS storyteller_users_email_idx ON storyteller_users(email);
 

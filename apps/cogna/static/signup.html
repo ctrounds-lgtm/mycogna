@@ -252,6 +252,11 @@
           </div>
 
           <div class="field">
+            <label for="lastName">Last name</label>
+            <input type="text" id="lastName" name="lastName" placeholder="Your last name" autocomplete="family-name" required />
+          </div>
+
+          <div class="field">
             <label for="email">Email address</label>
             <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required />
           </div>
@@ -308,6 +313,7 @@
       errEl.className = 'error-msg';
 
       const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const confirm = document.getElementById('confirm').value;
@@ -324,7 +330,7 @@
       btn.textContent = 'Creating account…';
 
       try {
-        const body = { first_name: firstName, email, password };
+        const body = { first_name: firstName, last_name: lastName, email, password };
         if (userCode) body.user_code = userCode;
 
         const res = await fetch('/api/storyteller/signup', {
@@ -345,6 +351,7 @@
         localStorage.setItem('st_token', data.token);
         localStorage.setItem('st_email', data.user.email);
         localStorage.setItem('st_first_name', data.user.first_name || '');
+        localStorage.setItem('st_last_name', data.user.last_name || '');
 
         window.location.href = '/storyteller';
       } catch (err) {
