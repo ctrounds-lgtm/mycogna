@@ -543,6 +543,7 @@ const portal = {
       req(`${api}/cognas`, { headers: authHeaders() })
         .then(d => renderCognaGrid(d.cognas))
         .catch(err => console.error(err.message));
+      portal.loadUsage();
     }
   },
 
@@ -570,6 +571,30 @@ const portal = {
 
   // Legacy alias
   async loadStories() { return portal.loadStoryPanel('A'); },
+
+  async loadUsage() {
+    try {
+      const data = await req(`${api}/auth/usage`, { headers: authHeaders() });
+      const pct = Math.min(100, data.percent_used || 0);
+      document.getElementById('usageLabel').textContent =
+        `${data.used_minutes} / ${data.cap_minutes} min`;
+      const bar = document.getElementById('usageBar');
+      bar.style.width = pct + '%';
+      bar.style.background = pct >= 100 ? '#C45E4A' : pct >= 80 ? '#E8A84C' : 'var(--gold)';
+      const warning = document.getElementById('usageWarning');
+      if (pct >= 80) {
+        warning.style.display = 'block';
+        warning.textContent = pct >= 100
+          ? `Monthly limit reached (${data.cap_minutes} min). Conversations are paused until the 1st of next month.`
+          : `Approaching your monthly limit — ${data.remaining_minutes} minutes remaining.`;
+        warning.style.color = pct >= 100 ? '#C45E4A' : '#8a6a1a';
+      } else {
+        warning.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('loadUsage error:', err.message);
+    }
+  },
 
   _renderPromoCodes(codes, tier) {
     const suffix = tier || 'A';

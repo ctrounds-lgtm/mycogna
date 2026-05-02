@@ -215,6 +215,20 @@
         <p class="access-code-hint">Give this code to the person using MyCogna. They'll enter it in the app to access all the voices you've built.</p>
       </div>
 
+      <!-- Usage meter -->
+      <div id="usageMeter" style="margin-bottom:32px;padding:20px;background:rgba(255,255,255,0.5);border:1px solid var(--border);border-radius:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:500;color:var(--ink)">Conversation minutes this month</span>
+          <span id="usageLabel" style="font-size:13px;color:var(--ink-muted)">Loading…</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div id="usageBar" style="height:100%;width:0%;background:var(--gold);border-radius:3px;transition:width 0.4s"></div>
+        </div>
+        <div id="usageWarning" style="display:none;margin-top:10px;font-size:12px;color:#C45E4A">
+          ⚠ Approaching your monthly limit. Sessions will pause when you reach 60 minutes.
+        </div>
+      </div>
+
       <div class="section-header-row">
         <h2 class="section-title">Your Cognas</h2>
         <button class="add-btn" onclick="portal.showCreateCogna()">+ Add a Cogna</button>

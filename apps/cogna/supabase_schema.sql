@@ -137,6 +137,16 @@ CREATE INDEX IF NOT EXISTS storyteller_users_email_idx ON storyteller_users(emai
 -- Link recordings to accounts (nullable for pre-auth recordings)
 ALTER TABLE story_recordings ADD COLUMN IF NOT EXISTS storyteller_user_id TEXT REFERENCES storyteller_users(id);
 
+-- Monthly usage tracking for AI Companion (D-tier)
+CREATE TABLE IF NOT EXISTS usage_tracking (
+  id          TEXT PRIMARY KEY,
+  user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+  month       TEXT NOT NULL,  -- "YYYY-MM"
+  minutes     REAL NOT NULL DEFAULT 0,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, month)
+);
+
 -- Storage bucket for story audio files
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('story-audio', 'story-audio', true)

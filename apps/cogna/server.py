@@ -99,6 +99,7 @@ HUME_CONFIG_ID = os.getenv("HUME_CONFIG_ID", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM = os.getenv("RESEND_FROM", "MyCogna <noreply@mycogna.org>")
 APP_URL = os.getenv("APP_URL", "https://mycogna.org")
+COMPANION_MONTHLY_MINUTES = int(os.getenv("COMPANION_MONTHLY_MINUTES", "60"))
 if resend_sdk and RESEND_API_KEY:
     resend_sdk.api_key = RESEND_API_KEY
 
@@ -349,6 +350,20 @@ def auth_login(payload: FamilyLoginRequest):
 def auth_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_user(authorization)
     return {"user": _public_user(user)}
+
+
+@app.get("/api/auth/usage")
+def get_usage(authorization: Optional[str] = Header(default=None)):
+    user = _auth_user(authorization)
+    month = _current_month()
+    used = _get_usage(user["email"], month)
+    return {
+        "month": month,
+        "used_minutes": round(used, 1),
+        "cap_minutes": COMPANION_MONTHLY_MINUTES,
+        "remaining_minutes": max(0.0, round(COMPANION_MONTHLY_MINUTES - used, 1)),
+        "percent_used": min(100, round((used / COMPANION_MONTHLY_MINUTES) * 100, 1)),
+    }
 
 
 @app.get("/api/auth/me/access-code")
@@ -661,6 +676,18 @@ async def evi_session(payload: EviSessionRequest):
 
     cogna = _get_cogna(payload.cogna_id)
 
+    # Check monthly usage cap before issuing a session token
+    owner_email = cogna.get("owner_email", "")
+    if owner_email:
+        month = _current_month()
+        used = _get_usage(owner_email, month)
+        if used >= COMPANION_MONTHLY_MINUTES:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Monthly conversation limit reached ({COMPANION_MONTHLY_MINUTES} minutes). "
+                       f"Usage resets on the 1st of next month.",
+            )
+
     # Require guardian consent before starting any EVI session
     if not (cogna.get("hume_consent") or {}).get("accepted"):
         raise HTTPException(
@@ -708,8 +735,13 @@ async def evi_session(payload: EviSessionRequest):
         "api_key": None if access_token else HUME_API_KEY,
         "config_id": cogna.get("hume_config_id") or HUME_CONFIG_ID or None,
         "system_prompt": system_prompt,
-        "voice_id": custom_voice_id,       # None until voice is cloned on Hume
-        "default_voice": default_voice,    # Named Hume voice used as fallback
+        "voice_id": custom_voice_id,
+        "default_voice": default_voice,
+        "usage": {
+            "used_minutes": round(used, 1),
+            "cap_minutes": COMPANION_MONTHLY_MINUTES,
+            "warning": used >= COMPANION_MONTHLY_MINUTES * 0.8,
+        },
     }
 
 
@@ -823,6 +855,18 @@ def save_session(payload: SaveSessionRequest):
         transcript=payload.transcript,
         duration_seconds=payload.duration_seconds,
     )
+
+    # Record usage against the cogna owner's account
+    if payload.cogna_ids and payload.duration_seconds > 0:
+        try:
+            cogna = _get_cogna(payload.cogna_ids[0])
+            owner_email = cogna.get("owner_email", "")
+            if owner_email:
+                minutes = payload.duration_seconds / 60.0
+                _add_usage(owner_email, _current_month(), minutes)
+        except Exception:
+            pass  # Never fail a session save due to usage tracking
+
     return {"ok": True, "session_id": session_id}
 
 
@@ -1715,6 +1759,54 @@ def _generate_child_access_code(tier: str = "D") -> str:
     if tier == "D":
         return f"D-{suffix}"
     return f"COGNA-{suffix}"
+
+
+# ----------------------------------------------------
+# Usage tracking helpers (AI Companion minute cap)
+# ----------------------------------------------------
+
+def _current_month() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
+
+def _get_usage(email: str, month: str) -> float:
+    if supabase:
+        r = (supabase.table("usage_tracking")
+             .select("minutes")
+             .eq("user_email", email)
+             .eq("month", month)
+             .limit(1)
+             .execute())
+        return float(r.data[0]["minutes"]) if r.data else 0.0
+    db = _load_db()
+    key = f"{email}|{month}"
+    return float(db.get("usage_tracking", {}).get(key, {}).get("minutes", 0.0))
+
+
+def _add_usage(email: str, month: str, minutes: float):
+    if minutes <= 0:
+        return
+    if supabase:
+        existing = _get_usage(email, month)
+        uid = f"usage_{email}_{month}".replace("@", "_").replace(".", "_")
+        if existing > 0:
+            (supabase.table("usage_tracking")
+             .update({"minutes": existing + minutes, "updated_at": _utc_now()})
+             .eq("user_email", email).eq("month", month)
+             .execute())
+        else:
+            (supabase.table("usage_tracking")
+             .insert({"id": uid, "user_email": email, "month": month, "minutes": minutes})
+             .execute())
+    else:
+        db = _load_db()
+        if "usage_tracking" not in db:
+            db["usage_tracking"] = {}
+        key = f"{email}|{month}"
+        entry = db["usage_tracking"].get(key, {"minutes": 0.0})
+        entry["minutes"] = entry["minutes"] + minutes
+        db["usage_tracking"][key] = entry
+        _save_db(db)
 
 
 def _generate_cogna_audio(cogna: Dict[str, Any], text: str) -> str:
