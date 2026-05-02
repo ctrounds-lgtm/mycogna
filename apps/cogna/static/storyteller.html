@@ -668,6 +668,9 @@
             body: JSON.stringify({ user_code: stState.userCode, email, password }),
           });
           stState.authToken = result.token;
+          localStorage.setItem('st_token', result.token);
+          localStorage.setItem('st_email', result.user.email);
+          localStorage.setItem('st_first_name', result.user.first_name || '');
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
@@ -702,6 +705,9 @@
             body: JSON.stringify({ email, password }),
           });
           stState.authToken = result.token;
+          localStorage.setItem('st_token', result.token);
+          localStorage.setItem('st_email', result.user.email);
+          localStorage.setItem('st_first_name', result.user.first_name || '');
           stState.prompts = result.prompts || [];
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
@@ -938,14 +944,42 @@
       },
     };
 
-    // On load: check for reset token in URL
-    window.addEventListener('load', () => {
+    // On load: check for reset token, then check stored auth
+    window.addEventListener('load', async () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get('reset_token')) {
         showScreen('screenResetConfirm');
-      } else {
-        showScreen('screenEntry');
+        return;
       }
+
+      const storedToken = localStorage.getItem('st_token');
+      if (storedToken) {
+        try {
+          const res = await fetch(API + '/me', {
+            headers: { 'Authorization': 'Bearer ' + storedToken },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            stState.authToken = storedToken;
+            stState.prompts = data.prompts || [];
+            stState.currentPromptIndex = 0;
+            stState.transcripts = [];
+            if (stState.prompts.length > 0) {
+              st._showCurrentPrompt();
+              showScreen('screenRecord');
+              return;
+            }
+          } else {
+            localStorage.removeItem('st_token');
+            localStorage.removeItem('st_email');
+            localStorage.removeItem('st_first_name');
+          }
+        } catch (_) {
+          // Network error — fall through to entry screen
+        }
+      }
+
+      showScreen('screenEntry');
     });
   </script>
 </body>

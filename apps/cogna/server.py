@@ -204,9 +204,10 @@ class PromoCodeCreate(BaseModel):
 
 
 class StorySignupRequest(BaseModel):
-    user_code: str
+    user_code: Optional[str] = None
     email: str
     password: str
+    first_name: str = ""
 
 
 class StoryLoginRequest(BaseModel):
@@ -253,6 +254,16 @@ def companion():
 @app.get("/storyteller")
 def storyteller():
     return FileResponse(ROOT / "static" / "storyteller.html")
+
+
+@app.get("/signup")
+def signup_page():
+    return FileResponse(ROOT / "static" / "signup.html")
+
+
+@app.get("/login")
+def login_page():
+    return FileResponse(ROOT / "static" / "login.html")
 
 
 @app.get("/api/health")
@@ -823,6 +834,16 @@ def list_sessions(
 # Storyteller endpoints (no auth required for capture)
 # ----------------------------------------------------
 
+@app.get("/api/storyteller/me")
+def storyteller_me(authorization: Optional[str] = Header(default=None)):
+    user = _auth_storyteller_user(authorization)
+    prompts = _get_active_prompts()
+    return {
+        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "signup_code": user.get("signup_code", "")},
+        "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
+    }
+
+
 @app.post("/api/storyteller/validate")
 def storyteller_validate(payload: StoryValidateRequest):
     code = payload.user_code.strip().upper()
@@ -837,10 +858,12 @@ def storyteller_validate(payload: StoryValidateRequest):
 
 @app.post("/api/storyteller/signup")
 def storyteller_signup(payload: StorySignupRequest):
-    code = payload.user_code.strip().upper()
-    pc = _get_promo_code(code)
-    if not pc:
-        raise HTTPException(status_code=404, detail="User code not found or inactive")
+    # Validate user code if provided
+    code = payload.user_code.strip().upper() if payload.user_code else None
+    if code:
+        pc = _get_promo_code(code)
+        if not pc:
+            raise HTTPException(status_code=404, detail="User code not found or inactive")
 
     email = payload.email.strip().lower()
     if not email or "@" not in email:
@@ -858,6 +881,7 @@ def storyteller_signup(payload: StorySignupRequest):
     user = {
         "id": user_id,
         "email": email,
+        "first_name": payload.first_name.strip(),
         "password_salt": salt,
         "password_hash": pw_hash,
         "signup_code": code,
@@ -866,24 +890,25 @@ def storyteller_signup(payload: StorySignupRequest):
     _create_storyteller_user(user)
 
     # Transfer any existing recordings for this code to the new account
-    if supabase:
-        (supabase.table("story_recordings")
-            .update({"storyteller_user_id": user_id})
-            .eq("promo_code", code)
-            .is_("storyteller_user_id", "null")
-            .execute())
-    else:
-        db = _load_db()
-        for rec in db["story_recordings"].values():
-            if rec.get("promo_code") == code and not rec.get("storyteller_user_id"):
-                rec["storyteller_user_id"] = user_id
-        _save_db(db)
+    if code:
+        if supabase:
+            (supabase.table("story_recordings")
+                .update({"storyteller_user_id": user_id})
+                .eq("promo_code", code)
+                .is_("storyteller_user_id", "null")
+                .execute())
+        else:
+            db = _load_db()
+            for rec in db["story_recordings"].values():
+                if rec.get("promo_code") == code and not rec.get("storyteller_user_id"):
+                    rec["storyteller_user_id"] = user_id
+            _save_db(db)
 
     prompts = _get_active_prompts()
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "signup_code": code},
+        "user": {"email": email, "first_name": payload.first_name.strip(), "signup_code": code or ""},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -902,7 +927,7 @@ def storyteller_login(payload: StoryLoginRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "signup_code": user.get("signup_code", "")},
+        "user": {"email": email, "first_name": user.get("first_name", ""), "signup_code": user.get("signup_code", "")},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -919,7 +944,7 @@ def storyteller_request_reset(payload: StoryPasswordResetRequest):
     expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
     _update_storyteller_user(email, {"password_reset_token": token, "password_reset_expires": expires})
 
-    reset_url = f"{APP_URL}/storyteller?reset_token={token}"
+    reset_url = f"{APP_URL}/login?reset_token={token}"
     if resend_sdk and RESEND_API_KEY:
         resend_sdk.Emails.send({
             "from": RESEND_FROM,
