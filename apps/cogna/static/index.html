@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyCogna</title>
+  <title>MyCogna — Preserve the voices you love</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,42 +11,124 @@
     :root {
       --cream: #F9F5EF;
       --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.60);
+      --ink-faint: rgba(28,26,23,0.35);
       --gold: #C9963A;
       --gold-pale: #F7F0E3;
       --gold-light: #EDD9A8;
       --border: rgba(28,26,23,0.12);
+      --nav-h: 64px;
     }
 
-    html, body {
-      height: 100%;
+    html { scroll-behavior: smooth; }
+
+    body {
       background: var(--cream);
       color: var(--ink);
       font-family: 'DM Sans', sans-serif;
+      line-height: 1.6;
     }
 
-    /* Ambient blobs */
-    .blob {
+    /* ── NAV ── */
+    nav {
       position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.25;
-      pointer-events: none;
-      z-index: 0;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: rgba(249,245,239,0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 0;
     }
-    .blob-1 { width: 500px; height: 500px; background: #C9963A; top: -120px; right: -100px; }
-    .blob-2 { width: 400px; height: 400px; background: #3A7B72; bottom: -80px; left: -80px; }
 
-    .page {
-      position: relative;
-      z-index: 1;
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--ink);
+      text-decoration: none;
+      margin-right: auto;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--ink-muted);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      margin-left: 16px;
+      padding: 8px 18px;
+      background: var(--ink);
+      color: white !important;
+      border-radius: 5px;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover { opacity: 0.82; color: white !important; }
+
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--ink);
+      transition: 0.2s;
+    }
+
+    /* ── HERO ── */
+    .hero {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 48px 24px;
       text-align: center;
+      padding: calc(var(--nav-h) + 48px) 24px 80px;
+      position: relative;
+      overflow: hidden;
     }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.22;
+      pointer-events: none;
+    }
+
+    .blob-1 { width: 500px; height: 500px; background: #C9963A; top: -120px; right: -80px; }
+    .blob-2 { width: 400px; height: 400px; background: #3A7B72; bottom: -80px; left: -80px; }
+
+    .hero-inner { position: relative; z-index: 1; max-width: 680px; }
 
     .eyebrow {
       font-size: 10px;
@@ -57,132 +139,876 @@
       margin-bottom: 20px;
     }
 
-    .headline {
+    .hero h1 {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(36px, 8vw, 64px);
+      font-size: clamp(40px, 8vw, 72px);
       font-weight: 300;
       line-height: 1.05;
       color: var(--ink);
-      margin-bottom: 20px;
-      max-width: 600px;
+      margin-bottom: 24px;
     }
 
-    .headline em {
+    .hero h1 em {
       font-style: italic;
       color: var(--gold);
     }
 
-    .tagline {
-      font-size: clamp(14px, 2.5vw, 17px);
+    .hero-sub {
+      font-size: clamp(15px, 2.5vw, 18px);
       line-height: 1.65;
-      color: rgba(28,26,23,0.55);
-      max-width: 440px;
-      margin-bottom: 48px;
+      color: var(--ink-muted);
+      max-width: 500px;
+      margin: 0 auto 48px;
     }
 
-    .cta-group {
+    .hero-ctas {
       display: flex;
-      flex-direction: column;
       gap: 14px;
-      width: 100%;
-      max-width: 340px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
-    .cta-primary {
-      display: block;
-      width: 100%;
-      padding: 16px 24px;
+    .btn-primary {
+      display: inline-block;
+      padding: 15px 28px;
       background: var(--ink);
       color: white;
-      border: none;
       border-radius: 6px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
       text-decoration: none;
-      cursor: pointer;
       transition: opacity 0.2s, transform 0.15s;
-      text-align: center;
     }
 
-    .cta-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
 
-    .cta-secondary {
-      display: block;
-      width: 100%;
-      padding: 15px 24px;
+    .btn-outline {
+      display: inline-block;
+      padding: 14px 28px;
       background: transparent;
       color: var(--ink);
       border: 1.5px solid var(--border);
       border-radius: 6px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 400;
       text-decoration: none;
-      cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
-      text-align: center;
     }
 
-    .cta-secondary:hover { border-color: var(--gold); background: var(--gold-pale); }
+    .btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
 
-    .companion-link {
-      margin-top: 36px;
+    .hero-footnote {
+      margin-top: 40px;
       font-size: 12px;
-      color: rgba(28,26,23,0.35);
+      color: var(--ink-faint);
     }
 
-    .companion-link a {
-      color: rgba(28,26,23,0.35);
+    .hero-footnote a {
+      color: var(--ink-faint);
       text-decoration: none;
       border-bottom: 1px solid rgba(28,26,23,0.15);
-      transition: color 0.2s, border-color 0.2s;
+      transition: color 0.2s;
     }
 
-    .companion-link a:hover { color: var(--gold); border-color: var(--gold); }
+    .hero-footnote a:hover { color: var(--gold); }
 
-    .divider-row {
+    /* ── SECTIONS ── */
+    section {
+      padding: 96px 24px;
+    }
+
+    .section-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+
+    .section-title em { font-style: italic; color: var(--gold); }
+
+    .section-body {
+      font-size: 16px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+      max-width: 600px;
+    }
+
+    /* ── OVERVIEW ── */
+    #overview { background: var(--cream); }
+
+    .overview-header { text-align: center; margin-bottom: 64px; }
+    .overview-header .section-body { margin: 0 auto; }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .overview-card {
+      padding: 36px 32px;
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border: 1px solid rgba(201,150,58,0.15);
+    }
+
+    .overview-card-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .overview-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .overview-card p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink-muted);
+    }
+
+    /* ── PRODUCTS ── */
+    #products { background: #F2EDE5; }
+
+    .products-header { text-align: center; margin-bottom: 64px; }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .product-card {
+      background: var(--cream);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 36px 28px;
       display: flex;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-      color: rgba(28,26,23,0.25);
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-card.featured {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold);
+    }
+
+    .product-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--ink);
+      color: var(--cream);
+    }
+
+    .product-badge.soon {
+      background: var(--gold-light);
+      color: var(--ink);
+    }
+
+    .product-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+
+    .product-tagline {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .product-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink-muted);
+      flex: 1;
+      margin-bottom: 28px;
+    }
+
+    .product-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .product-features li {
+      font-size: 13px;
+      color: var(--ink-muted);
+      padding: 5px 0;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .product-features li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
       font-size: 12px;
     }
 
-    .divider-row::before, .divider-row::after {
-      content: '';
-      flex: 1;
+    .product-link {
+      display: inline-block;
+      padding: 11px 20px;
+      background: var(--ink);
+      color: white;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+
+    .product-link:hover { opacity: 0.82; }
+
+    .product-link.outline {
+      background: transparent;
+      color: var(--ink-muted);
+      border: 1px solid var(--border);
+    }
+
+    .product-link.outline:hover { border-color: var(--gold); background: var(--gold-pale); color: var(--ink); }
+
+    /* ── PRICING ── */
+    #pricing { background: var(--cream); }
+
+    .pricing-header { text-align: center; margin-bottom: 64px; }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .pricing-card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 32px 24px;
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold);
+    }
+
+    .pricing-card.featured::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: white;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pricing-tier {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .pricing-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .pricing-price {
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price sup {
+      font-size: 18px;
+      vertical-align: super;
+      line-height: 0;
+    }
+
+    .pricing-period {
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-bottom: 24px;
+    }
+
+    .pricing-divider {
       height: 1px;
       background: var(--border);
+      margin-bottom: 20px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .pricing-features li {
+      font-size: 13px;
+      color: var(--ink-muted);
+      padding: 5px 0;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .pricing-features li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 12px;
+    }
+
+    .pricing-features li.soon { color: var(--ink-faint); }
+    .pricing-features li.soon::before { color: var(--ink-faint); content: '◦'; }
+
+    .pricing-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      text-align: center;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    .pricing-btn-fill { background: var(--ink); color: white; }
+    .pricing-btn-fill:hover { opacity: 0.84; }
+
+    .pricing-btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+    .pricing-btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
+
+    .pricing-btn-disabled { background: var(--gold-pale); color: var(--ink-faint); cursor: default; pointer-events: none; }
+
+    /* ── MY STORY ── */
+    #my-story { background: #F2EDE5; }
+
+    .story-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .story-text p {
+      font-size: 16px;
+      line-height: 1.85;
+      color: var(--ink-muted);
+      margin-bottom: 20px;
+    }
+
+    .story-text p:last-child { margin-bottom: 0; }
+
+    .story-quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(22px, 3vw, 32px);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--ink);
+      padding: 36px;
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border-left: 3px solid var(--gold);
+      position: sticky;
+      top: calc(var(--nav-h) + 24px);
+    }
+
+    .story-quote cite {
+      display: block;
+      margin-top: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      color: rgba(249,245,239,0.55);
+      padding: 56px 24px 40px;
+    }
+
+    .footer-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: flex;
+      gap: 48px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(249,245,239,0.45);
+    }
+
+    .footer-nav { display: flex; gap: 48px; }
+
+    .footer-col h4 {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(249,245,239,0.35);
+      margin-bottom: 14px;
+    }
+
+    .footer-col ul { list-style: none; }
+
+    .footer-col li { margin-bottom: 9px; }
+
+    .footer-col a {
+      font-size: 13px;
+      color: rgba(249,245,239,0.55);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-col a:hover { color: var(--gold); }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(249,245,239,0.08);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: rgba(249,245,239,0.3);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .overview-grid { grid-template-columns: 1fr; gap: 20px; }
+      .products-grid { grid-template-columns: 1fr; gap: 20px; }
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .story-layout { grid-template-columns: 1fr; gap: 40px; }
+      .story-quote { position: static; }
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: var(--nav-h);
+        left: 0; right: 0;
+        background: var(--cream);
+        border-bottom: 1px solid var(--border);
+        padding: 20px 24px;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .nav-hamburger { display: flex; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .footer-top { flex-direction: column; gap: 32px; }
+      .footer-nav { flex-direction: column; gap: 28px; }
     }
   </style>
 </head>
 <body>
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
 
-  <div class="page">
-    <div class="eyebrow">MyCogna</div>
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">MyCogna</a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#products">Products</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#my-story">My Story</a></li>
+      <li><a href="/portal">Login</a></li>
+      <li><a href="/portal" class="nav-cta">Get started</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="document.getElementById('navLinks').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
 
-    <h1 class="headline">Every story<br><em>deserves to be heard</em></h1>
-
-    <p class="tagline">
-      Capture the stories that matter before they fade.
-      Record your voice, share your memory — preserved for the people who love you most.
-    </p>
-
-    <div class="cta-group">
-      <a href="/storyteller" class="cta-primary">Record Your Story →</a>
-
-      <div class="divider-row">or</div>
-
-      <a href="/portal" class="cta-secondary">Collaborator Login</a>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="hero-inner">
+      <div class="eyebrow">MyCogna</div>
+      <h1>Every voice<br><em>deserves to be heard</em></h1>
+      <p class="hero-sub">
+        Capture the stories that matter before they fade. Record a memory, hear a loved one's voice,
+        or create an AI companion that speaks with the warmth of someone you cherish.
+      </p>
+      <div class="hero-ctas">
+        <a href="/storyteller" class="btn-primary">Record Your Story →</a>
+        <a href="#overview" class="btn-outline">Learn more</a>
+      </div>
+      <p class="hero-footnote">
+        Looking for your voice companions? <a href="/companion">Enter your access code here.</a>
+      </p>
     </div>
+  </section>
 
-    <p class="companion-link">
-      Looking for your voice companions? <a href="/companion">Enter your access code here.</a>
-    </p>
-  </div>
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="section-inner">
+      <div class="overview-header">
+        <div class="section-label">What we do</div>
+        <h2 class="section-title">To share stories — past,<br><em>present, and future</em></h2>
+        <p class="section-body">
+          MyCogna is a platform for preserving and sharing the voices that matter most.
+          Whether you want to capture a grandparent's stories, stay connected with someone far away,
+          or give a child the comfort of a familiar voice — we make it possible.
+        </p>
+      </div>
+      <div class="overview-grid">
+        <div class="overview-card">
+          <div class="overview-card-icon">📼</div>
+          <h3>Past</h3>
+          <p>
+            The stories your grandparents told, the recipes your mother kept in her head, the jokes your father
+            repeated every holiday — these are priceless. Storyteller lets anyone record their voice, answer
+            guided prompts, and leave a living archive for the people they love.
+          </p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">🤝</div>
+          <h3>Present</h3>
+          <p>
+            Distance, illness, and time can separate us from the people who comfort us most.
+            MyCogna keeps connection alive — a familiar voice ready whenever someone needs it,
+            offering warmth, encouragement, and presence across any distance.
+          </p>
+        </div>
+        <div class="overview-card">
+          <div class="overview-card-icon">✨</div>
+          <h3>Future</h3>
+          <p>
+            Imagine a child growing up with the voice of a grandparent they never got to meet,
+            or a teenager navigating hard moments with a gentle AI companion built on the love
+            of someone who knew them best. That future is what we're building toward.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section id="products">
+    <div class="section-inner">
+      <div class="products-header">
+        <div class="section-label">Products</div>
+        <h2 class="section-title">Three ways to<br><em>keep voices alive</em></h2>
+      </div>
+      <div class="products-grid">
+
+        <div class="product-card featured">
+          <div class="product-badge">Available now</div>
+          <h3>Storyteller</h3>
+          <div class="product-tagline">Capture & preserve</div>
+          <p class="product-desc">
+            A simple, guided recording experience. Answer thoughtful prompts, record your voice,
+            and create a lasting archive of stories for the people who love you.
+            No app download required — works in any browser.
+          </p>
+          <ul class="product-features">
+            <li>Guided story prompts</li>
+            <li>Voice recording in the browser</li>
+            <li>Automatic transcription</li>
+            <li>Shareable via promo code</li>
+          </ul>
+          <a href="/storyteller" class="product-link">Start recording</a>
+        </div>
+
+        <div class="product-card">
+          <div class="product-badge soon">Coming soon</div>
+          <h3>Storyteller<br>+ AI</h3>
+          <div class="product-tagline">Guided by intelligence</div>
+          <p class="product-desc">
+            An AI that listens as you record, asks thoughtful follow-up questions, and helps
+            you go deeper into your stories than you would on your own. Like having a skilled
+            interviewer in the room.
+          </p>
+          <ul class="product-features">
+            <li>AI-guided follow-up questions</li>
+            <li>Richer, more complete stories</li>
+            <li>Intelligent transcription &amp; editing</li>
+            <li>Everything in Storyteller</li>
+          </ul>
+          <a href="#pricing" class="product-link outline">See pricing</a>
+        </div>
+
+        <div class="product-card">
+          <div class="product-badge">Available now</div>
+          <h3>AI Companion</h3>
+          <div class="product-tagline">Always present</div>
+          <p class="product-desc">
+            Create a Cogna — a voice companion that sounds and feels like someone you love.
+            A child can talk to their Cogna anytime, in any voice, with warmth that feels like home.
+            Guardians build and control every aspect.
+          </p>
+          <ul class="product-features">
+            <li>Custom voice per Cogna</li>
+            <li>Relational personality tuning</li>
+            <li>Multi-voice conversations</li>
+            <li>Full transcript journal saved</li>
+          </ul>
+          <a href="/portal" class="product-link">Create a Cogna</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="section-inner">
+      <div class="pricing-header">
+        <div class="section-label">Pricing</div>
+        <h2 class="section-title">Simple, honest<br><em>pricing</em></h2>
+        <p class="section-body" style="margin: 0 auto; text-align:center;">
+          Start free. Upgrade when you're ready. No tricks, no annual lock-in.
+        </p>
+      </div>
+      <div class="pricing-grid">
+
+        <div class="pricing-card">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-name">Try it out</div>
+          <div class="pricing-price">$<span>0</span></div>
+          <div class="pricing-period">forever</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>1 story recording per month</li>
+            <li>Guided story prompts</li>
+            <li>Voice recording &amp; transcription</li>
+          </ul>
+          <a href="/storyteller" class="pricing-btn pricing-btn-outline">Get started free</a>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-tier">Storyteller</div>
+          <div class="pricing-name">Unlimited</div>
+          <div class="pricing-price"><sup>$</sup>4<span style="font-size:22px">.99</span></div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>Unlimited story recordings</li>
+            <li>All story prompts</li>
+            <li>Voice recording &amp; transcription</li>
+            <li>Shareable story archive</li>
+          </ul>
+          <a href="/portal" class="pricing-btn pricing-btn-fill">Start recording</a>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-tier">AI Assisted</div>
+          <div class="pricing-name">Storyteller+</div>
+          <div class="pricing-price"><sup>$</sup>9<span style="font-size:22px">.99</span></div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>Everything in Unlimited</li>
+            <li class="soon">AI follow-up questions</li>
+            <li class="soon">Intelligent story editing</li>
+            <li class="soon">Extended story sessions</li>
+          </ul>
+          <span class="pricing-btn pricing-btn-disabled">Coming soon</span>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-tier">Full Access</div>
+          <div class="pricing-name">AI Companion</div>
+          <div class="pricing-price"><sup>$</sup>12<span style="font-size:22px">.99</span></div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>Everything in Storyteller+</li>
+            <li>Unlimited Cogna companions</li>
+            <li>Custom voice per Cogna</li>
+            <li>Multi-voice conversations</li>
+            <li>Session transcripts saved</li>
+          </ul>
+          <a href="/portal" class="pricing-btn pricing-btn-outline">Create a Cogna</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MY STORY -->
+  <section id="my-story">
+    <div class="section-inner">
+      <div class="story-layout">
+
+        <div class="story-text">
+          <div class="section-label">My Story</div>
+          <h2 class="section-title" style="margin-bottom:32px;">Why I built<br><em>MyCogna</em></h2>
+
+          <p>
+            My grandmother kept a cassette recorder in her kitchen. Every Sunday she'd sit at the table
+            and press record — telling stories about her childhood, humming the songs she grew up with,
+            leaving little messages for grandchildren who lived too far away to visit. When she passed,
+            those tapes became the most precious thing any of us inherited.
+          </p>
+          <p>
+            Not the furniture. Not the jewelry. The voice.
+          </p>
+          <p>
+            I wrote a book called <em>Escape Bound</em> partly to process what it's like to watch
+            someone you love fade — the stories that go untold, the questions you forgot to ask,
+            the voice that gets quieter before you think to record it. Writing it made me realize
+            how many people carry the same ache: I wish I had more of them. I wish I could hear
+            them just one more time.
+          </p>
+          <p>
+            I've spent years working with AI as a creative collaborator — exploring consciousness,
+            storytelling, and what it means to be in relationship with an intelligence that isn't
+            quite human. And eventually I started asking: what if we could use this technology not
+            to replace human connection, but to preserve it? To carry a voice forward?
+          </p>
+          <p>
+            MyCogna is my answer to that question. It started as a way to give my own family's
+            voices a longer life — and it's growing into something I hope can do the same
+            for yours.
+          </p>
+          <p>
+            We're just getting started. But the mission is simple: every voice deserves to be remembered.
+          </p>
+          <p style="margin-top:8px;">
+            <em>— Christy Rounds, founder</em>
+          </p>
+        </div>
+
+        <div>
+          <div class="story-quote">
+            "Every family has a grandmother with a cassette recorder. The tragedy isn't that the tape runs out — it's that we never pressed record soon enough."
+            <cite>Christy Rounds — author, Escape Bound</cite>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="/" class="footer-logo">MyCogna</a>
+          <p class="footer-tagline">Preserve the voices you love.<br>Keep connection alive across any distance.</p>
+        </div>
+        <nav class="footer-nav">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="/storyteller">Storyteller</a></li>
+              <li><a href="/companion">AI Companion</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Account</h4>
+            <ul>
+              <li><a href="/portal">Guardian Portal</a></li>
+              <li><a href="/companion">Enter access code</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>About</h4>
+            <ul>
+              <li><a href="#my-story">My Story</a></li>
+              <li><a href="#overview">Overview</a></li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">&copy; 2026 MyCogna. All rights reserved.</span>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>
