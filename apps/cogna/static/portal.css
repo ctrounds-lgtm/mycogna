@@ -1033,3 +1033,9 @@ input[type=range]:focus { outline: none; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
+
+.recordings-filter {
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+}

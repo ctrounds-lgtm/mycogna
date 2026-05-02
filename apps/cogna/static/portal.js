@@ -572,9 +572,33 @@ const portal = {
   },
 
   _renderRecordings(recs) {
+    portal._allRecordings = recs;
+
+    // Build filter dropdown
+    const filterRow = document.getElementById('recordingsFilterRow');
+    const filterEl = document.getElementById('recordingsFilter');
+    if (recs.length) {
+      const seen = new Set();
+      const options = [{ code: '', label: 'All codes' }];
+      recs.forEach(r => {
+        if (!seen.has(r.promo_code)) {
+          seen.add(r.promo_code);
+          options.push({ code: r.promo_code, label: r.promo_code_label ? `${r.promo_code_label} (${r.promo_code})` : r.promo_code });
+        }
+      });
+      filterEl.innerHTML = options.map(o => `<option value="${o.code}">${o.label}</option>`).join('');
+      filterRow.classList.remove('hidden');
+    } else {
+      filterRow.classList.add('hidden');
+    }
+
+    portal._renderRecordingRows(recs);
+  },
+
+  _renderRecordingRows(recs) {
     const el = document.getElementById('recordingsList');
     if (!recs.length) {
-      el.innerHTML = '<div class="empty-state"><p>No recordings yet.</p></div>';
+      el.innerHTML = '<div class="empty-state"><p>No recordings for this code yet.</p></div>';
       return;
     }
     el.innerHTML = recs.map(r => `
@@ -586,6 +610,11 @@ const portal = {
           <div class="recording-transcript">${r.transcript || '<em style="opacity:0.4">No transcript</em>'}</div>
         </div>
       </div>`).join('');
+  },
+
+  filterRecordings(code) {
+    const recs = portal._allRecordings || [];
+    portal._renderRecordingRows(code ? recs.filter(r => r.promo_code === code) : recs);
   },
 
   async generatePromoCode() {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyCogna — Guardian Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/portal.css?v=5">
+<link rel="stylesheet" href="/static/portal.css?v=6">
 </head>
 <body>
 
@@ -188,6 +188,11 @@
       <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Recordings</h2>
         <button class="add-btn" onclick="portal.loadStories()">Refresh</button>
+      </div>
+      <div id="recordingsFilterRow" class="hidden" style="margin-bottom:12px">
+        <select id="recordingsFilter" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value)">
+          <option value="">All codes</option>
+        </select>
       </div>
       <div id="recordingsList" class="stories-list" style="margin-bottom:40px">
         <div class="empty-state"><p>No recordings yet.</p></div>
