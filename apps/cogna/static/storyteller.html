@@ -11,6 +11,8 @@
     :root {
       --cream: #F9F5EF;
       --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.55);
+      --ink-faint: rgba(28,26,23,0.35);
       --gold: #C9963A;
       --gold-pale: #F7F0E3;
       --gold-light: #EDD9A8;
@@ -37,7 +39,6 @@
     .blob-1 { width: 480px; height: 480px; background: var(--gold); top: -100px; right: -80px; }
     .blob-2 { width: 360px; height: 360px; background: var(--teal); bottom: -60px; left: -60px; }
 
-    /* ── Screens ── */
     .screen {
       position: relative;
       z-index: 1;
@@ -53,7 +54,7 @@
 
     .inner {
       width: 100%;
-      max-width: 440px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -84,31 +85,37 @@
     .sub {
       font-size: 15px;
       line-height: 1.6;
-      color: rgba(28,26,23,0.5);
-      margin-bottom: 36px;
+      color: var(--ink-muted);
+      margin-bottom: 32px;
     }
 
-    /* ── Code input ── */
-    .code-input {
+    /* ── Inputs ── */
+    .code-input, .text-input {
       width: 100%;
       padding: 14px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+
+    .code-input {
       font-family: 'Courier New', monospace;
       font-size: 20px;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-align: center;
       text-transform: uppercase;
-      border: 2px solid var(--border);
-      border-radius: 6px;
-      background: white;
-      color: var(--ink);
-      outline: none;
-      transition: border-color 0.2s;
-      margin-bottom: 14px;
     }
 
-    .code-input:focus { border-color: var(--gold); }
+    .code-input:focus, .text-input:focus { border-color: var(--gold); }
     .code-input::placeholder { color: rgba(28,26,23,0.22); font-weight: 400; font-size: 16px; letter-spacing: 0.05em; }
+    .text-input::placeholder { color: rgba(28,26,23,0.3); }
 
     /* ── Buttons ── */
     .btn-primary {
@@ -123,6 +130,7 @@
       font-weight: 500;
       cursor: pointer;
       transition: opacity 0.2s, transform 0.15s;
+      margin-bottom: 0;
     }
 
     .btn-primary:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
@@ -133,7 +141,7 @@
       width: 100%;
       padding: 13px;
       background: transparent;
-      color: rgba(28,26,23,0.5);
+      color: var(--ink-muted);
       border: 1px solid var(--border);
       border-radius: 5px;
       font-family: 'DM Sans', sans-serif;
@@ -144,6 +152,38 @@
 
     .btn-secondary:hover { border-color: rgba(28,26,23,0.3); }
 
+    .divider {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--ink-faint);
+      font-size: 12px;
+      margin: 20px 0;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--gold);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .link-btn:hover { opacity: 0.75; }
+
+    /* ── Error / Success messages ── */
     .error-msg {
       width: 100%;
       padding: 10px 14px;
@@ -152,11 +192,38 @@
       border-radius: 4px;
       color: var(--error);
       font-size: 13px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       text-align: left;
     }
 
-    .error-msg.hidden { display: none; }
+    .success-msg {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(58,123,114,0.08);
+      border: 1px solid rgba(58,123,114,0.2);
+      border-radius: 4px;
+      color: var(--teal);
+      font-size: 13px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .error-msg.hidden, .success-msg.hidden { display: none; }
+
+    /* ── Code badge (shown on signup screen) ── */
+    .code-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--gold-pale);
+      border: 1px solid rgba(201,150,58,0.2);
+      border-radius: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
 
     /* ── Prompt screen ── */
     .prompt-card {
@@ -219,7 +286,7 @@
 
     .record-hint {
       font-size: 13px;
-      color: rgba(28,26,23,0.45);
+      color: var(--ink-faint);
       margin-bottom: 28px;
     }
 
@@ -234,7 +301,6 @@
 
     .record-timer.hidden { visibility: hidden; }
 
-    /* ── Waveform animation ── */
     .waveform {
       display: flex;
       align-items: center;
@@ -265,7 +331,6 @@
       to   { transform: scaleY(1);    opacity: 1; }
     }
 
-    /* ── Processing ── */
     .spinner {
       width: 40px;
       height: 40px;
@@ -278,13 +343,12 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Transcript preview ── */
     .transcript-box {
       width: 100%;
       background: white;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 20px 20px;
+      padding: 20px;
       margin-bottom: 24px;
       text-align: left;
       box-shadow: 0 2px 12px rgba(28,26,23,0.05);
@@ -295,7 +359,7 @@
       font-weight: 600;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: rgba(28,26,23,0.4);
+      color: var(--ink-faint);
       margin-bottom: 10px;
     }
 
@@ -303,9 +367,9 @@
       font-size: 15px;
       line-height: 1.65;
       color: var(--ink);
+      white-space: pre-wrap;
     }
 
-    /* ── Thank you ── */
     .check-circle {
       width: 72px;
       height: 72px;
@@ -330,7 +394,7 @@
     .thank-sub {
       font-size: 15px;
       line-height: 1.65;
-      color: rgba(28,26,23,0.55);
+      color: var(--ink-muted);
       margin-bottom: 32px;
       max-width: 360px;
     }
@@ -340,14 +404,14 @@
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
 
-  <!-- ── SCREEN 1: Enter promo code ── -->
-  <div class="screen" id="screenCode">
+  <!-- ── SCREEN 1: Enter user code ── -->
+  <div class="screen" id="screenEntry">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
       <h1 class="headline">Share your<br><em>story</em></h1>
-      <p class="sub">Enter the code you received to get started.<br>Your voice matters. Take your time.</p>
+      <p class="sub">Enter the user code you received to get started.<br>Your voice matters. Take your time.</p>
 
-      <input type="text" id="promoCodeInput" class="code-input"
+      <input type="text" id="userCodeInput" class="code-input"
              placeholder="STORY-XXXX" maxlength="20"
              oninput="st.formatCode(this)"
              onkeydown="if(event.key==='Enter') st.submitCode()">
@@ -356,11 +420,95 @@
 
       <button class="btn-primary" onclick="st.submitCode()" id="codeBtn">Continue →</button>
 
-      <button class="btn-secondary" onclick="window.location='/'">← Back to home</button>
+      <div class="divider">or</div>
+
+      <button class="btn-secondary" onclick="st.showLogin()">Already have an account? Sign in</button>
+      <button class="btn-secondary" style="margin-top:8px" onclick="window.location='/'">← Back to home</button>
     </div>
   </div>
 
-  <!-- ── SCREEN 2: Prompt + record ── -->
+  <!-- ── SCREEN 2: Create account ── -->
+  <div class="screen hidden" id="screenSignup">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Create your<br><em>account</em></h2>
+      <p class="sub" style="margin-bottom:16px">Your code:</p>
+      <div class="code-badge" id="signupCodeBadge">STORY-XXXX</div>
+      <p class="sub">Create a free account to save your stories<br>and pick up where you left off.</p>
+
+      <input type="email" id="signupEmail" class="text-input" placeholder="Email address"
+             onkeydown="if(event.key==='Enter') st.signup()">
+      <input type="password" id="signupPassword" class="text-input" placeholder="Choose a password (min. 8 characters)"
+             onkeydown="if(event.key==='Enter') st.signup()">
+
+      <div id="signupError" class="error-msg hidden"></div>
+
+      <button class="btn-primary" onclick="st.signup()" id="signupBtn">Create account &amp; continue →</button>
+      <button class="btn-secondary" onclick="st.showEntry()">← Use a different code</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: Sign in ── -->
+  <div class="screen hidden" id="screenLogin">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Welcome<br><em>back</em></h2>
+      <p class="sub">Sign in to record your story.</p>
+
+      <input type="email" id="loginEmail" class="text-input" placeholder="Email address"
+             onkeydown="if(event.key==='Enter') st.login()">
+      <input type="password" id="loginPassword" class="text-input" placeholder="Password"
+             onkeydown="if(event.key==='Enter') st.login()">
+
+      <div id="loginError" class="error-msg hidden"></div>
+
+      <button class="btn-primary" onclick="st.login()" id="loginBtn">Sign in →</button>
+
+      <p style="margin-top:14px;font-size:13px;color:var(--ink-faint)">
+        <button class="link-btn" onclick="st.showResetRequest()">Forgot your password?</button>
+      </p>
+
+      <div class="divider">or</div>
+
+      <button class="btn-secondary" onclick="st.showEntry()">← I have a user code instead</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 4: Forgot password ── -->
+  <div class="screen hidden" id="screenResetRequest">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Reset your<br><em>password</em></h2>
+      <p class="sub">Enter your email and we'll send you a reset link.</p>
+
+      <input type="email" id="resetEmail" class="text-input" placeholder="Email address"
+             onkeydown="if(event.key==='Enter') st.requestReset()">
+
+      <div id="resetRequestError" class="error-msg hidden"></div>
+      <div id="resetRequestSuccess" class="success-msg hidden">Check your email — a reset link is on its way.</div>
+
+      <button class="btn-primary" onclick="st.requestReset()" id="resetRequestBtn">Send reset link</button>
+      <button class="btn-secondary" onclick="st.showLogin()">← Back to sign in</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 5: Set new password (from email link) ── -->
+  <div class="screen hidden" id="screenResetConfirm">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Set a new<br><em>password</em></h2>
+
+      <input type="password" id="resetNewPassword" class="text-input" placeholder="New password (min. 8 characters)"
+             onkeydown="if(event.key==='Enter') st.confirmReset()">
+
+      <div id="resetConfirmError" class="error-msg hidden"></div>
+      <div id="resetConfirmSuccess" class="success-msg hidden">Password updated. You can now sign in.</div>
+
+      <button class="btn-primary" onclick="st.confirmReset()" id="resetConfirmBtn">Set new password</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 6: Prompt + record ── -->
   <div class="screen hidden" id="screenRecord">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
@@ -386,7 +534,7 @@
     </div>
   </div>
 
-  <!-- ── SCREEN 3: Processing ── -->
+  <!-- ── SCREEN 7: Processing ── -->
   <div class="screen hidden" id="screenProcessing">
     <div class="inner">
       <div class="spinner"></div>
@@ -396,14 +544,14 @@
     </div>
   </div>
 
-  <!-- ── SCREEN 4: Confirmation ── -->
+  <!-- ── SCREEN 8: Done ── -->
   <div class="screen hidden" id="screenDone">
     <div class="inner">
       <div class="check-circle">✓</div>
       <h2 class="thank-headline">Thank you!</h2>
       <p class="thank-sub" id="thankSub">Your story has been saved. The people who receive it will treasure it.</p>
 
-      <div class="transcript-box" id="doneTranscriptBox">
+      <div class="transcript-box">
         <div class="transcript-label">What you shared</div>
         <div class="transcript-text" id="doneTranscript"></div>
       </div>
@@ -416,12 +564,15 @@
   <script>
     const API = window.location.origin + '/api/storyteller';
 
+    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenRecord','screenProcessing','screenDone'];
+
     const stState = {
-      promoCode: '',
-      promptId: '',
+      userCode: '',
+      authToken: '',
       prompts: [],
       currentPromptIndex: 0,
       transcripts: [],
+      promptId: '',
       mediaRecorder: null,
       audioChunks: [],
       recording: false,
@@ -430,7 +581,7 @@
     };
 
     function showScreen(id) {
-      ['screenCode', 'screenRecord', 'screenProcessing', 'screenDone'].forEach(s => {
+      ALL_SCREENS.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', s !== id);
       });
     }
@@ -446,9 +597,7 @@
     }
 
     function formatTime(s) {
-      const m = Math.floor(s / 60);
-      const sec = s % 60;
-      return `${m}:${sec.toString().padStart(2, '0')}`;
+      return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
     }
 
     const st = {
@@ -456,11 +605,21 @@
         input.value = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
       },
 
+      showEntry() { showScreen('screenEntry'); },
+      showLogin()  { showScreen('screenLogin'); },
+
+      showResetRequest() {
+        document.getElementById('resetRequestError').classList.add('hidden');
+        document.getElementById('resetRequestSuccess').classList.add('hidden');
+        showScreen('screenResetRequest');
+      },
+
+      // ── Code entry → signup ──
       async submitCode() {
-        const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+        const code = document.getElementById('userCodeInput').value.trim().toUpperCase();
         const errEl = document.getElementById('codeError');
         errEl.classList.add('hidden');
-        if (!code) { errEl.textContent = 'Please enter your code.'; errEl.classList.remove('hidden'); return; }
+        if (!code) { errEl.textContent = 'Please enter your user code.'; errEl.classList.remove('hidden'); return; }
 
         const btn = document.getElementById('codeBtn');
         btn.textContent = 'Checking…';
@@ -470,10 +629,46 @@
           const result = await apiFetch('/validate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ promo_code: code }),
+            body: JSON.stringify({ user_code: code }),
           });
-          stState.promoCode = code;
+          stState.userCode = code;
           stState.prompts = result.prompts;
+          document.getElementById('signupCodeBadge').textContent = code;
+          document.getElementById('signupError').classList.add('hidden');
+          document.getElementById('signupEmail').value = '';
+          document.getElementById('signupPassword').value = '';
+          showScreen('screenSignup');
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.remove('hidden');
+        } finally {
+          btn.textContent = 'Continue →';
+          btn.disabled = false;
+        }
+      },
+
+      // ── Create account ──
+      async signup() {
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+        const errEl = document.getElementById('signupError');
+        errEl.classList.add('hidden');
+
+        if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.classList.remove('hidden'); return; }
+        if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.remove('hidden'); return; }
+
+        const btn = document.getElementById('signupBtn');
+        btn.textContent = 'Creating account…';
+        btn.disabled = true;
+
+        try {
+          const result = await apiFetch('/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_code: stState.userCode, email, password }),
+          });
+          stState.authToken = result.token;
+          if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           st._showCurrentPrompt();
@@ -481,11 +676,118 @@
         } catch (err) {
           errEl.textContent = err.message;
           errEl.classList.remove('hidden');
-          btn.textContent = 'Continue →';
+        } finally {
+          btn.textContent = 'Create account & continue →';
           btn.disabled = false;
         }
       },
 
+      // ── Sign in ──
+      async login() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errEl = document.getElementById('loginError');
+        errEl.classList.add('hidden');
+
+        if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; errEl.classList.remove('hidden'); return; }
+
+        const btn = document.getElementById('loginBtn');
+        btn.textContent = 'Signing in…';
+        btn.disabled = true;
+
+        try {
+          const result = await apiFetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          stState.authToken = result.token;
+          stState.prompts = result.prompts || [];
+          stState.currentPromptIndex = 0;
+          stState.transcripts = [];
+          if (stState.prompts.length === 0) {
+            errEl.textContent = 'No active story prompts right now. Check back soon.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+          st._showCurrentPrompt();
+          showScreen('screenRecord');
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.remove('hidden');
+        } finally {
+          btn.textContent = 'Sign in →';
+          btn.disabled = false;
+        }
+      },
+
+      // ── Forgot password ──
+      async requestReset() {
+        const email = document.getElementById('resetEmail').value.trim();
+        const errEl = document.getElementById('resetRequestError');
+        const succEl = document.getElementById('resetRequestSuccess');
+        errEl.classList.add('hidden');
+        succEl.classList.add('hidden');
+
+        if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.classList.remove('hidden'); return; }
+
+        const btn = document.getElementById('resetRequestBtn');
+        btn.textContent = 'Sending…';
+        btn.disabled = true;
+
+        try {
+          await apiFetch('/request-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          succEl.classList.remove('hidden');
+          btn.textContent = 'Sent ✓';
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.remove('hidden');
+          btn.textContent = 'Send reset link';
+          btn.disabled = false;
+        }
+      },
+
+      // ── Confirm reset (from email link) ──
+      async confirmReset() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('reset_token');
+        const password = document.getElementById('resetNewPassword').value;
+        const errEl = document.getElementById('resetConfirmError');
+        const succEl = document.getElementById('resetConfirmSuccess');
+        errEl.classList.add('hidden');
+        succEl.classList.add('hidden');
+
+        if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.remove('hidden'); return; }
+
+        const btn = document.getElementById('resetConfirmBtn');
+        btn.textContent = 'Saving…';
+        btn.disabled = true;
+
+        try {
+          await apiFetch('/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, password }),
+          });
+          succEl.classList.remove('hidden');
+          setTimeout(() => {
+            // Clear the token from URL and go to login
+            history.replaceState({}, '', '/storyteller');
+            showScreen('screenLogin');
+          }, 1800);
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.remove('hidden');
+          btn.textContent = 'Set new password';
+          btn.disabled = false;
+        }
+      },
+
+      // ── Recording flow ──
       _showCurrentPrompt() {
         const i = stState.currentPromptIndex;
         const total = stState.prompts.length;
@@ -511,11 +813,8 @@
       },
 
       async toggleRecord() {
-        if (stState.recording) {
-          st.stopRecording();
-        } else {
-          await st.startRecording();
-        }
+        if (stState.recording) st.stopRecording();
+        else await st.startRecording();
       },
 
       async startRecording() {
@@ -539,18 +838,11 @@
         stState.audioChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
           ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : '';
+          : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
 
         stState.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-        stState.mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) stState.audioChunks.push(e.data);
-        };
-        stState.mediaRecorder.onstop = () => {
-          stream.getTracks().forEach(t => t.stop());
-          st._submitRecording();
-        };
+        stState.mediaRecorder.ondataavailable = e => { if (e.data.size > 0) stState.audioChunks.push(e.data); };
+        stState.mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); st._submitRecording(); };
 
         stState.mediaRecorder.start(250);
         stState.recording = true;
@@ -576,7 +868,6 @@
         clearInterval(stState.timerInterval);
         stState.recording = false;
         stState.mediaRecorder.stop();
-
         const btn = document.getElementById('recordBtn');
         btn.classList.remove('recording');
         btn.textContent = '🎙️';
@@ -593,22 +884,25 @@
         const blob = new Blob(stState.audioChunks, { type: mimeType });
 
         const formData = new FormData();
-        formData.append('promo_code', stState.promoCode);
         formData.append('prompt_id', stState.promptId);
         formData.append('audio', blob, `recording${ext}`);
 
         try {
-          const result = await fetch(API + '/record', {
+          const res = await fetch(API + '/record', {
             method: 'POST',
+            headers: { 'Authorization': `Bearer ${stState.authToken}` },
             body: formData,
           });
-          if (!result.ok) {
-            let detail = `Error ${result.status}`;
-            try { const b = await result.json(); if (b.detail) detail = b.detail; } catch {}
+          if (!res.ok) {
+            let detail = `Error ${res.status}`;
+            try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
             throw new Error(detail);
           }
-          const data = await result.json();
-          stState.transcripts.push({ question: stState.prompts[stState.currentPromptIndex].text, transcript: data.transcript || '' });
+          const data = await res.json();
+          stState.transcripts.push({
+            question: stState.prompts[stState.currentPromptIndex].text,
+            transcript: data.transcript || '',
+          });
           stState.currentPromptIndex++;
           if (stState.currentPromptIndex < stState.prompts.length) {
             st._showCurrentPrompt();
@@ -618,9 +912,9 @@
               stState.transcripts.length > 1 ? `Q${i + 1}: ${t.transcript}` : t.transcript
             ).join('\n\n');
             document.getElementById('doneTranscript').textContent = allText || '(No transcript available)';
-            if (stState.transcripts.length > 1) {
-              document.getElementById('thankSub').textContent = `All ${stState.transcripts.length} responses saved. Thank you for sharing.`;
-            }
+            document.getElementById('thankSub').textContent = stState.transcripts.length > 1
+              ? `All ${stState.transcripts.length} responses saved. Thank you for sharing.`
+              : 'Your story has been saved. The people who receive it will treasure it.';
             showScreen('screenDone');
           }
         } catch (err) {
@@ -643,6 +937,16 @@
         showScreen('screenRecord');
       },
     };
+
+    // On load: check for reset token in URL
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('reset_token')) {
+        showScreen('screenResetConfirm');
+      } else {
+        showScreen('screenEntry');
+      }
+    });
   </script>
 </body>
 </html>

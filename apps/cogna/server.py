@@ -77,6 +77,7 @@ STORY_RECORDINGS_DIR = PORTAL_DATA_DIR / "story_recordings"
 STORY_RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 SESSIONS: Dict[str, str] = {}
+STORY_SESSIONS: Dict[str, str] = {}  # storyteller token → email
 
 # Claude API setup
 CLAUDE_API_KEY = os.getenv(CONFIG.get("claude_api_key_env", "CLAUDE_API_KEY"))
@@ -187,7 +188,7 @@ class SaveSessionRequest(BaseModel):
 
 
 class StoryValidateRequest(BaseModel):
-    promo_code: str
+    user_code: str
 
 
 class StoryPromptCreate(BaseModel):
@@ -200,6 +201,26 @@ class PromptsReorderRequest(BaseModel):
 
 class PromoCodeCreate(BaseModel):
     description: str = ""
+
+
+class StorySignupRequest(BaseModel):
+    user_code: str
+    email: str
+    password: str
+
+
+class StoryLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class StoryPasswordResetRequest(BaseModel):
+    email: str
+
+
+class StoryPasswordResetConfirm(BaseModel):
+    token: str
+    password: str
 
 
 # ----------------------------------------------------
@@ -804,26 +825,163 @@ def list_sessions(
 
 @app.post("/api/storyteller/validate")
 def storyteller_validate(payload: StoryValidateRequest):
-    code = payload.promo_code.strip().upper()
+    code = payload.user_code.strip().upper()
     pc = _get_promo_code(code)
     if not pc:
-        raise HTTPException(status_code=404, detail="Promo code not found or inactive")
+        raise HTTPException(status_code=404, detail="User code not found or inactive")
     prompts = _get_active_prompts()
     if not prompts:
         raise HTTPException(status_code=404, detail="No active story prompt. Ask a collaborator to set one up.")
     return {"valid": True, "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts]}
 
 
-@app.post("/api/storyteller/record")
-async def storyteller_record(
-    promo_code: str = Form(...),
-    prompt_id: str = Form(...),
-    audio: UploadFile = File(...),
-):
-    code = promo_code.strip().upper()
+@app.post("/api/storyteller/signup")
+def storyteller_signup(payload: StorySignupRequest):
+    code = payload.user_code.strip().upper()
     pc = _get_promo_code(code)
     if not pc:
-        raise HTTPException(status_code=403, detail="Invalid or inactive promo code")
+        raise HTTPException(status_code=404, detail="User code not found or inactive")
+
+    email = payload.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    existing = _get_storyteller_user(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in instead.")
+
+    user_id = "stuser_" + secrets.token_hex(8)
+    salt = secrets.token_hex(8)
+    pw_hash = _hash_password(payload.password, salt)
+    user = {
+        "id": user_id,
+        "email": email,
+        "password_salt": salt,
+        "password_hash": pw_hash,
+        "signup_code": code,
+        "created_at": _utc_now(),
+    }
+    _create_storyteller_user(user)
+
+    # Transfer any existing recordings for this code to the new account
+    if supabase:
+        (supabase.table("story_recordings")
+            .update({"storyteller_user_id": user_id})
+            .eq("promo_code", code)
+            .is_("storyteller_user_id", "null")
+            .execute())
+    else:
+        db = _load_db()
+        for rec in db["story_recordings"].values():
+            if rec.get("promo_code") == code and not rec.get("storyteller_user_id"):
+                rec["storyteller_user_id"] = user_id
+        _save_db(db)
+
+    prompts = _get_active_prompts()
+    token = _create_story_session(email)
+    return {
+        "token": token,
+        "user": {"email": email, "signup_code": code},
+        "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
+    }
+
+
+@app.post("/api/storyteller/login")
+def storyteller_login(payload: StoryLoginRequest):
+    email = payload.email.strip().lower()
+    user = _get_storyteller_user(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    expected = _hash_password(payload.password, user["password_salt"])
+    if expected != user["password_hash"]:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    prompts = _get_active_prompts()
+    token = _create_story_session(email)
+    return {
+        "token": token,
+        "user": {"email": email, "signup_code": user.get("signup_code", "")},
+        "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
+    }
+
+
+@app.post("/api/storyteller/request-reset")
+def storyteller_request_reset(payload: StoryPasswordResetRequest):
+    from datetime import timedelta
+    email = payload.email.strip().lower()
+    user = _get_storyteller_user(email)
+    if not user:
+        return {"ok": True}
+
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    _update_storyteller_user(email, {"password_reset_token": token, "password_reset_expires": expires})
+
+    reset_url = f"{APP_URL}/storyteller?reset_token={token}"
+    if resend_sdk and RESEND_API_KEY:
+        resend_sdk.Emails.send({
+            "from": RESEND_FROM,
+            "to": [email],
+            "subject": "Reset your MyCogna Storyteller password",
+            "html": (
+                f"<p>Click the link below to reset your Storyteller password. "
+                f"This link expires in 1 hour.</p>"
+                f"<p><a href='{reset_url}'>{reset_url}</a></p>"
+                f"<p>If you didn't request this, you can safely ignore this email.</p>"
+            ),
+        })
+    else:
+        print(f"[DEV] Storyteller reset link for {email}: {reset_url}")
+    return {"ok": True}
+
+
+@app.post("/api/storyteller/reset-password")
+def storyteller_reset_password(payload: StoryPasswordResetConfirm):
+    if supabase:
+        r = (supabase.table("storyteller_users")
+             .select("*").eq("password_reset_token", payload.token).limit(1).execute())
+        user = r.data[0] if r.data else None
+    else:
+        db = _load_db()
+        user = next(
+            (u for u in db.get("storyteller_users", {}).values()
+             if u.get("password_reset_token") == payload.token),
+            None,
+        )
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    expires_str = user.get("password_reset_expires")
+    if not expires_str:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+    expires = datetime.fromisoformat(expires_str)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+
+    new_salt = secrets.token_hex(8)
+    new_hash = _hash_password(payload.password, new_salt)
+    _update_storyteller_user(user["email"], {
+        "password_salt": new_salt,
+        "password_hash": new_hash,
+        "password_reset_token": None,
+        "password_reset_expires": None,
+    })
+    return {"ok": True}
+
+
+@app.post("/api/storyteller/record")
+async def storyteller_record(
+    prompt_id: str = Form(...),
+    audio: UploadFile = File(...),
+    authorization: Optional[str] = Header(default=None),
+):
+    st_user = _auth_storyteller_user(authorization)
 
     transcript = _transcribe_audio(audio)
 
@@ -834,7 +992,8 @@ async def storyteller_record(
     if supabase:
         supabase.table("story_recordings").insert({
             "id": recording_id,
-            "promo_code": code,
+            "promo_code": st_user.get("signup_code", ""),
+            "storyteller_user_id": st_user["id"],
             "prompt_id": prompt_id,
             "transcript": transcript,
             "audio_url": audio_url,
@@ -843,7 +1002,8 @@ async def storyteller_record(
         db = _load_db()
         db["story_recordings"][recording_id] = {
             "id": recording_id,
-            "promo_code": code,
+            "promo_code": st_user.get("signup_code", ""),
+            "storyteller_user_id": st_user["id"],
             "prompt_id": prompt_id,
             "transcript": transcript,
             "audio_url": audio_url,
@@ -950,7 +1110,7 @@ def reorder_story_prompts(
     return {"ok": True}
 
 
-@app.get("/api/storyteller/promo-codes")
+@app.get("/api/storyteller/user-codes")
 def list_promo_codes(authorization: Optional[str] = Header(default=None)):
     _auth_user(authorization)
     if supabase:
@@ -961,7 +1121,7 @@ def list_promo_codes(authorization: Optional[str] = Header(default=None)):
     return {"codes": list(codes)}
 
 
-@app.post("/api/storyteller/promo-codes")
+@app.post("/api/storyteller/user-codes")
 def create_promo_code(
     payload: PromoCodeCreate,
     authorization: Optional[str] = Header(default=None),
@@ -984,7 +1144,7 @@ def create_promo_code(
     return {"code": record}
 
 
-@app.delete("/api/storyteller/promo-codes/{code}")
+@app.delete("/api/storyteller/user-codes/{code}")
 def deactivate_promo_code(
     code: str,
     authorization: Optional[str] = Header(default=None),
@@ -1235,6 +1395,56 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 
 
 # ----------------------------------------------------
+# Storyteller auth helpers
+# ----------------------------------------------------
+
+def _get_storyteller_user(email: str) -> Optional[Dict[str, Any]]:
+    if supabase:
+        r = supabase.table("storyteller_users").select("*").eq("email", email).limit(1).execute()
+        return r.data[0] if r.data else None
+    db = _load_db()
+    return db.get("storyteller_users", {}).get(email)
+
+
+def _create_storyteller_user(user: Dict[str, Any]):
+    if supabase:
+        supabase.table("storyteller_users").insert(user).execute()
+        return
+    db = _load_db()
+    db.setdefault("storyteller_users", {})[user["email"]] = user
+    _save_db(db)
+
+
+def _update_storyteller_user(email: str, updates: Dict[str, Any]):
+    if supabase:
+        supabase.table("storyteller_users").update(updates).eq("email", email).execute()
+        return
+    db = _load_db()
+    if email in db.get("storyteller_users", {}):
+        db["storyteller_users"][email].update(updates)
+    _save_db(db)
+
+
+def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
+    token = authorization.split(" ", 1)[1].strip()
+    email = STORY_SESSIONS.get(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Session expired. Please sign in again.")
+    user = _get_storyteller_user(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+
+def _create_story_session(email: str) -> str:
+    token = secrets.token_urlsafe(32)
+    STORY_SESSIONS[token] = email
+    return token
+
+
+# ----------------------------------------------------
 # Storyteller data helpers
 # ----------------------------------------------------
 
@@ -1366,7 +1576,7 @@ def _save_cogna_upload(cogna_id: str, kind: str, file: UploadFile) -> str:
 
 def _load_db() -> Dict[str, Any]:
     if not PORTAL_DB_PATH.exists():
-        db = {"users": {}, "cognas": {}, "story_prompts": {}, "promo_codes": {}, "story_recordings": {}, "created_at": _utc_now()}
+        db = {"users": {}, "cognas": {}, "story_prompts": {}, "promo_codes": {}, "story_recordings": {}, "storyteller_users": {}, "created_at": _utc_now()}
         _save_db(db)
         return db
     with open(PORTAL_DB_PATH, "r", encoding="utf-8") as f:
@@ -1376,6 +1586,7 @@ def _load_db() -> Dict[str, Any]:
     db.setdefault("story_prompts", {})
     db.setdefault("promo_codes", {})
     db.setdefault("story_recordings", {})
+    db.setdefault("storyteller_users", {})
     return db
 
 

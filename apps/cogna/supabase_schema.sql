@@ -106,6 +106,25 @@ CREATE TABLE IF NOT EXISTS story_recordings (
 
 CREATE INDEX IF NOT EXISTS story_recordings_promo_idx ON story_recordings(promo_code);
 
+-- ─────────────────────────────────────────────
+-- Migration: Storyteller user accounts
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS storyteller_users (
+  id                     TEXT PRIMARY KEY,
+  email                  TEXT NOT NULL UNIQUE,
+  password_salt          TEXT NOT NULL,
+  password_hash          TEXT NOT NULL,
+  signup_code            TEXT REFERENCES promo_codes(code),
+  password_reset_token   TEXT,
+  password_reset_expires TIMESTAMPTZ,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS storyteller_users_email_idx ON storyteller_users(email);
+
+-- Link recordings to accounts (nullable for pre-auth recordings)
+ALTER TABLE story_recordings ADD COLUMN IF NOT EXISTS storyteller_user_id TEXT REFERENCES storyteller_users(id);
+
 -- Storage bucket for story audio files
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('story-audio', 'story-audio', true)

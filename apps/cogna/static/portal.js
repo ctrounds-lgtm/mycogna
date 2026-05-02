@@ -498,7 +498,7 @@ const portal = {
   async loadStories() {
     try {
       const [codesData, promptsData, recsData] = await Promise.all([
-        req(`${api}/storyteller/promo-codes`, { headers: authHeaders() }),
+        req(`${api}/storyteller/user-codes`, { headers: authHeaders() }),
         req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
         req(`${api}/storyteller/recordings`, { headers: authHeaders() }),
       ]);
@@ -620,7 +620,7 @@ const portal = {
   async generatePromoCode() {
     const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
     try {
-      await req(`${api}/storyteller/promo-codes`, {
+      await req(`${api}/storyteller/user-codes`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: desc }),
@@ -640,9 +640,9 @@ const portal = {
   },
 
   async deactivateCode(code) {
-    if (!confirm(`Deactivate code ${code}? Anyone who has this code won't be able to use it.`)) return;
+    if (!confirm(`Deactivate user code ${code}? New accounts can no longer be created with this code. Existing accounts are unaffected.`)) return;
     try {
-      await req(`${api}/storyteller/promo-codes/${code}`, {
+      await req(`${api}/storyteller/user-codes/${code}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
