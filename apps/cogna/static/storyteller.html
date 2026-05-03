@@ -1016,6 +1016,7 @@
             throw new Error(detail);
           }
           const data = await res.json();
+          stState.answeredPromptIds.add(stState.promptId);
           stState.transcripts.push({
             question: stState.prompts[stState.currentPromptIndex].text,
             transcript: data.transcript || '',
