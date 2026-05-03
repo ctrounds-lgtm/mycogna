@@ -1097,6 +1097,24 @@ async def storyteller_record(
     return {"ok": True, "transcript": transcript, "recording_id": recording_id}
 
 
+@app.get("/api/storyteller/my-recordings")
+def my_recordings(authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    if supabase:
+        r = (supabase.table("story_recordings")
+             .select("prompt_id")
+             .eq("storyteller_user_id", st_user["id"])
+             .execute())
+        prompt_ids = list({rec["prompt_id"] for rec in (r.data or []) if rec.get("prompt_id")})
+    else:
+        db = _load_db()
+        prompt_ids = list({
+            rec["prompt_id"] for rec in db["story_recordings"].values()
+            if rec.get("storyteller_user_id") == st_user["id"] and rec.get("prompt_id")
+        })
+    return {"answered_prompt_ids": prompt_ids}
+
+
 @app.get("/api/storyteller/prompts")
 def list_story_prompts(authorization: Optional[str] = Header(default=None)):
     _auth_user(authorization)

@@ -323,6 +323,25 @@
       accent-color: var(--gold);
       cursor: pointer;
     }
+    .prompt-check-item.answered {
+      color: var(--ink-muted);
+    }
+    .prompt-check-item.answered span {
+      opacity: 0.65;
+    }
+    .prompt-answered-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #5a7a5a;
+      background: #e8f3e8;
+      border-radius: 4px;
+      padding: 1px 7px;
+      margin-left: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      align-self: center;
+    }
     .custom-prompt-row {
       display: flex;
       gap: 8px;
@@ -657,6 +676,7 @@
       authToken: '',
       prompts: [],
       allPrompts: [],
+      answeredPromptIds: new Set(),
       currentPromptIndex: 0,
       transcripts: [],
       promptId: '',
@@ -1044,20 +1064,35 @@
         }
       },
 
-      recordAnother() {
+      async recordAnother() {
         stState.prompts = [...stState.allPrompts];
         stState.currentPromptIndex = 0;
         stState.transcripts = [];
-        st._showPromptSelect();
+        await st._showPromptSelect();
       },
 
-      _showPromptSelect() {
+      async _showPromptSelect() {
+        // Fetch which prompts this user has already recorded
+        try {
+          const res = await fetch(API + '/my-recordings', {
+            headers: { 'Authorization': 'Bearer ' + stState.authToken },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            stState.answeredPromptIds = new Set(data.answered_prompt_ids || []);
+          }
+        } catch (_) {}
+
         const container = document.getElementById('promptCheckList');
-        container.innerHTML = stState.allPrompts.map((p, i) => `
-          <label class="prompt-check-item">
-            <input type="checkbox" data-index="${i}" checked />
+        container.innerHTML = stState.allPrompts.map((p, i) => {
+          const answered = stState.answeredPromptIds.has(p.id);
+          return `
+          <label class="prompt-check-item${answered ? ' answered' : ''}">
+            <input type="checkbox" data-index="${i}" />
             <span>${p.text}</span>
-          </label>`).join('');
+            ${answered ? '<span class="prompt-answered-badge">✓ Recorded</span>' : ''}
+          </label>`;
+        }).join('');
         document.getElementById('customPromptInput').value = '';
         document.getElementById('promptSelectError').classList.add('hidden');
         showScreen('screenPromptSelect');
