@@ -1072,12 +1072,14 @@ async def storyteller_record(
     audio_url = _save_story_audio(recording_id, audio)
 
     signup_code = st_user.get("signup_code") or None
+    # Custom prompts (id starts with "custom-") don't exist in story_prompts table
+    db_prompt_id = None if (prompt_id or "").startswith("custom-") else prompt_id
     if supabase:
         supabase.table("story_recordings").insert({
             "id": recording_id,
             "promo_code": signup_code,
             "storyteller_user_id": st_user["id"],
-            "prompt_id": prompt_id,
+            "prompt_id": db_prompt_id,
             "transcript": transcript,
             "audio_url": audio_url,
         }).execute()
@@ -1087,7 +1089,7 @@ async def storyteller_record(
             "id": recording_id,
             "promo_code": signup_code,
             "storyteller_user_id": st_user["id"],
-            "prompt_id": prompt_id,
+            "prompt_id": db_prompt_id,
             "transcript": transcript,
             "audio_url": audio_url,
             "created_at": _utc_now(),
