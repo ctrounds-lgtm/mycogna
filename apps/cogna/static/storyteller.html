@@ -457,6 +457,37 @@
       white-space: pre-wrap;
     }
 
+    .story-entry {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 18px 0;
+    }
+    .story-entry:last-child { border-bottom: none; }
+    .story-question {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .story-answer {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink);
+      white-space: pre-wrap;
+    }
+    .story-date {
+      font-size: 12px;
+      color: var(--ink-muted);
+      margin-top: 6px;
+    }
+    .stories-empty {
+      text-align: center;
+      color: var(--ink-muted);
+      font-size: 15px;
+      padding: 32px 0;
+    }
+
     .check-circle {
       width: 72px;
       height: 72px;
@@ -664,14 +695,23 @@
       </div>
 
       <button class="btn-primary" onclick="st.recordAnother()">Record another story</button>
-      <button class="btn-secondary" onclick="window.location='/'">← Back to home</button>
+      <button class="btn-secondary" onclick="st.showMyStories()">View all my stories →</button>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="screenMyStories">
+    <div class="inner">
+      <h2 style="margin-bottom:4px;">My Stories</h2>
+      <p style="color:var(--ink-muted);font-size:14px;margin-bottom:24px;">Everything you've shared so far.</p>
+      <div id="myStoriesList"></div>
+      <button class="btn-secondary" style="margin-top:24px;" onclick="st.recordAnother()">← Record another</button>
     </div>
   </div>
 
   <script>
     const API = window.location.origin + '/api/storyteller';
 
-    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenPromptSelect','screenRecord','screenProcessing','screenDone'];
+    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
 
     const stState = {
       userCode: '',
@@ -1074,6 +1114,43 @@
         stState.currentPromptIndex = 0;
         stState.transcripts = [];
         await st._showPromptSelect();
+      },
+
+      async showMyStories() {
+        const container = document.getElementById('myStoriesList');
+        container.innerHTML = '<p style="color:var(--ink-muted);text-align:center;padding:24px 0;">Loading…</p>';
+        showScreen('screenMyStories');
+        try {
+          const res = await fetch(API + '/my-stories', {
+            headers: { 'Authorization': 'Bearer ' + stState.authToken },
+          });
+          if (!res.ok) throw new Error('Could not load stories');
+          const data = await res.json();
+          const recordings = data.recordings || [];
+
+          // Build a prompt lookup from allPrompts for custom questions
+          const localPromptMap = {};
+          for (const p of stState.allPrompts) localPromptMap[p.id] = p.text;
+
+          if (recordings.length === 0) {
+            container.innerHTML = '<p class="stories-empty">No stories recorded yet.</p>';
+            return;
+          }
+          container.innerHTML = recordings.map(rec => {
+            const question = rec.prompt_text || localPromptMap[rec.prompt_id] || 'Custom question';
+            const date = rec.created_at
+              ? new Date(rec.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+              : '';
+            return `
+              <div class="story-entry">
+                <div class="story-question">${question}</div>
+                <div class="story-answer">${rec.transcript || '(No transcript)'}</div>
+                ${date ? `<div class="story-date">${date}</div>` : ''}
+              </div>`;
+          }).join('');
+        } catch (err) {
+          container.innerHTML = `<p class="stories-empty">${err.message}</p>`;
+        }
       },
 
       _mergeCustomPrompts(email) {

@@ -1117,6 +1117,34 @@ def my_recordings(authorization: Optional[str] = Header(default=None)):
     return {"answered_prompt_ids": prompt_ids}
 
 
+@app.get("/api/storyteller/my-stories")
+def my_stories(authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    if supabase:
+        r = (supabase.table("story_recordings")
+             .select("id, prompt_id, transcript, created_at")
+             .eq("storyteller_user_id", st_user["id"])
+             .order("created_at", desc=False)
+             .execute())
+        recordings = r.data or []
+        prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+        for rec in recordings:
+            rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "")
+    else:
+        db = _load_db()
+        recs = [rec for rec in db["story_recordings"].values()
+                if rec.get("storyteller_user_id") == st_user["id"]]
+        recordings = sorted(recs, key=lambda x: x.get("created_at", ""))
+        prompt_map = {p["id"]: p["text"] for p in db["story_prompts"].values()}
+        for rec in recordings:
+            rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "")
+    return {"recordings": recordings}
+
+
 @app.get("/api/storyteller/prompts")
 def list_story_prompts(authorization: Optional[str] = Header(default=None)):
     _auth_user(authorization)
