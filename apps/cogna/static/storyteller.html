@@ -327,8 +327,9 @@
       display: flex;
       gap: 8px;
       margin-top: 16px;
+      align-items: flex-start;
     }
-    .custom-prompt-row input {
+    .custom-prompt-row textarea {
       flex: 1;
       padding: 10px 14px;
       border: 1px solid var(--border);
@@ -337,8 +338,11 @@
       font-family: inherit;
       color: var(--ink);
       background: #fff;
+      height: 80px;
+      resize: vertical;
+      line-height: 1.5;
     }
-    .custom-prompt-row input:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .custom-prompt-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
     .custom-prompt-row button {
       padding: 10px 16px;
       background: var(--gold);
@@ -580,8 +584,7 @@
       <div class="prompt-check-list" id="promptCheckList"></div>
 
       <div class="custom-prompt-row">
-        <input type="text" id="customPromptInput" placeholder="Add your own question…"
-               onkeydown="if(event.key==='Enter') st.addCustomPrompt()" maxlength="300" />
+        <textarea id="customPromptInput" placeholder="Add your own question…" maxlength="300"></textarea>
         <button onclick="st.addCustomPrompt()">+ Add</button>
       </div>
 
