@@ -705,7 +705,8 @@
       <h2 style="margin-bottom:4px;">My Stories</h2>
       <p style="color:var(--ink-muted);font-size:14px;margin-bottom:24px;">Everything you've shared so far.</p>
       <div id="myStoriesList"></div>
-      <button class="btn-secondary" style="margin-top:24px;" onclick="st.recordAnother()">← Record another</button>
+      <button class="btn-primary" id="downloadStoriesBtn" style="margin-top:24px;display:none;" onclick="st.downloadMyStories()">Download my stories</button>
+      <button class="btn-secondary" style="margin-top:10px;" onclick="st.recordAnother()">← Record another</button>
     </div>
   </div>
 
@@ -720,6 +721,7 @@
       prompts: [],
       allPrompts: [],
       answeredPromptIds: new Set(),
+      myStories: [],
       currentPromptIndex: 0,
       transcripts: [],
       promptId: '',
@@ -1119,7 +1121,9 @@
 
       async showMyStories() {
         const container = document.getElementById('myStoriesList');
+        const dlBtn = document.getElementById('downloadStoriesBtn');
         container.innerHTML = '<p style="color:var(--ink-muted);text-align:center;padding:24px 0;">Loading…</p>';
+        dlBtn.style.display = 'none';
         showScreen('screenMyStories');
         try {
           const res = await fetch(API + '/my-stories', {
@@ -1129,29 +1133,64 @@
           const data = await res.json();
           const recordings = data.recordings || [];
 
-          // Build a prompt lookup from allPrompts for custom questions
           const localPromptMap = {};
           for (const p of stState.allPrompts) localPromptMap[p.id] = p.text;
 
-          if (recordings.length === 0) {
+          // Enrich with resolved question text and store for download
+          stState.myStories = recordings.map(rec => ({
+            ...rec,
+            question: rec.prompt_text || localPromptMap[rec.prompt_id] || 'Custom question',
+          }));
+
+          if (stState.myStories.length === 0) {
             container.innerHTML = '<p class="stories-empty">No stories recorded yet.</p>';
             return;
           }
-          container.innerHTML = recordings.map(rec => {
-            const question = rec.prompt_text || localPromptMap[rec.prompt_id] || 'Custom question';
+          container.innerHTML = stState.myStories.map(rec => {
             const date = rec.created_at
               ? new Date(rec.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
               : '';
             return `
               <div class="story-entry">
-                <div class="story-question">${question}</div>
+                <div class="story-question">${rec.question}</div>
                 <div class="story-answer">${rec.transcript || '(No transcript)'}</div>
                 ${date ? `<div class="story-date">${date}</div>` : ''}
               </div>`;
           }).join('');
+          dlBtn.style.display = '';
         } catch (err) {
           container.innerHTML = `<p class="stories-empty">${err.message}</p>`;
         }
+      },
+
+      downloadMyStories() {
+        const name = localStorage.getItem('st_first_name') || 'My';
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const lines = [
+          `${name}'s Stories`,
+          `Downloaded ${today}`,
+          '='.repeat(50),
+          '',
+        ];
+        for (const rec of stState.myStories) {
+          const date = rec.created_at
+            ? new Date(rec.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+          lines.push(rec.question);
+          if (date) lines.push(date);
+          lines.push('');
+          lines.push(rec.transcript || '(No transcript)');
+          lines.push('');
+          lines.push('-'.repeat(50));
+          lines.push('');
+        }
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-stories.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
       },
 
       _mergeCustomPrompts(email) {
