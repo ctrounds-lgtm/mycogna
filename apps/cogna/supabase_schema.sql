@@ -162,6 +162,45 @@ ALTER TABLE story_recordings ALTER COLUMN promo_code DROP NOT NULL;
 -- Migration: persist custom prompts per storyteller user (cross-device support)
 ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS custom_prompts JSONB NOT NULL DEFAULT '[]';
 
+-- ─────────────────────────────────────────────
+-- Memoir Writing Tool (Storyteller+ / Tier 2)
+-- ─────────────────────────────────────────────
+
+-- AI deepening sessions — one per recording the user chooses to deepen
+CREATE TABLE IF NOT EXISTS memoir_sessions (
+  id                   TEXT PRIMARY KEY,
+  storyteller_user_id  TEXT NOT NULL REFERENCES storyteller_users(id) ON DELETE CASCADE,
+  recording_id         TEXT NOT NULL REFERENCES story_recordings(id) ON DELETE CASCADE,
+  messages             JSONB NOT NULL DEFAULT '[]',
+  finished             BOOLEAN NOT NULL DEFAULT false,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS memoir_sessions_user_idx ON memoir_sessions(storyteller_user_id);
+
+-- Book Bibles — Claude's assembled memoir outline (latest overwrites previous)
+CREATE TABLE IF NOT EXISTS book_bibles (
+  id                   TEXT PRIMARY KEY,
+  storyteller_user_id  TEXT NOT NULL REFERENCES storyteller_users(id) ON DELETE CASCADE,
+  content              TEXT NOT NULL DEFAULT '',
+  assembled_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS book_bibles_user_idx ON book_bibles(storyteller_user_id);
+
+-- Chapters — one row per chapter from the outline, editable
+CREATE TABLE IF NOT EXISTS chapters (
+  id                   TEXT PRIMARY KEY,
+  storyteller_user_id  TEXT NOT NULL REFERENCES storyteller_users(id) ON DELETE CASCADE,
+  book_bible_id        TEXT REFERENCES book_bibles(id),
+  title                TEXT NOT NULL DEFAULT '',
+  content              TEXT NOT NULL DEFAULT '',
+  edit_messages        JSONB NOT NULL DEFAULT '[]',
+  sort_order           INTEGER NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS chapters_user_idx ON chapters(storyteller_user_id);
+
 -- Monthly usage tracking for AI Companion (D-tier)
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id          TEXT PRIMARY KEY,

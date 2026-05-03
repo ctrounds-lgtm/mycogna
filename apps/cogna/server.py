@@ -230,6 +230,25 @@ class StoryPasswordResetConfirm(BaseModel):
 class StoryCustomPromptRequest(BaseModel):
     text: str
 
+class MemoirDeepenStartRequest(BaseModel):
+    recording_id: str
+
+class MemoirDeepenChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+class MemoirDeepenFinishRequest(BaseModel):
+    session_id: str
+
+class MemoirChapterRequest(BaseModel):
+    title: str
+    content: str = ""
+    sort_order: int = 0
+    book_bible_id: Optional[str] = None
+
+class MemoirChapterEditRequest(BaseModel):
+    message: str
+
 
 # ----------------------------------------------------
 # FastAPI app
@@ -261,6 +280,11 @@ def companion():
 @app.get("/storyteller")
 def storyteller():
     return FileResponse(ROOT / "static" / "storyteller.html")
+
+
+@app.get("/memoir")
+def memoir():
+    return FileResponse(ROOT / "static" / "memoir.html")
 
 
 @app.get("/signup")
@@ -1407,6 +1431,301 @@ async def respond(
 
 
 # ----------------------------------------------------
+# Memoir Writing Tool endpoints
+# TODO: Add tier check here when Stripe is integrated — Tier 2 (Storyteller+) only
+# ----------------------------------------------------
+
+MEMOIR_DEEPEN_SYSTEM = """You are a warm, skilled memoir interviewer. You have just read the following story transcript from the user. Your job is to ask thoughtful follow-up questions that help the user go deeper — drawing out specific details, sensory memories, emotions, and context they didn't include the first time.
+
+Ask one or two questions at a time. Never more. Listen carefully to each response before asking the next question. Your tone is curious and warm, never clinical or journalistic. You are not evaluating the story — you are helping the storyteller find what's already there.
+
+When the user indicates they are finished, thank them warmly and let them know their story has been saved."""
+
+MEMOIR_ASSEMBLE_SYSTEM = """You are a skilled memoir editor. You have been given a collection of voice-recorded stories and follow-up interview transcripts from one person.
+
+Your job is to:
+1. Identify the major themes running through these stories
+2. Note the person's distinctive voice, humor, and way of seeing the world
+3. Suggest a logical chapter structure that groups related stories
+4. Give each suggested chapter a working title
+5. Briefly note what kinds of stories seem missing that would strengthen the memoir
+
+Format your response as:
+BOOK BIBLE: 3-4 paragraphs describing themes, voice, and emotional arc
+CHAPTER OUTLINE: numbered list of chapter titles with 1-2 sentence descriptions
+WHAT'S MISSING: a short, encouraging paragraph noting gaps
+
+Tone: warm, encouraging, professional. This person's stories matter."""
+
+MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given the raw transcripts assigned to this chapter.
+
+Your job is to:
+1. Summarize what this chapter currently contains
+2. Note its strengths — what's working, what's vivid, what's true
+3. Suggest structural improvements — pacing, order, transitions
+4. Identify any gaps where more detail would strengthen the story
+5. Offer to help rewrite any section the author requests
+
+Important: This is their story, their voice. You are not rewriting it in your own voice — you are helping them find the best version of theirs. Never change the facts. Never add events that didn't happen. Always ask before making significant changes."""
+
+
+def _memoir_db_defaults(db: Dict[str, Any]):
+    db.setdefault("memoir_sessions", {})
+    db.setdefault("book_bibles", {})
+    db.setdefault("chapters", {})
+
+
+@app.get("/api/memoir/dashboard")
+def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("story_recordings").select("id, prompt_id, transcript, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+        recordings = r.data or []
+        prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+        ms = supabase.table("memoir_sessions").select("id, recording_id, finished").eq("storyteller_user_id", user_id).execute()
+        session_map = {s["recording_id"]: s for s in (ms.data or [])}
+        bb = supabase.table("book_bibles").select("id, content, assembled_at").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
+        book_bible = bb.data[0] if bb.data else None
+        ch = supabase.table("chapters").select("id, title, sort_order, content, updated_at").eq("storyteller_user_id", user_id).order("sort_order").execute()
+        chapters = ch.data or []
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        recordings = sorted([rec for rec in db["story_recordings"].values() if rec.get("storyteller_user_id") == user_id], key=lambda x: x.get("created_at", ""))
+        prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+        session_map = {s["recording_id"]: s for s in db["memoir_sessions"].values() if s.get("storyteller_user_id") == user_id}
+        bbs = sorted([b for b in db["book_bibles"].values() if b.get("storyteller_user_id") == user_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        book_bible = bbs[0] if bbs else None
+        chapters = sorted([c for c in db["chapters"].values() if c.get("storyteller_user_id") == user_id], key=lambda x: x.get("sort_order", 0))
+
+    for rec in recordings:
+        rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
+        session = session_map.get(rec["id"])
+        rec["deepening_status"] = "finished" if session and session.get("finished") else ("started" if session else "none")
+        rec["memoir_session_id"] = session["id"] if session else None
+
+    return {"recordings": recordings, "book_bible": book_bible, "chapters": chapters}
+
+
+@app.post("/api/memoir/deepen/start")
+def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("story_recordings").select("*").eq("id", payload.recording_id).eq("storyteller_user_id", user_id).limit(1).execute()
+        recording = r.data[0] if r.data else None
+    else:
+        db = _load_db()
+        rec = db["story_recordings"].get(payload.recording_id)
+        recording = rec if rec and rec.get("storyteller_user_id") == user_id else None
+
+    if not recording:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    transcript = recording.get("transcript", "")
+    system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
+    opening = _generate_memoir_response(system, [{"role": "user", "content": "Please begin."}])
+
+    session_id = "msess_" + secrets.token_hex(8)
+    messages = [{"role": "assistant", "content": opening}]
+    now = _utc_now()
+
+    if supabase:
+        supabase.table("memoir_sessions").insert({"id": session_id, "storyteller_user_id": user_id, "recording_id": payload.recording_id, "messages": messages, "finished": False, "created_at": now, "updated_at": now}).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        db["memoir_sessions"][session_id] = {"id": session_id, "storyteller_user_id": user_id, "recording_id": payload.recording_id, "messages": messages, "finished": False, "created_at": now, "updated_at": now}
+        _save_db(db)
+
+    return {"session_id": session_id, "message": opening, "transcript": transcript}
+
+
+@app.post("/api/memoir/deepen/chat")
+def memoir_deepen_chat(payload: MemoirDeepenChatRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("memoir_sessions").select("*").eq("id", payload.session_id).eq("storyteller_user_id", user_id).limit(1).execute()
+        session = r.data[0] if r.data else None
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        s = db["memoir_sessions"].get(payload.session_id)
+        session = s if s and s.get("storyteller_user_id") == user_id else None
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if supabase:
+        rec_r = supabase.table("story_recordings").select("transcript").eq("id", session["recording_id"]).limit(1).execute()
+        transcript = rec_r.data[0]["transcript"] if rec_r.data else ""
+    else:
+        transcript = db["story_recordings"].get(session["recording_id"], {}).get("transcript", "")
+
+    messages = session.get("messages") or []
+    messages.append({"role": "user", "content": payload.message})
+
+    system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
+    reply = _generate_memoir_response(system, messages)
+    messages.append({"role": "assistant", "content": reply})
+
+    if supabase:
+        supabase.table("memoir_sessions").update({"messages": messages, "updated_at": _utc_now()}).eq("id", payload.session_id).execute()
+    else:
+        db["memoir_sessions"][payload.session_id]["messages"] = messages
+        db["memoir_sessions"][payload.session_id]["updated_at"] = _utc_now()
+        _save_db(db)
+
+    return {"message": reply}
+
+
+@app.post("/api/memoir/deepen/finish")
+def memoir_deepen_finish(payload: MemoirDeepenFinishRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    if supabase:
+        supabase.table("memoir_sessions").update({"finished": True, "updated_at": _utc_now()}).eq("id", payload.session_id).eq("storyteller_user_id", st_user["id"]).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        if payload.session_id in db["memoir_sessions"]:
+            db["memoir_sessions"][payload.session_id]["finished"] = True
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.post("/api/memoir/assemble")
+def memoir_assemble(authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("story_recordings").select("id, prompt_id, transcript, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+        recordings = r.data or []
+        prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+        ms = supabase.table("memoir_sessions").select("recording_id, messages").eq("storyteller_user_id", user_id).eq("finished", True).execute()
+        sessions_by_recording = {s["recording_id"]: s["messages"] for s in (ms.data or [])}
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        recordings = sorted([rec for rec in db["story_recordings"].values() if rec.get("storyteller_user_id") == user_id], key=lambda x: x.get("created_at", ""))
+        prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+        sessions_by_recording = {s["recording_id"]: s["messages"] for s in db["memoir_sessions"].values() if s.get("storyteller_user_id") == user_id and s.get("finished")}
+
+    if not recordings:
+        raise HTTPException(status_code=400, detail="No recordings found to assemble")
+
+    context_parts = []
+    for rec in recordings:
+        question = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
+        context_parts.append(f"QUESTION: {question}\nANSWER: {rec.get('transcript', '')}")
+        if rec["id"] in sessions_by_recording:
+            msgs = sessions_by_recording[rec["id"]]
+            exchanges = [f"  {'AI' if m['role'] == 'assistant' else 'User'}: {m['content']}" for m in msgs]
+            context_parts.append("FOLLOW-UP CONVERSATION:\n" + "\n".join(exchanges))
+        context_parts.append("")
+
+    full_context = "\n".join(context_parts)
+    content = _generate_memoir_response(MEMOIR_ASSEMBLE_SYSTEM, [{"role": "user", "content": full_context}], max_tokens=2000)
+
+    bible_id = "bible_" + secrets.token_hex(8)
+    now = _utc_now()
+    if supabase:
+        supabase.table("book_bibles").insert({"id": bible_id, "storyteller_user_id": user_id, "content": content, "assembled_at": now}).execute()
+    else:
+        db["book_bibles"][bible_id] = {"id": bible_id, "storyteller_user_id": user_id, "content": content, "assembled_at": now}
+        _save_db(db)
+
+    return {"book_bible_id": bible_id, "content": content}
+
+
+@app.get("/api/memoir/chapters")
+def memoir_get_chapters(authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+    if supabase:
+        r = supabase.table("chapters").select("*").eq("storyteller_user_id", user_id).order("sort_order").execute()
+        return {"chapters": r.data or []}
+    db = _load_db(); _memoir_db_defaults(db)
+    chapters = sorted([c for c in db["chapters"].values() if c.get("storyteller_user_id") == user_id], key=lambda x: x.get("sort_order", 0))
+    return {"chapters": chapters}
+
+
+@app.post("/api/memoir/chapters")
+def memoir_create_chapter(payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    chapter_id = "chap_" + secrets.token_hex(8)
+    now = _utc_now()
+    chapter = {"id": chapter_id, "storyteller_user_id": st_user["id"], "book_bible_id": payload.book_bible_id, "title": payload.title, "content": payload.content, "edit_messages": [], "sort_order": payload.sort_order, "created_at": now, "updated_at": now}
+    if supabase:
+        supabase.table("chapters").insert(chapter).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        db["chapters"][chapter_id] = chapter
+        _save_db(db)
+    return {"chapter": chapter}
+
+
+@app.put("/api/memoir/chapters/{chapter_id}")
+def memoir_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    updates = {"title": payload.title, "content": payload.content, "updated_at": _utc_now()}
+    if supabase:
+        supabase.table("chapters").update(updates).eq("id", chapter_id).eq("storyteller_user_id", st_user["id"]).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        if chapter_id in db["chapters"]:
+            db["chapters"][chapter_id].update(updates)
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.post("/api/memoir/chapters/{chapter_id}/edit")
+def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("chapters").select("*").eq("id", chapter_id).eq("storyteller_user_id", user_id).limit(1).execute()
+        chapter = r.data[0] if r.data else None
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        c = db["chapters"].get(chapter_id)
+        chapter = c if c and c.get("storyteller_user_id") == user_id else None
+
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+
+    messages = chapter.get("edit_messages") or []
+    if not messages:
+        system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
+        messages.append({"role": "user", "content": "Please give me your initial editorial feedback on this chapter."})
+        opening = _generate_memoir_response(system, messages)
+        messages.append({"role": "assistant", "content": opening})
+
+    messages.append({"role": "user", "content": payload.message})
+    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
+    reply = _generate_memoir_response(system, messages)
+    messages.append({"role": "assistant", "content": reply})
+
+    if supabase:
+        supabase.table("chapters").update({"edit_messages": messages, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
+    else:
+        db["chapters"][chapter_id]["edit_messages"] = messages
+        db["chapters"][chapter_id]["updated_at"] = _utc_now()
+        _save_db(db)
+
+    return {"message": reply}
+
+
+# ----------------------------------------------------
 # Data access layer — Supabase (primary) + JSON fallback
 # ----------------------------------------------------
 
@@ -1766,6 +2085,9 @@ def _load_db() -> Dict[str, Any]:
     db.setdefault("promo_codes", {})
     db.setdefault("story_recordings", {})
     db.setdefault("storyteller_users", {})
+    db.setdefault("memoir_sessions", {})
+    db.setdefault("book_bibles", {})
+    db.setdefault("chapters", {})
     return db
 
 
@@ -1925,6 +2247,16 @@ def _generate_text_response(system_prompt: str, messages: List[Dict]) -> str:
         model="claude-sonnet-4-6",
         max_tokens=300,
         temperature=0.7,
+        system=system_prompt,
+        messages=messages,
+    )
+    return response.content[0].text
+
+
+def _generate_memoir_response(system_prompt: str, messages: List[Dict], max_tokens: int = 1000) -> str:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=max_tokens,
         system=system_prompt,
         messages=messages,
     )

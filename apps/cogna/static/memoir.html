@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>MyCogna · Memoir</title>
+  <style>
+    :root {
+      --gold: #B8860B;
+      --gold-light: #F5EDD6;
+      --cream: #FAF7F2;
+      --ink: #1C1A17;
+      --ink-muted: #6B6560;
+      --border: #E8E2D9;
+      --danger: #C0392B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Georgia', serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* ── Top nav ── */
+    .top-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      background: #fff; position: sticky; top: 0; z-index: 10;
+    }
+    .top-nav .wordmark { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted); text-transform: uppercase; }
+    .top-nav .nav-right { display: flex; gap: 12px; align-items: center; }
+    .top-nav a, .top-nav button.link-btn { font-size: 13px; color: var(--ink-muted); text-decoration: none; background: none; border: none; cursor: pointer; font-family: inherit; }
+    .top-nav a:hover, .top-nav button.link-btn:hover { color: var(--ink); }
+
+    /* ── Page container ── */
+    .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; width: 100%; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: block; width: 100%; padding: 14px 20px;
+      background: var(--gold); color: #fff; border: none; border-radius: 10px;
+      font-size: 16px; font-family: 'Georgia', serif; font-weight: 600;
+      cursor: pointer; text-align: center; text-decoration: none;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-secondary {
+      display: block; width: 100%; padding: 12px 20px;
+      background: transparent; color: var(--ink); border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
+      cursor: pointer; text-align: center; text-decoration: none; margin-top: 10px;
+    }
+    .btn-secondary:hover { border-color: var(--ink-muted); }
+    .btn-sm {
+      display: inline-block; padding: 7px 14px;
+      background: var(--gold-light); color: var(--gold); border: 1px solid #e0d0a0;
+      border-radius: 6px; font-size: 13px; font-family: 'Georgia', serif;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-sm:hover { background: #eee4c0; }
+
+    /* ── Progress bar ── */
+    .progress-steps {
+      display: flex; gap: 0; margin-bottom: 32px;
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .progress-step {
+      flex: 1; padding: 10px 8px; text-align: center; font-size: 12px;
+      font-weight: 600; color: var(--ink-muted); background: #fff;
+      border-right: 1px solid var(--border); letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .progress-step:last-child { border-right: none; }
+    .progress-step.done { background: var(--gold-light); color: var(--gold); }
+    .progress-step.active { background: var(--gold); color: #fff; }
+
+    /* ── Story cards ── */
+    .story-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 18px; margin-bottom: 12px;
+    }
+    .story-card-question { font-size: 14px; font-weight: 600; color: var(--gold); margin-bottom: 4px; }
+    .story-card-preview { font-size: 14px; color: var(--ink-muted); line-height: 1.5; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .story-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .story-card-date { font-size: 12px; color: var(--ink-muted); }
+    .deepening-badge {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    }
+    .deepening-badge.none { background: #f0ede8; color: var(--ink-muted); }
+    .deepening-badge.started { background: #fff3cd; color: #856404; }
+    .deepening-badge.finished { background: #e8f3e8; color: #3a6a3a; }
+
+    /* ── Chat interface ── */
+    .chat-transcript {
+      background: #fff; border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; margin-bottom: 20px; max-height: 200px; overflow-y: auto;
+      font-size: 14px; line-height: 1.65; color: var(--ink-muted);
+    }
+    .chat-transcript summary { font-weight: 600; color: var(--ink); cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+    .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; }
+    .chat-bubble.ai { background: var(--gold-light); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .chat-bubble.user { background: var(--ink); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .chat-input-row textarea {
+      flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: 'Georgia', serif; color: var(--ink);
+      resize: none; height: 70px; line-height: 1.5;
+    }
+    .chat-input-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .chat-send-btn {
+      padding: 12px 18px; background: var(--gold); color: #fff; border: none;
+      border-radius: 10px; font-size: 15px; cursor: pointer; white-space: nowrap; font-family: 'Georgia', serif;
+    }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Assemble output ── */
+    .assemble-output {
+      background: #fff; border: 1px solid var(--border); border-radius: 12px;
+      padding: 24px; font-size: 15px; line-height: 1.8; color: var(--ink);
+      white-space: pre-wrap; margin: 20px 0;
+    }
+
+    /* ── Chapter list ── */
+    .chapter-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px; gap: 12px; cursor: pointer;
+    }
+    .chapter-item:hover { border-color: var(--gold); }
+    .chapter-item.active { border-color: var(--gold); background: var(--gold-light); }
+    .chapter-title-text { font-size: 15px; font-weight: 600; }
+    .chapter-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* ── Edit layout ── */
+    .edit-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .edit-sidebar { width: 220px; flex-shrink: 0; }
+    .edit-main { flex: 1; min-width: 0; }
+    @media (max-width: 600px) {
+      .edit-layout { flex-direction: column; }
+      .edit-sidebar { width: 100%; }
+    }
+
+    /* ── Chapter content editor ── */
+    .chapter-editor {
+      width: 100%; min-height: 200px; padding: 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
+      line-height: 1.7; resize: vertical; color: var(--ink); margin-bottom: 12px;
+    }
+    .chapter-editor:focus { outline: 2px solid var(--gold); border-color: transparent; }
+
+    /* ── Misc ── */
+    .section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 12px; }
+    .empty-state { text-align: center; color: var(--ink-muted); padding: 32px 0; font-size: 15px; }
+    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
+    .loading-msg { color: var(--ink-muted); font-size: 14px; font-style: italic; }
+    h1 { font-size: clamp(24px, 5vw, 36px); margin-bottom: 6px; }
+    h2 { font-size: clamp(20px, 4vw, 28px); margin-bottom: 6px; }
+    .sub { color: var(--ink-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .stat-row { display: flex; gap: 20px; margin-bottom: 24px; }
+    .stat { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: DASHBOARD
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenDashboard">
+  <nav class="top-nav">
+    <span class="wordmark">MyCogna · Memoir</span>
+    <div class="nav-right">
+      <a href="/storyteller">← Storyteller</a>
+      <button class="link-btn" onclick="m.signOut()">Sign out</button>
+    </div>
+  </nav>
+  <div class="page">
+    <h1>Your Memoir</h1>
+    <p class="sub" id="dashWelcome">Building your story, one memory at a time.</p>
+
+    <div class="progress-steps">
+      <div class="progress-step done" id="stepRecord">1 · Record</div>
+      <div class="progress-step" id="stepDeepen">2 · Deepen</div>
+      <div class="progress-step" id="stepAssemble">3 · Assemble</div>
+      <div class="progress-step" id="stepEdit">4 · Edit</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="statRecordings">—</div><div class="stat-label">Stories recorded</div></div>
+      <div class="stat"><div class="stat-num" id="statDeepened">—</div><div class="stat-label">Deepened</div></div>
+      <div class="stat"><div class="stat-num" id="statChapters">—</div><div class="stat-label">Chapters</div></div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <a href="/storyteller" class="btn-primary" style="display:inline-block;width:auto;padding:12px 24px;text-decoration:none;">+ Record a new story</a>
+    </div>
+
+    <div class="section-label">Your stories</div>
+    <div id="dashStoryList"><p class="loading-msg">Loading…</p></div>
+
+    <hr class="divider" />
+
+    <div class="section-label">Memoir outline</div>
+    <div id="dashAssembleSection">
+      <p class="sub" style="font-size:14px;">When you have enough stories, click below to have Claude read everything and generate your Book Bible and chapter outline.</p>
+      <button class="btn-primary" onclick="m.showAssemble()">Assemble my memoir →</button>
+    </div>
+
+    <div id="dashChapterSection" style="display:none; margin-top:24px;">
+      <div class="section-label">Chapters</div>
+      <div id="dashChapterList"></div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="m.showEdit()">Edit chapters →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: DEEPEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenDeepen">
+  <nav class="top-nav">
+    <button class="link-btn" onclick="m.showDashboard()">← Dashboard</button>
+    <span class="wordmark">MyCogna · Memoir</span>
+    <div></div>
+  </nav>
+  <div class="page">
+    <h2>Go Deeper</h2>
+    <p class="sub">Claude will ask follow-up questions to help you find more detail in this story.</p>
+
+    <details style="margin-bottom:20px;">
+      <summary style="font-size:13px;font-weight:600;color:var(--ink-muted);cursor:pointer;margin-bottom:8px;">Your original recording</summary>
+      <div class="chat-transcript" id="deepenTranscript"></div>
+    </details>
+
+    <div class="chat-messages" id="deepenMessages"></div>
+
+    <div class="chat-input-row">
+      <textarea id="deepenInput" placeholder="Type your response…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();m.deepenSend();}"></textarea>
+      <button class="chat-send-btn" id="deepenSendBtn" onclick="m.deepenSend()">Send</button>
+    </div>
+
+    <div id="deepenError" class="error-msg hidden" style="margin-top:8px;"></div>
+
+    <button class="btn-secondary" style="margin-top:20px;" onclick="m.deepenFinish()">I'm done with this story →</button>
+    <button class="btn-secondary" onclick="m.showDashboard()">Skip for now</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: ASSEMBLE
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenAssemble">
+  <nav class="top-nav">
+    <button class="link-btn" onclick="m.showDashboard()">← Dashboard</button>
+    <span class="wordmark">MyCogna · Memoir</span>
+    <div></div>
+  </nav>
+  <div class="page">
+    <h2>Assemble My Memoir</h2>
+    <p class="sub" id="assembleSubtext">Claude will read all your stories and generate a Book Bible and chapter outline.</p>
+
+    <div id="assembleAction">
+      <button class="btn-primary" id="assembleBtn" onclick="m.runAssemble()">Assemble my memoir →</button>
+    </div>
+
+    <div id="assembleLoading" style="display:none; text-align:center; padding:40px 0;">
+      <p class="loading-msg">Claude is reading your stories… this may take 30–60 seconds.</p>
+    </div>
+
+    <div id="assembleOutput" style="display:none;">
+      <div class="assemble-output" id="assembleContent"></div>
+      <button class="btn-primary" onclick="m.downloadBible()">Download Book Bible</button>
+      <button class="btn-secondary" onclick="m.proceedToEdit()">Proceed to editing →</button>
+      <button class="btn-secondary" onclick="m.runAssemble()">Reassemble with new stories</button>
+    </div>
+
+    <div id="assembleError" class="error-msg" style="display:none; margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: EDIT
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenEdit">
+  <nav class="top-nav">
+    <button class="link-btn" onclick="m.showDashboard()">← Dashboard</button>
+    <span class="wordmark">MyCogna · Memoir</span>
+    <div class="nav-right">
+      <button class="btn-sm" onclick="m.downloadManuscript()">Download manuscript</button>
+    </div>
+  </nav>
+  <div class="page">
+    <h2>Edit Chapters</h2>
+    <p class="sub">Select a chapter, then work with Claude to refine it.</p>
+
+    <div class="edit-layout">
+      <div class="edit-sidebar">
+        <div class="section-label">Chapters</div>
+        <div id="editChapterList"></div>
+        <button class="btn-sm" style="margin-top:12px; width:100%;" onclick="m.addChapter()">+ Add chapter</button>
+      </div>
+      <div class="edit-main" id="editMain">
+        <p class="empty-state">Select a chapter to begin editing.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = window.location.origin + '/api/memoir';
+  const ST_API = window.location.origin + '/api/storyteller';
+
+  const mState = {
+    authToken: '',
+    userEmail: '',
+    firstName: '',
+    recordings: [],
+    bookBible: null,
+    bookBibleContent: '',
+    chapters: [],
+    currentRecording: null,
+    deepenSessionId: null,
+    currentChapterId: null,
+  };
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  async function apiFetch(path, opts = {}) {
+    opts.headers = opts.headers || {};
+    if (mState.authToken) opts.headers['Authorization'] = 'Bearer ' + mState.authToken;
+    const res = await fetch(path, opts);
+    if (!res.ok) {
+      let detail = `Error ${res.status}`;
+      try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+
+  const m = {
+
+    signOut() {
+      localStorage.removeItem('st_token');
+      localStorage.removeItem('st_email');
+      localStorage.removeItem('st_first_name');
+      window.location = '/storyteller';
+    },
+
+    async showDashboard() {
+      showScreen('screenDashboard');
+      try {
+        const data = await apiFetch(API + '/dashboard');
+        mState.recordings = data.recordings || [];
+        mState.bookBible = data.book_bible;
+        mState.chapters = data.chapters || [];
+        m._renderDashboard();
+      } catch (err) {
+        document.getElementById('dashStoryList').innerHTML = `<p class="error-msg">${err.message}</p>`;
+      }
+    },
+
+    _renderDashboard() {
+      const recs = mState.recordings;
+      const deepened = recs.filter(r => r.deepening_status === 'finished').length;
+      document.getElementById('statRecordings').textContent = recs.length;
+      document.getElementById('statDeepened').textContent = deepened;
+      document.getElementById('statChapters').textContent = mState.chapters.length;
+      document.getElementById('dashWelcome').textContent = `Welcome back${mState.firstName ? ', ' + mState.firstName : ''}. Your memoir is taking shape.`;
+
+      // Progress steps
+      if (deepened > 0) document.getElementById('stepDeepen').classList.add('done');
+      if (mState.bookBible) document.getElementById('stepAssemble').classList.add('done');
+      if (mState.chapters.some(c => c.content)) document.getElementById('stepEdit').classList.add('done');
+
+      // Story list
+      const list = document.getElementById('dashStoryList');
+      if (recs.length === 0) {
+        list.innerHTML = '<p class="empty-state">No stories recorded yet. <a href="/storyteller">Record your first story →</a></p>';
+      } else {
+        list.innerHTML = recs.map(rec => {
+          const preview = (rec.transcript || '').slice(0, 120) + ((rec.transcript || '').length > 120 ? '…' : '');
+          const date = rec.created_at ? new Date(rec.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+          const badgeClass = rec.deepening_status;
+          const badgeLabel = {none: 'Not deepened', started: 'In progress', finished: '✓ Deepened'}[rec.deepening_status] || '';
+          return `
+            <div class="story-card">
+              <div class="story-card-question">${rec.prompt_text || 'Custom question'}</div>
+              <div class="story-card-preview">${preview || '(No transcript)'}</div>
+              <div class="story-card-footer">
+                <span class="story-card-date">${date}</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span class="deepening-badge ${badgeClass}">${badgeLabel}</span>
+                  ${rec.deepening_status !== 'finished'
+                    ? `<button class="btn-sm" onclick="m.startDeepen('${rec.id}')">Go deeper with AI</button>`
+                    : ''}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      // Chapters section
+      if (mState.chapters.length > 0) {
+        document.getElementById('dashChapterSection').style.display = '';
+        document.getElementById('dashChapterList').innerHTML = mState.chapters.map(c =>
+          `<div class="chapter-item" onclick="m.showEdit('${c.id}')">
+            <span class="chapter-title-text">${c.title}</span>
+            <span class="btn-sm">Edit →</span>
+          </div>`
+        ).join('');
+      }
+
+      // Assemble subtext
+      document.getElementById('assembleSubtext') && (
+        document.getElementById('assembleSubtext').textContent =
+          `${recs.length} ${recs.length === 1 ? 'story' : 'stories'} and ${deepened} deepening ${deepened === 1 ? 'session' : 'sessions'} will be included.`
+      );
+    },
+
+    async startDeepen(recordingId) {
+      const rec = mState.recordings.find(r => r.id === recordingId);
+      mState.currentRecording = rec;
+      document.getElementById('deepenTranscript').textContent = rec ? (rec.transcript || '(No transcript)') : '';
+      document.getElementById('deepenMessages').innerHTML = '<p class="loading-msg">Claude is reading your story…</p>';
+      document.getElementById('deepenError').classList.add('hidden');
+      showScreen('screenDeepen');
+
+      try {
+        const data = await apiFetch(API + '/deepen/start', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({recording_id: recordingId}),
+        });
+        mState.deepenSessionId = data.session_id;
+        m._appendMessage('ai', data.message);
+        document.getElementById('deepenMessages').querySelector('.loading-msg') && (document.getElementById('deepenMessages').innerHTML = '');
+        m._appendMessage('ai', data.message);
+      } catch (err) {
+        document.getElementById('deepenMessages').innerHTML = '';
+        document.getElementById('deepenError').textContent = err.message;
+        document.getElementById('deepenError').style.display = '';
+      }
+    },
+
+    _appendMessage(role, text) {
+      const container = document.getElementById('deepenMessages');
+      const loadingEl = container.querySelector('.loading-msg');
+      if (loadingEl) loadingEl.remove();
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${role}`;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    },
+
+    async deepenSend() {
+      const input = document.getElementById('deepenInput');
+      const text = input.value.trim();
+      if (!text || !mState.deepenSessionId) return;
+      input.value = '';
+      const btn = document.getElementById('deepenSendBtn');
+      btn.disabled = true;
+      m._appendMessage('user', text);
+      m._appendMessage('ai', '…');
+
+      try {
+        const data = await apiFetch(API + '/deepen/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({session_id: mState.deepenSessionId, message: text}),
+        });
+        document.querySelectorAll('#deepenMessages .chat-bubble.ai').forEach((el, i, arr) => {
+          if (i === arr.length - 1) el.textContent = data.message;
+        });
+      } catch (err) {
+        document.getElementById('deepenError').textContent = err.message;
+        document.getElementById('deepenError').style.display = '';
+      } finally {
+        btn.disabled = false;
+        input.focus();
+      }
+    },
+
+    async deepenFinish() {
+      if (!mState.deepenSessionId) { m.showDashboard(); return; }
+      try {
+        await apiFetch(API + '/deepen/finish', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({session_id: mState.deepenSessionId}),
+        });
+      } catch (_) {}
+      mState.deepenSessionId = null;
+      m.showDashboard();
+    },
+
+    showAssemble() {
+      if (mState.bookBible) {
+        document.getElementById('assembleContent').textContent = mState.bookBible.content || '';
+        document.getElementById('assembleOutput').style.display = '';
+        document.getElementById('assembleAction').style.display = 'none';
+      } else {
+        document.getElementById('assembleOutput').style.display = 'none';
+        document.getElementById('assembleAction').style.display = '';
+      }
+      document.getElementById('assembleLoading').style.display = 'none';
+      document.getElementById('assembleError').style.display = 'none';
+      showScreen('screenAssemble');
+    },
+
+    async runAssemble() {
+      document.getElementById('assembleAction').style.display = 'none';
+      document.getElementById('assembleOutput').style.display = 'none';
+      document.getElementById('assembleLoading').style.display = '';
+      document.getElementById('assembleError').style.display = 'none';
+
+      try {
+        const data = await apiFetch(API + '/assemble', {method: 'POST'});
+        mState.bookBible = {id: data.book_bible_id, content: data.content};
+        mState.bookBibleContent = data.content;
+        document.getElementById('assembleContent').textContent = data.content;
+        document.getElementById('assembleLoading').style.display = 'none';
+        document.getElementById('assembleOutput').style.display = '';
+      } catch (err) {
+        document.getElementById('assembleLoading').style.display = 'none';
+        document.getElementById('assembleAction').style.display = '';
+        document.getElementById('assembleError').textContent = err.message;
+        document.getElementById('assembleError').style.display = '';
+      }
+    },
+
+    downloadBible() {
+      const content = mState.bookBible ? mState.bookBible.content : '';
+      const name = mState.firstName || 'My';
+      const blob = new Blob([`${name}'s Book Bible\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${name.toLowerCase()}-book-bible.txt`; a.click();
+    },
+
+    async proceedToEdit() {
+      await m.showEdit();
+    },
+
+    async showEdit(selectChapterId) {
+      showScreen('screenEdit');
+      try {
+        const data = await apiFetch(API + '/chapters');
+        mState.chapters = data.chapters || [];
+        m._renderEditSidebar(selectChapterId);
+        if (selectChapterId) m.loadChapter(selectChapterId);
+        else if (mState.chapters.length > 0) m.loadChapter(mState.chapters[0].id);
+      } catch (err) {
+        document.getElementById('editMain').innerHTML = `<p class="error-msg">${err.message}</p>`;
+      }
+    },
+
+    _renderEditSidebar(activeId) {
+      const list = document.getElementById('editChapterList');
+      if (mState.chapters.length === 0) {
+        list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Click below to add one.</p>';
+        return;
+      }
+      list.innerHTML = mState.chapters.map(c =>
+        `<div class="chapter-item ${c.id === activeId ? 'active' : ''}" onclick="m.loadChapter('${c.id}')" id="chap-item-${c.id}">
+          <span class="chapter-title-text" style="font-size:14px;">${c.title}</span>
+        </div>`
+      ).join('');
+    },
+
+    async loadChapter(chapterId) {
+      mState.currentChapterId = chapterId;
+      document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
+      const item = document.getElementById('chap-item-' + chapterId);
+      if (item) item.classList.add('active');
+
+      const chapter = mState.chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+
+      document.getElementById('editMain').innerHTML = `
+        <div>
+          <div class="section-label">${chapter.title}</div>
+          <textarea class="chapter-editor" id="chapterEditor" placeholder="Paste or write chapter content here…">${chapter.content || ''}</textarea>
+          <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <button class="btn-sm" onclick="m.saveChapter()">Save chapter</button>
+            <button class="btn-sm" onclick="m.downloadChapter()">Download chapter</button>
+          </div>
+          <hr class="divider" />
+          <div class="section-label">Editorial feedback</div>
+          <div class="chat-messages" id="editMessages"><p class="loading-msg">Ask Claude for feedback, or request a rewrite of any section.</p></div>
+          <div class="chat-input-row" style="margin-top:12px;">
+            <textarea id="editInput" placeholder="Ask Claude for feedback or a rewrite…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();m.editSend();}"></textarea>
+            <button class="chat-send-btn" id="editSendBtn" onclick="m.editSend()">Send</button>
+          </div>
+          <div id="editError" class="error-msg" style="display:none;margin-top:8px;"></div>
+        </div>`;
+    },
+
+    async saveChapter() {
+      const chapter = mState.chapters.find(c => c.id === mState.currentChapterId);
+      if (!chapter) return;
+      const content = document.getElementById('chapterEditor').value;
+      try {
+        await apiFetch(API + '/chapters/' + mState.currentChapterId, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title: chapter.title, content, sort_order: chapter.sort_order}),
+        });
+        chapter.content = content;
+      } catch (err) {
+        document.getElementById('editError').textContent = err.message;
+        document.getElementById('editError').style.display = '';
+      }
+    },
+
+    downloadChapter() {
+      const chapter = mState.chapters.find(c => c.id === mState.currentChapterId);
+      if (!chapter) return;
+      const content = document.getElementById('chapterEditor').value || chapter.content || '';
+      const blob = new Blob([`${chapter.title}\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${chapter.title.toLowerCase().replace(/\s+/g, '-')}.txt`; a.click();
+    },
+
+    downloadManuscript() {
+      const name = mState.firstName || 'My';
+      const parts = mState.chapters.map(c => `${c.title}\n${'='.repeat(50)}\n\n${c.content || ''}`);
+      const blob = new Blob([parts.join('\n\n\n')], {type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${name.toLowerCase()}-manuscript.txt`; a.click();
+    },
+
+    async addChapter() {
+      const title = prompt('Chapter title:');
+      if (!title) return;
+      try {
+        const data = await apiFetch(API + '/chapters', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title, content: '', sort_order: mState.chapters.length}),
+        });
+        mState.chapters.push(data.chapter);
+        m._renderEditSidebar(data.chapter.id);
+        m.loadChapter(data.chapter.id);
+      } catch (err) { alert(err.message); }
+    },
+
+    _appendEditMessage(role, text) {
+      const container = document.getElementById('editMessages');
+      if (!container) return;
+      const loading = container.querySelector('.loading-msg');
+      if (loading) loading.remove();
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${role}`;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    },
+
+    async editSend() {
+      const input = document.getElementById('editInput');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text || !mState.currentChapterId) return;
+      input.value = '';
+      const btn = document.getElementById('editSendBtn');
+      if (btn) btn.disabled = true;
+      m._appendEditMessage('user', text);
+      m._appendEditMessage('ai', '…');
+
+      try {
+        const data = await apiFetch(API + '/chapters/' + mState.currentChapterId + '/edit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text}),
+        });
+        document.querySelectorAll('#editMessages .chat-bubble.ai').forEach((el, i, arr) => {
+          if (i === arr.length - 1) el.textContent = data.message;
+        });
+      } catch (err) {
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (input) input.focus();
+      }
+    },
+  };
+
+  // ── Boot ──
+  window.addEventListener('load', async () => {
+    const token = localStorage.getItem('st_token');
+    if (!token) { window.location = '/storyteller'; return; }
+
+    mState.authToken = token;
+    mState.userEmail = localStorage.getItem('st_email') || '';
+    mState.firstName = localStorage.getItem('st_first_name') || '';
+
+    // Verify token is still valid
+    try {
+      await fetch(ST_API + '/me', {headers: {'Authorization': 'Bearer ' + token}})
+        .then(r => { if (!r.ok) throw new Error('expired'); });
+    } catch {
+      window.location = '/storyteller';
+      return;
+    }
+
+    m.showDashboard();
+  });
+</script>
+</body>
+</html>
