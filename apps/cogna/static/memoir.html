@@ -439,13 +439,13 @@
           body: JSON.stringify({recording_id: recordingId}),
         });
         mState.deepenSessionId = data.session_id;
-        m._appendMessage('ai', data.message);
-        document.getElementById('deepenMessages').querySelector('.loading-msg') && (document.getElementById('deepenMessages').innerHTML = '');
+        document.getElementById('deepenMessages').innerHTML = '';
         m._appendMessage('ai', data.message);
       } catch (err) {
         document.getElementById('deepenMessages').innerHTML = '';
-        document.getElementById('deepenError').textContent = err.message;
-        document.getElementById('deepenError').style.display = '';
+        const errEl = document.getElementById('deepenError');
+        errEl.textContent = err.message;
+        errEl.style.display = '';
       }
     },
 
