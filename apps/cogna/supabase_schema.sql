@@ -98,6 +98,25 @@ CREATE TABLE IF NOT EXISTS story_prompts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Default system prompts (seed data — run once)
+INSERT INTO story_prompts (id, text, active, created_by, created_at) VALUES
+  ('sys-001', 'Where did you grow up, and what do you remember most about that place?',                    true, 'system', '2026-01-01 00:00:01+00'),
+  ('sys-002', 'Tell me about the home you grew up in — what did it look, smell, and feel like?',           true, 'system', '2026-01-01 00:00:02+00'),
+  ('sys-003', 'Who was the most influential person in your childhood, and why?',                           true, 'system', '2026-01-01 00:00:03+00'),
+  ('sys-004', 'Describe a moment that changed the direction of your life.',                                true, 'system', '2026-01-01 00:00:04+00'),
+  ('sys-005', 'What is the hardest thing you''ve ever been through, and what did it teach you?',          true, 'system', '2026-01-01 00:00:05+00'),
+  ('sys-006', 'Tell me about a time you took a risk that surprised even you.',                             true, 'system', '2026-01-01 00:00:06+00'),
+  ('sys-007', 'What work have you done that you''re most proud of, and why did it matter?',               true, 'system', '2026-01-01 00:00:07+00'),
+  ('sys-008', 'Was there a moment when you knew what you were meant to do?',                               true, 'system', '2026-01-01 00:00:08+00'),
+  ('sys-009', 'Tell me about a friendship that shaped who you are.',                                       true, 'system', '2026-01-01 00:00:09+00'),
+  ('sys-010', 'How did you meet the most important person in your life?',                                  true, 'system', '2026-01-01 00:00:10+00'),
+  ('sys-011', 'What do you know now that you wish you''d known at 25?',                                   true, 'system', '2026-01-01 00:00:11+00'),
+  ('sys-012', 'What values do you hope the people who love you will carry forward?',                       true, 'system', '2026-01-01 00:00:12+00'),
+  ('sys-013', 'What story do you most want your grandchildren to know?',                                   true, 'system', '2026-01-01 00:00:13+00'),
+  ('sys-014', 'Describe a meal, a place, or a moment you never want to forget.',                           true, 'system', '2026-01-01 00:00:14+00'),
+  ('sys-015', 'What made you laugh more than anything else in your life?',                                 true, 'system', '2026-01-01 00:00:15+00')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE INDEX IF NOT EXISTS story_prompts_active_idx ON story_prompts(active);
 
 -- Story recordings — one row per submitted recording
