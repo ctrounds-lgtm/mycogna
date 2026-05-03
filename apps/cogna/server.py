@@ -227,6 +227,9 @@ class StoryPasswordResetConfirm(BaseModel):
     token: str
     password: str
 
+class StoryCustomPromptRequest(BaseModel):
+    text: str
+
 
 # ----------------------------------------------------
 # FastAPI app
@@ -893,7 +896,7 @@ def storyteller_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_storyteller_user(authorization)
     prompts = _get_active_prompts()
     return {
-        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", "")},
+        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", ""), "custom_prompts": _user_custom_prompts(user)},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -963,7 +966,7 @@ def storyteller_signup(payload: StorySignupRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": payload.first_name.strip(), "last_name": payload.last_name.strip(), "signup_code": code or ""},
+        "user": {"email": email, "first_name": payload.first_name.strip(), "last_name": payload.last_name.strip(), "signup_code": code or "", "custom_prompts": []},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -982,7 +985,7 @@ def storyteller_login(payload: StoryLoginRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", "")},
+        "user": {"email": email, "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", ""), "custom_prompts": _user_custom_prompts(user)},
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -1143,6 +1146,22 @@ def my_stories(authorization: Optional[str] = Header(default=None)):
         for rec in recordings:
             rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "")
     return {"recordings": recordings}
+
+
+@app.post("/api/storyteller/custom-prompts")
+def add_custom_prompt(
+    payload: StoryCustomPromptRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    st_user = _auth_storyteller_user(authorization)
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Prompt text is required")
+    new_prompt = {"id": "custom-" + secrets.token_hex(6), "text": text}
+    existing = _user_custom_prompts(st_user)
+    existing.append(new_prompt)
+    _update_storyteller_user(st_user["email"], {"custom_prompts": existing})
+    return {"prompt": new_prompt, "custom_prompts": existing}
 
 
 @app.get("/api/storyteller/prompts")
@@ -1550,6 +1569,11 @@ def _list_sessions(primary_cogna_id: str) -> List[Dict[str, Any]]:
 # ----------------------------------------------------
 # Storyteller auth helpers
 # ----------------------------------------------------
+
+def _user_custom_prompts(user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    cp = user.get("custom_prompts") or []
+    return cp if isinstance(cp, list) else []
+
 
 def _get_storyteller_user(email: str) -> Optional[Dict[str, Any]]:
     if supabase:

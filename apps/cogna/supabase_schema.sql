@@ -159,6 +159,9 @@ ALTER TABLE story_recordings ADD COLUMN IF NOT EXISTS storyteller_user_id TEXT R
 -- Migration: allow recordings without a promo code (users who signed up directly)
 ALTER TABLE story_recordings ALTER COLUMN promo_code DROP NOT NULL;
 
+-- Migration: persist custom prompts per storyteller user (cross-device support)
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS custom_prompts JSONB NOT NULL DEFAULT '[]';
+
 -- Monthly usage tracking for AI Companion (D-tier)
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id          TEXT PRIMARY KEY,

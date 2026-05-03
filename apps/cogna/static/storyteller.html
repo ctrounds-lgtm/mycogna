@@ -825,7 +825,7 @@
           localStorage.setItem('st_first_name', result.user.first_name || '');
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.allPrompts = [...stState.prompts];
-          st._mergeCustomPrompts(result.user.email);
+          st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           st._showPromptSelect();
@@ -863,7 +863,7 @@
           localStorage.setItem('st_first_name', result.user.first_name || '');
           stState.prompts = result.prompts || [];
           stState.allPrompts = [...stState.prompts];
-          st._mergeCustomPrompts(result.user.email);
+          st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           if (stState.prompts.length === 0) {
@@ -1193,12 +1193,19 @@
         URL.revokeObjectURL(url);
       },
 
-      _mergeCustomPrompts(email) {
+      _mergeCustomPrompts(email, serverCustomPrompts) {
+        const existingIds = new Set(stState.allPrompts.map(p => p.id));
+
+        // Primary: server-stored custom prompts (cross-device)
+        for (const p of (serverCustomPrompts || [])) {
+          if (!existingIds.has(p.id)) { stState.allPrompts.push(p); existingIds.add(p.id); }
+        }
+
+        // Fallback: localStorage prompts added before server persistence was built
         const key = 'st_custom_prompts_' + (email || localStorage.getItem('st_email') || 'default');
         const saved = JSON.parse(localStorage.getItem(key) || '[]');
-        const existingIds = new Set(stState.allPrompts.map(p => p.id));
         for (const p of saved) {
-          if (!existingIds.has(p.id)) stState.allPrompts.push(p);
+          if (!existingIds.has(p.id)) { stState.allPrompts.push(p); existingIds.add(p.id); }
         }
       },
 
@@ -1231,26 +1238,34 @@
         showScreen('screenPromptSelect');
       },
 
-      addCustomPrompt() {
+      async addCustomPrompt() {
         const input = document.getElementById('customPromptInput');
         const text = input.value.trim();
         if (!text) return;
-        const newPrompt = { id: 'custom-' + Date.now(), text };
+        input.value = '';
+
+        let newPrompt;
+        try {
+          const res = await fetch(API + '/custom-prompts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + stState.authToken },
+            body: JSON.stringify({ text }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            newPrompt = data.prompt;
+          }
+        } catch (_) {}
+
+        // Fall back to a local ID if the server call failed
+        if (!newPrompt) newPrompt = { id: 'custom-' + Date.now(), text };
+
         stState.allPrompts.push(newPrompt);
-
-        // Persist to localStorage so custom prompts survive logout
-        const email = localStorage.getItem('st_email') || 'default';
-        const key = 'st_custom_prompts_' + email;
-        const saved = JSON.parse(localStorage.getItem(key) || '[]');
-        saved.push(newPrompt);
-        localStorage.setItem(key, JSON.stringify(saved));
-
         const container = document.getElementById('promptCheckList');
         const label = document.createElement('label');
         label.className = 'prompt-check-item';
         label.innerHTML = `<input type="checkbox" data-index="${stState.allPrompts.length - 1}" checked /><span>${text}</span>`;
         container.appendChild(label);
-        input.value = '';
         input.focus();
       },
 
@@ -1290,7 +1305,7 @@
             stState.authToken = storedToken;
             stState.prompts = data.prompts || [];
             stState.allPrompts = [...stState.prompts];
-            st._mergeCustomPrompts(data.user && data.user.email);
+            st._mergeCustomPrompts(data.user && data.user.email, data.user && data.user.custom_prompts);
             stState.currentPromptIndex = 0;
             stState.transcripts = [];
             if (stState.prompts.length > 0) {
