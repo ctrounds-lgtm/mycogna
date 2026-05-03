@@ -31,7 +31,7 @@
     }
 
     /* ── NAV ── */
-    nav {
+    body > nav {
       position: fixed;
       top: 0; left: 0; right: 0;
       height: var(--nav-h);
@@ -782,7 +782,7 @@
     }
 
     @media (max-width: 640px) {
-      nav { padding: 0 20px; }
+      body > nav { padding: 0 20px; }
       .nav-links { display: none; }
       .nav-links.open {
         display: flex;
