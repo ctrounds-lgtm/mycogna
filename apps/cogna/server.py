@@ -1476,7 +1476,7 @@ def _memoir_db_defaults(db: Dict[str, Any]):
 
 
 @app.get("/api/memoir/dashboard")
-def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
+async def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
 
@@ -1513,7 +1513,7 @@ def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
 
 
 @app.post("/api/memoir/deepen/start")
-def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
     print(f"[MEMOIR] deepen/start recording_id={payload.recording_id} user={user_id}")
@@ -1552,7 +1552,7 @@ def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Option
 
 
 @app.post("/api/memoir/deepen/chat")
-def memoir_deepen_chat(payload: MemoirDeepenChatRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_deepen_chat(payload: MemoirDeepenChatRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
 
@@ -1591,7 +1591,7 @@ def memoir_deepen_chat(payload: MemoirDeepenChatRequest, authorization: Optional
 
 
 @app.post("/api/memoir/deepen/finish")
-def memoir_deepen_finish(payload: MemoirDeepenFinishRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_deepen_finish(payload: MemoirDeepenFinishRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     if supabase:
         supabase.table("memoir_sessions").update({"finished": True, "updated_at": _utc_now()}).eq("id", payload.session_id).eq("storyteller_user_id", st_user["id"]).execute()
@@ -1604,7 +1604,7 @@ def memoir_deepen_finish(payload: MemoirDeepenFinishRequest, authorization: Opti
 
 
 @app.post("/api/memoir/assemble")
-def memoir_assemble(authorization: Optional[str] = Header(default=None)):
+async def memoir_assemble(authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
 
@@ -1652,7 +1652,7 @@ def memoir_assemble(authorization: Optional[str] = Header(default=None)):
 
 
 @app.get("/api/memoir/chapters")
-def memoir_get_chapters(authorization: Optional[str] = Header(default=None)):
+async def memoir_get_chapters(authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
     if supabase:
@@ -1664,7 +1664,7 @@ def memoir_get_chapters(authorization: Optional[str] = Header(default=None)):
 
 
 @app.post("/api/memoir/chapters")
-def memoir_create_chapter(payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_create_chapter(payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     chapter_id = "chap_" + secrets.token_hex(8)
     now = _utc_now()
@@ -1679,7 +1679,7 @@ def memoir_create_chapter(payload: MemoirChapterRequest, authorization: Optional
 
 
 @app.put("/api/memoir/chapters/{chapter_id}")
-def memoir_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     updates = {"title": payload.title, "content": payload.content, "updated_at": _utc_now()}
     if supabase:
@@ -1693,7 +1693,7 @@ def memoir_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authoriz
 
 
 @app.post("/api/memoir/chapters/{chapter_id}/edit")
-def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
+async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
 
