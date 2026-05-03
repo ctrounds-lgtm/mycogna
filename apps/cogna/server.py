@@ -2259,13 +2259,17 @@ def _generate_text_response(system_prompt: str, messages: List[Dict]) -> str:
 
 
 def _generate_memoir_response(system_prompt: str, messages: List[Dict], max_tokens: int = 1000) -> str:
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=max_tokens,
-        system=system_prompt,
-        messages=messages,
-    )
-    return response.content[0].text
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=messages,
+        )
+        return response.content[0].text
+    except Exception as e:
+        print(f"[MEMOIR] Claude API error: {type(e).__name__}: {e}")
+        raise
 
 
 def _transcribe_audio(upload: UploadFile) -> str:
