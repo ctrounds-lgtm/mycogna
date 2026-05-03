@@ -1071,10 +1071,11 @@ async def storyteller_record(
     recording_id = "rec_" + secrets.token_hex(8)
     audio_url = _save_story_audio(recording_id, audio)
 
+    signup_code = st_user.get("signup_code") or None
     if supabase:
         supabase.table("story_recordings").insert({
             "id": recording_id,
-            "promo_code": st_user.get("signup_code", ""),
+            "promo_code": signup_code,
             "storyteller_user_id": st_user["id"],
             "prompt_id": prompt_id,
             "transcript": transcript,
@@ -1084,7 +1085,7 @@ async def storyteller_record(
         db = _load_db()
         db["story_recordings"][recording_id] = {
             "id": recording_id,
-            "promo_code": st_user.get("signup_code", ""),
+            "promo_code": signup_code,
             "storyteller_user_id": st_user["id"],
             "prompt_id": prompt_id,
             "transcript": transcript,

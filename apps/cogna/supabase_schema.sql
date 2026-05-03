@@ -156,6 +156,9 @@ CREATE INDEX IF NOT EXISTS storyteller_users_email_idx ON storyteller_users(emai
 -- Link recordings to accounts (nullable for pre-auth recordings)
 ALTER TABLE story_recordings ADD COLUMN IF NOT EXISTS storyteller_user_id TEXT REFERENCES storyteller_users(id);
 
+-- Migration: allow recordings without a promo code (users who signed up directly)
+ALTER TABLE story_recordings ALTER COLUMN promo_code DROP NOT NULL;
+
 -- Monthly usage tracking for AI Companion (D-tier)
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id          TEXT PRIMARY KEY,
