@@ -1516,6 +1516,7 @@ def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
 def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
     user_id = st_user["id"]
+    print(f"[MEMOIR] deepen/start recording_id={payload.recording_id} user={user_id}")
 
     if supabase:
         r = supabase.table("story_recordings").select("*").eq("id", payload.recording_id).eq("storyteller_user_id", user_id).limit(1).execute()
@@ -1525,12 +1526,15 @@ def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Option
         rec = db["story_recordings"].get(payload.recording_id)
         recording = rec if rec and rec.get("storyteller_user_id") == user_id else None
 
+    print(f"[MEMOIR] recording found={recording is not None}")
     if not recording:
         raise HTTPException(status_code=404, detail="Recording not found")
 
     transcript = recording.get("transcript", "")
+    print(f"[MEMOIR] transcript length={len(transcript)} — calling Claude")
     system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
     opening = _generate_memoir_response(system, [{"role": "user", "content": "Please begin."}])
+    print(f"[MEMOIR] Claude responded, inserting session")
 
     session_id = "msess_" + secrets.token_hex(8)
     messages = [{"role": "assistant", "content": opening}]
@@ -1543,6 +1547,7 @@ def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: Option
         db["memoir_sessions"][session_id] = {"id": session_id, "storyteller_user_id": user_id, "recording_id": payload.recording_id, "messages": messages, "finished": False, "created_at": now, "updated_at": now}
         _save_db(db)
 
+    print(f"[MEMOIR] session created={session_id}")
     return {"session_id": session_id, "message": opening, "transcript": transcript}
 
 
