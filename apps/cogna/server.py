@@ -991,8 +991,10 @@ def storyteller_login(payload: StoryLoginRequest):
 def storyteller_request_reset(payload: StoryPasswordResetRequest):
     from datetime import timedelta
     email = payload.email.strip().lower()
+    print(f"[RESET] request for {email} | resend_sdk={resend_sdk is not None} | has_key={bool(RESEND_API_KEY)}")
     user = _get_storyteller_user(email)
     if not user:
+        print(f"[RESET] no user found for {email}")
         return {"ok": True}
 
     token = secrets.token_urlsafe(32)
