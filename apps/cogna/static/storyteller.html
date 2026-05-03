@@ -782,6 +782,7 @@
           localStorage.setItem('st_first_name', result.user.first_name || '');
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.allPrompts = [...stState.prompts];
+          st._mergeCustomPrompts(result.user.email);
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           st._showPromptSelect();
@@ -819,6 +820,7 @@
           localStorage.setItem('st_first_name', result.user.first_name || '');
           stState.prompts = result.prompts || [];
           stState.allPrompts = [...stState.prompts];
+          st._mergeCustomPrompts(result.user.email);
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           if (stState.prompts.length === 0) {
@@ -1074,15 +1076,26 @@
         await st._showPromptSelect();
       },
 
+      _mergeCustomPrompts(email) {
+        const key = 'st_custom_prompts_' + (email || localStorage.getItem('st_email') || 'default');
+        const saved = JSON.parse(localStorage.getItem(key) || '[]');
+        const existingIds = new Set(stState.allPrompts.map(p => p.id));
+        for (const p of saved) {
+          if (!existingIds.has(p.id)) stState.allPrompts.push(p);
+        }
+      },
+
       async _showPromptSelect() {
-        // Fetch which prompts this user has already recorded
+        // Fetch which prompts this user has already recorded (merge, don't replace)
         try {
           const res = await fetch(API + '/my-recordings', {
             headers: { 'Authorization': 'Bearer ' + stState.authToken },
           });
           if (res.ok) {
             const data = await res.json();
-            stState.answeredPromptIds = new Set(data.answered_prompt_ids || []);
+            for (const id of (data.answered_prompt_ids || [])) {
+              stState.answeredPromptIds.add(id);
+            }
           }
         } catch (_) {}
 
@@ -1107,6 +1120,14 @@
         if (!text) return;
         const newPrompt = { id: 'custom-' + Date.now(), text };
         stState.allPrompts.push(newPrompt);
+
+        // Persist to localStorage so custom prompts survive logout
+        const email = localStorage.getItem('st_email') || 'default';
+        const key = 'st_custom_prompts_' + email;
+        const saved = JSON.parse(localStorage.getItem(key) || '[]');
+        saved.push(newPrompt);
+        localStorage.setItem(key, JSON.stringify(saved));
+
         const container = document.getElementById('promptCheckList');
         const label = document.createElement('label');
         label.className = 'prompt-check-item';
@@ -1152,6 +1173,7 @@
             stState.authToken = storedToken;
             stState.prompts = data.prompts || [];
             stState.allPrompts = [...stState.prompts];
+            st._mergeCustomPrompts(data.user && data.user.email);
             stState.currentPromptIndex = 0;
             stState.transcripts = [];
             if (stState.prompts.length > 0) {
