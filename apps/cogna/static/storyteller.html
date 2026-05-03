@@ -298,6 +298,60 @@
     }
     .skip-btn:hover { opacity: 1; }
 
+    /* ── Prompt selection ── */
+    .prompt-check-list {
+      width: 100%;
+      text-align: left;
+      margin: 16px 0;
+    }
+    .prompt-check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+    .prompt-check-item input[type=checkbox] {
+      margin-top: 3px;
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+    .custom-prompt-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .custom-prompt-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+    .custom-prompt-row input:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .custom-prompt-row button {
+      padding: 10px 16px;
+      background: var(--gold);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .custom-prompt-row button:hover { opacity: 0.88; }
+
     .record-timer {
       font-family: 'Courier New', monospace;
       font-size: 28px;
@@ -516,7 +570,27 @@
     </div>
   </div>
 
-  <!-- ── SCREEN 6: Prompt + record ── -->
+  <!-- ── SCREEN 6: Prompt selection ── -->
+  <div class="screen hidden" id="screenPromptSelect">
+    <div class="inner">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Choose your <em>questions</em></h2>
+      <p class="sub">All are selected. Uncheck any you'd rather skip.</p>
+
+      <div class="prompt-check-list" id="promptCheckList"></div>
+
+      <div class="custom-prompt-row">
+        <input type="text" id="customPromptInput" placeholder="Add your own question…"
+               onkeydown="if(event.key==='Enter') st.addCustomPrompt()" maxlength="300" />
+        <button onclick="st.addCustomPrompt()">+ Add</button>
+      </div>
+
+      <div id="promptSelectError" class="error-msg hidden" style="margin-top:12px">Please select at least one question.</div>
+      <button class="btn-primary" style="margin-top:20px" onclick="st.startWithSelectedPrompts()">Start recording →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 7: Prompt + record ── -->
   <div class="screen hidden" id="screenRecord">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
@@ -573,12 +647,13 @@
   <script>
     const API = window.location.origin + '/api/storyteller';
 
-    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenRecord','screenProcessing','screenDone'];
+    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenPromptSelect','screenRecord','screenProcessing','screenDone'];
 
     const stState = {
       userCode: '',
       authToken: '',
       prompts: [],
+      allPrompts: [],
       currentPromptIndex: 0,
       transcripts: [],
       promptId: '',
@@ -681,10 +756,10 @@
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
+          stState.allPrompts = [...stState.prompts];
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
-          st._showCurrentPrompt();
-          showScreen('screenRecord');
+          st._showPromptSelect();
         } catch (err) {
           errEl.textContent = err.message;
           errEl.classList.remove('hidden');
@@ -718,6 +793,7 @@
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
           stState.prompts = result.prompts || [];
+          stState.allPrompts = [...stState.prompts];
           stState.currentPromptIndex = 0;
           stState.transcripts = [];
           if (stState.prompts.length === 0) {
@@ -725,8 +801,7 @@
             errEl.classList.remove('hidden');
             return;
           }
-          st._showCurrentPrompt();
-          showScreen('screenRecord');
+          st._showPromptSelect();
         } catch (err) {
           errEl.textContent = err.message;
           errEl.classList.remove('hidden');
@@ -967,6 +1042,49 @@
       },
 
       recordAnother() {
+        stState.prompts = [...stState.allPrompts];
+        stState.currentPromptIndex = 0;
+        stState.transcripts = [];
+        st._showPromptSelect();
+      },
+
+      _showPromptSelect() {
+        const container = document.getElementById('promptCheckList');
+        container.innerHTML = stState.allPrompts.map((p, i) => `
+          <label class="prompt-check-item">
+            <input type="checkbox" data-index="${i}" checked />
+            <span>${p.text}</span>
+          </label>`).join('');
+        document.getElementById('customPromptInput').value = '';
+        document.getElementById('promptSelectError').classList.add('hidden');
+        showScreen('screenPromptSelect');
+      },
+
+      addCustomPrompt() {
+        const input = document.getElementById('customPromptInput');
+        const text = input.value.trim();
+        if (!text) return;
+        const newPrompt = { id: 'custom-' + Date.now(), text };
+        stState.allPrompts.push(newPrompt);
+        const container = document.getElementById('promptCheckList');
+        const label = document.createElement('label');
+        label.className = 'prompt-check-item';
+        label.innerHTML = `<input type="checkbox" data-index="${stState.allPrompts.length - 1}" checked /><span>${text}</span>`;
+        container.appendChild(label);
+        input.value = '';
+        input.focus();
+      },
+
+      startWithSelectedPrompts() {
+        const checkboxes = document.querySelectorAll('#promptCheckList input[type=checkbox]');
+        const selected = [];
+        checkboxes.forEach(cb => {
+          if (cb.checked) selected.push(stState.allPrompts[parseInt(cb.dataset.index)]);
+        });
+        const errEl = document.getElementById('promptSelectError');
+        if (selected.length === 0) { errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
+        stState.prompts = selected;
         stState.currentPromptIndex = 0;
         stState.transcripts = [];
         st._showCurrentPrompt();
@@ -992,11 +1110,11 @@
             const data = await res.json();
             stState.authToken = storedToken;
             stState.prompts = data.prompts || [];
+            stState.allPrompts = [...stState.prompts];
             stState.currentPromptIndex = 0;
             stState.transcripts = [];
             if (stState.prompts.length > 0) {
-              st._showCurrentPrompt();
-              showScreen('screenRecord');
+              st._showPromptSelect();
               return;
             }
           } else {
