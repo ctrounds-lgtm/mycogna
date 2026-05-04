@@ -111,20 +111,6 @@
     <!-- Plan picker -->
     <div class="plans" id="planGrid">
 
-      <div class="plan-card" id="planA" onclick="selectPlan('A')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">Free</div>
-        <div class="plan-name">Try it out</div>
-        <div class="plan-price"><sup>$</sup>0</div>
-        <div class="plan-period">forever</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>1 story recording per month</li>
-          <li>Guided story prompts</li>
-          <li>Voice recording &amp; transcription</li>
-        </ul>
-      </div>
-
       <div class="plan-card" id="planB" onclick="selectPlan('B')">
         <div class="plan-selector"></div>
         <div class="plan-badge">Storyteller</div>
@@ -171,6 +157,21 @@
         </ul>
       </div>
 
+      <div class="plan-card" id="planE" onclick="selectPlan('E')">
+        <div class="plan-selector"></div>
+        <div class="plan-badge">Institutional</div>
+        <div class="plan-name">Legacy Collection</div>
+        <div class="plan-price"><sup>$</sup>25</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>5 new storyteller codes per month</li>
+          <li>All codes remain active permanently</li>
+          <li>Stories accumulate over time</li>
+          <li>Ideal for organizations &amp; communities</li>
+        </ul>
+      </div>
+
     </div>
 
     <!-- Signup form (shown after plan selection) -->
@@ -209,10 +210,10 @@
 
   <script>
     const PLAN_LABELS = {
-      A: 'Free — Try it out ($0)',
       B: 'Storyteller Unlimited ($5/mo)',
       C: 'Storyteller+ AI ($10/mo)',
       D: 'AI Companion ($15/mo)',
+      E: 'Legacy Collection ($25/mo)',
     };
 
     let selectedTier = null;
