@@ -117,6 +117,18 @@ INSERT INTO story_prompts (id, text, active, created_by, created_at) VALUES
   ('sys-015', 'What made you laugh more than anything else in your life?',                                 true, 'system', '2026-01-01 00:00:15+00')
 ON CONFLICT (id) DO NOTHING;
 
+-- Travel & Adventure and Significant Challenges prompts (migration — run once)
+INSERT INTO story_prompts (id, text, active, created_by, created_at, sort_order) VALUES
+  ('sys-016', 'Tell me about a place that changed how you see the world.',                                 true, 'system', '2026-01-01 00:00:16+00', 16),
+  ('sys-017', 'What is the most memorable journey you''ve ever taken?',                                   true, 'system', '2026-01-01 00:00:17+00', 17),
+  ('sys-018', 'Was there a trip that didn''t go as planned — and what happened?',                         true, 'system', '2026-01-01 00:00:18+00', 18),
+  ('sys-019', 'Tell me about a person you met while traveling who stayed with you.',                       true, 'system', '2026-01-01 00:00:19+00', 19),
+  ('sys-020', 'Tell me about a time you faced something difficult and found your way through it.',         true, 'system', '2026-01-01 00:00:20+00', 20),
+  ('sys-021', 'Was there a moment in your life that required more courage than you knew you had?',         true, 'system', '2026-01-01 00:00:21+00', 21),
+  ('sys-022', 'What''s something you lost that taught you something important?',                          true, 'system', '2026-01-01 00:00:22+00', 22),
+  ('sys-023', 'Tell me about a time when things didn''t go the way you''d hoped — and what came next.',  true, 'system', '2026-01-01 00:00:23+00', 23)
+ON CONFLICT (id) DO NOTHING;
+
 CREATE INDEX IF NOT EXISTS story_prompts_active_idx ON story_prompts(active);
 
 -- Story recordings — one row per submitted recording
