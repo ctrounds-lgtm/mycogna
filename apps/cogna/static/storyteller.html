@@ -342,11 +342,36 @@
       flex-shrink: 0;
       align-self: center;
     }
+    .prompt-category {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      text-align: left;
+    }
+    .prompt-category-header {
+      background: var(--gold-pale);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+    .prompt-category-body {
+      padding: 0 16px;
+    }
+    .prompt-check-item:last-of-type {
+      border-bottom: none;
+    }
     .custom-prompt-row {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 16px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
     }
     .custom-prompt-row textarea {
       width: 100%;
@@ -358,19 +383,19 @@
       font-family: inherit;
       color: var(--ink);
       background: #fff;
-      height: 80px;
+      height: 68px;
       resize: vertical;
       line-height: 1.5;
     }
     .custom-prompt-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
     .custom-prompt-row button {
       align-self: flex-end;
-      padding: 10px 20px;
+      padding: 8px 18px;
       background: var(--gold);
       color: #fff;
       border: none;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
@@ -649,14 +674,9 @@
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
       <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Choose your <em>questions</em></h2>
-      <p class="sub">All are selected. Uncheck any you'd rather skip.</p>
+      <p class="sub">Uncheck any you'd rather skip, or add your own in any category.</p>
 
-      <div class="prompt-check-list" id="promptCheckList"></div>
-
-      <div class="custom-prompt-row">
-        <textarea id="customPromptInput" placeholder="Add your own question…" maxlength="300"></textarea>
-        <button onclick="st.addCustomPrompt()">+ Add</button>
-      </div>
+      <div id="promptCategoryList" style="margin-top:20px;width:100%"></div>
 
       <div id="promptSelectError" class="error-msg hidden" style="margin-top:12px">Please select at least one question.</div>
       <button class="btn-primary" style="margin-top:20px" onclick="st.startWithSelectedPrompts()">Start recording →</button>
@@ -732,6 +752,16 @@
 
   <script>
     const API = window.location.origin + '/api/storyteller';
+
+    const PROMPT_CATEGORIES = [
+      { name: 'Childhood & Origins',   ids: ['sys-001','sys-002','sys-003'] },
+      { name: 'Turning Points',        ids: ['sys-004','sys-005','sys-006'] },
+      { name: 'Work & Purpose',        ids: ['sys-007','sys-008'] },
+      { name: 'Travel & Adventure',    ids: [] },
+      { name: 'Relationships',         ids: ['sys-009','sys-010'] },
+      { name: 'Wisdom & Legacy',       ids: ['sys-011','sys-012','sys-013'] },
+      { name: 'Sensory Experiences',   ids: ['sys-014','sys-015'] },
+    ];
 
     const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenOnboarding','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
 
@@ -1254,33 +1284,74 @@
           }
         } catch (_) {}
 
-        const container = document.getElementById('promptCheckList');
-        container.innerHTML = stState.allPrompts.map((p, i) => {
+        const container = document.getElementById('promptCategoryList');
+        const promptById = Object.fromEntries(stState.allPrompts.map(p => [p.id, p]));
+
+        // Group custom prompts by category
+        const customByCategory = {};
+        for (const p of stState.allPrompts) {
+          if (!p.id.startsWith('sys-')) {
+            const cat = p.category || 'My Questions';
+            if (!customByCategory[cat]) customByCategory[cat] = [];
+            customByCategory[cat].push(p);
+          }
+        }
+
+        const renderPrompt = (p) => {
           const answered = stState.answeredPromptIds.has(p.id);
-          return `
-          <label class="prompt-check-item${answered ? ' answered' : ''}">
-            <input type="checkbox" data-index="${i}" />
+          return `<label class="prompt-check-item${answered ? ' answered' : ''}">
+            <input type="checkbox" data-id="${p.id}" />
             <span>${p.text}</span>
             ${answered ? '<span class="prompt-answered-badge">✓ Recorded</span>' : ''}
           </label>`;
-        }).join('');
-        document.getElementById('customPromptInput').value = '';
+        };
+
+        let html = '';
+        for (const cat of PROMPT_CATEGORIES) {
+          const systemPrompts = cat.ids.map(id => promptById[id]).filter(Boolean);
+          const customPrompts = customByCategory[cat.name] || [];
+          const allInCat = [...systemPrompts, ...customPrompts];
+          html += `<div class="prompt-category" data-category="${cat.name}">
+            <div class="prompt-category-header">${cat.name}</div>
+            <div class="prompt-category-body">
+              ${allInCat.map(renderPrompt).join('')}
+              <div class="custom-prompt-row">
+                <textarea placeholder="Add your own ${cat.name} question…" maxlength="300"></textarea>
+                <button onclick="st.addCustomPrompt('${cat.name}', this)">+ Add</button>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        // Uncategorized custom prompts (added before categories were introduced)
+        const uncategorized = (customByCategory['My Questions'] || []);
+        if (uncategorized.length) {
+          html += `<div class="prompt-category" data-category="My Questions">
+            <div class="prompt-category-header">My Questions</div>
+            <div class="prompt-category-body">
+              ${uncategorized.map(renderPrompt).join('')}
+            </div>
+          </div>`;
+        }
+
+        container.innerHTML = html;
         document.getElementById('promptSelectError').classList.add('hidden');
         showScreen('screenPromptSelect');
       },
 
-      async addCustomPrompt() {
-        const input = document.getElementById('customPromptInput');
-        const text = input.value.trim();
+      async addCustomPrompt(category, btnEl) {
+        const row = btnEl.closest('.custom-prompt-row');
+        const textarea = row.querySelector('textarea');
+        const text = textarea.value.trim();
         if (!text) return;
-        input.value = '';
+        textarea.value = '';
 
         let newPrompt;
         try {
           const res = await fetch(API + '/custom-prompts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + stState.authToken },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text, category }),
           });
           if (res.ok) {
             const data = await res.json();
@@ -1288,23 +1359,22 @@
           }
         } catch (_) {}
 
-        // Fall back to a local ID if the server call failed
-        if (!newPrompt) newPrompt = { id: 'custom-' + Date.now(), text };
+        if (!newPrompt) newPrompt = { id: 'custom-' + Date.now(), text, category };
 
         stState.allPrompts.push(newPrompt);
-        const container = document.getElementById('promptCheckList');
         const label = document.createElement('label');
         label.className = 'prompt-check-item';
-        label.innerHTML = `<input type="checkbox" data-index="${stState.allPrompts.length - 1}" checked /><span>${text}</span>`;
-        container.appendChild(label);
-        input.focus();
+        label.innerHTML = `<input type="checkbox" data-id="${newPrompt.id}" checked /><span>${text}</span>`;
+        row.insertAdjacentElement('beforebegin', label);
+        textarea.focus();
       },
 
       startWithSelectedPrompts() {
-        const checkboxes = document.querySelectorAll('#promptCheckList input[type=checkbox]');
+        const checkboxes = document.querySelectorAll('#promptCategoryList input[type=checkbox][data-id]');
+        const promptById = Object.fromEntries(stState.allPrompts.map(p => [p.id, p]));
         const selected = [];
         checkboxes.forEach(cb => {
-          if (cb.checked) selected.push(stState.allPrompts[parseInt(cb.dataset.index)]);
+          if (cb.checked && promptById[cb.dataset.id]) selected.push(promptById[cb.dataset.id]);
         });
         const errEl = document.getElementById('promptSelectError');
         if (selected.length === 0) { errEl.classList.remove('hidden'); return; }

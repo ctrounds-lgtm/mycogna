@@ -229,6 +229,7 @@ class StoryPasswordResetConfirm(BaseModel):
 
 class StoryCustomPromptRequest(BaseModel):
     text: str
+    category: Optional[str] = None
 
 class MemoirDeepenStartRequest(BaseModel):
     recording_id: str
@@ -1185,7 +1186,7 @@ def add_custom_prompt(
     text = payload.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Prompt text is required")
-    new_prompt = {"id": "custom-" + secrets.token_hex(6), "text": text}
+    new_prompt = {"id": "custom-" + secrets.token_hex(6), "text": text, "category": payload.category}
     existing = _user_custom_prompts(st_user)
     existing.append(new_prompt)
     _update_storyteller_user(st_user["email"], {"custom_prompts": existing})
