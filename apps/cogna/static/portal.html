@@ -132,6 +132,7 @@
       <button class="dash-tab" id="dashTabB" onclick="portal.switchDashTab('B')">Unlimited</button>
       <button class="dash-tab" id="dashTabC" onclick="portal.switchDashTab('C')">AI Assisted</button>
       <button class="dash-tab" id="dashTabD" onclick="portal.switchDashTab('D')">AI Companion</button>
+      <button class="dash-tab" id="dashTabE" onclick="portal.switchDashTab('E')">Legacy Collection</button>
     </div>
 
     <!-- ── PANEL A — Free Storyteller ── -->
@@ -245,6 +246,28 @@
     </div>
 
     <!-- ── LOCKED OVERLAY (shown for tabs above user tier) ── -->
+    <!-- ── PANEL E — Legacy Collection ── -->
+    <div id="panelE" class="hidden">
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection — 5 new per month)</span></h2>
+        <button class="add-btn" onclick="portal.generatePromoCode('B')">+ Generate Code</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Generate codes to give storytellers unlimited access. Each code remains active permanently — generate up to 5 new ones per month to grow your collection.</p>
+      <div id="promoCodesListE" class="stories-list">
+        <div class="empty-state"><p>No codes yet.</p></div>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Recordings</h2>
+        <button class="add-btn" onclick="portal.loadStoryPanel('E')">Refresh</button>
+      </div>
+      <div id="recordingsFilterRowE" class="hidden" style="margin-bottom:12px">
+        <select id="recordingsFilterE" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'E')"></select>
+      </div>
+      <div id="recordingsListE" class="stories-list">
+        <div class="empty-state"><p>No recordings yet.</p></div>
+      </div>
+    </div>
+
     <div id="panelLocked" class="hidden">
       <div style="text-align:center;padding:80px 24px">
         <div style="font-size:32px;margin-bottom:16px">🔒</div>
