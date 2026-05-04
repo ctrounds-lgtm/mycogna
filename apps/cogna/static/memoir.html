@@ -440,7 +440,9 @@
         });
         mState.deepenSessionId = data.session_id;
         document.getElementById('deepenMessages').innerHTML = '';
-        m._appendMessage('ai', data.message);
+        for (const msg of (data.messages || [])) {
+          m._appendMessage(msg.role === 'assistant' ? 'ai' : 'user', msg.content);
+        }
       } catch (err) {
         document.getElementById('deepenMessages').innerHTML = '';
         const errEl = document.getElementById('deepenError');

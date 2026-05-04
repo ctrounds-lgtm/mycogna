@@ -1530,15 +1530,32 @@ async def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: 
         rec = db["story_recordings"].get(payload.recording_id)
         recording = rec if rec and rec.get("storyteller_user_id") == user_id else None
 
-    print(f"[MEMOIR] recording found={recording is not None}")
     if not recording:
         raise HTTPException(status_code=404, detail="Recording not found")
 
     transcript = recording.get("transcript", "")
-    print(f"[MEMOIR] transcript length={len(transcript)} — calling Claude")
+
+    # Resume existing unfinished session for this recording rather than creating a new one
+    if supabase:
+        existing_r = (supabase.table("memoir_sessions").select("*")
+                      .eq("storyteller_user_id", user_id)
+                      .eq("recording_id", payload.recording_id)
+                      .eq("finished", False)
+                      .order("created_at", desc=True)
+                      .limit(1).execute())
+        existing = existing_r.data[0] if existing_r.data else None
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        existing = next((s for s in db["memoir_sessions"].values()
+                         if s.get("storyteller_user_id") == user_id
+                         and s.get("recording_id") == payload.recording_id
+                         and not s.get("finished")), None)
+
+    if existing:
+        return {"session_id": existing["id"], "messages": existing["messages"], "transcript": transcript}
+
     system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
     opening = _generate_memoir_response(system, [{"role": "user", "content": "Please begin."}])
-    print(f"[MEMOIR] Claude responded, inserting session")
 
     session_id = "msess_" + secrets.token_hex(8)
     messages = [{"role": "assistant", "content": opening}]
@@ -1551,8 +1568,7 @@ async def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: 
         db["memoir_sessions"][session_id] = {"id": session_id, "storyteller_user_id": user_id, "recording_id": payload.recording_id, "messages": messages, "finished": False, "created_at": now, "updated_at": now}
         _save_db(db)
 
-    print(f"[MEMOIR] session created={session_id}")
-    return {"session_id": session_id, "message": opening, "transcript": transcript}
+    return {"session_id": session_id, "messages": messages, "transcript": transcript}
 
 
 @app.post("/api/memoir/deepen/chat")
