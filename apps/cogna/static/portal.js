@@ -101,8 +101,9 @@ async function loadDashboard() {
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
   // Set up tab locking based on tier
-  const tier = state.user.tier || 'A';
-  const tierOrder = ['A', 'B', 'C', 'D'];
+  const tierOrder = ['A', 'B', 'C', 'D', 'E'];
+  const rawTier = state.user.tier || 'A';
+  const tier = tierOrder.includes(rawTier) ? rawTier : 'B';
   const userTierIdx = tierOrder.indexOf(tier);
 
   tierOrder.forEach((t, idx) => {
