@@ -118,7 +118,7 @@ async function loadDashboard() {
   const startTab = tier;
   portal.switchDashTab(startTab);
 
-  if (tier === 'D' || userTierIdx >= 3) {
+  if (tier === 'D') {
     const cognaData = await req(`${api}/cognas`, { headers: authHeaders() });
     renderCognaGrid(cognaData.cognas);
   }
@@ -540,6 +540,7 @@ const portal = {
 
     if (tab === 'A') portal.loadStoryPanel('A');
     else if (tab === 'B') portal.loadStoryPanel('B');
+    else if (tab === 'E') portal.loadStoryPanel('E', 'B');
     else if (tab === 'D' && state.user) {
       req(`${api}/cognas`, { headers: authHeaders() })
         .then(d => renderCognaGrid(d.cognas))
@@ -548,12 +549,13 @@ const portal = {
     }
   },
 
-  async loadStoryPanel(tier) {
+  async loadStoryPanel(tier, fetchTier) {
+    const ft = fetchTier || tier;
     try {
       const [codesData, promptsData, recsData] = await Promise.all([
-        req(`${api}/storyteller/user-codes?tier=${tier}`, { headers: authHeaders() }),
+        req(`${api}/storyteller/user-codes?tier=${ft}`, { headers: authHeaders() }),
         req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
-        req(`${api}/storyteller/recordings?tier=${tier}`, { headers: authHeaders() }),
+        req(`${api}/storyteller/recordings?tier=${ft}`, { headers: authHeaders() }),
       ]);
       portal._renderPromoCodes(codesData.codes || [], tier);
       if (tier === 'A') portal._renderPrompts(promptsData.prompts || []);
