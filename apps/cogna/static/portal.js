@@ -113,8 +113,8 @@ async function loadDashboard() {
     }
   });
 
-  // Start on the highest unlocked tab (skip C if locked since it's coming soon)
-  const startTab = tier === 'D' ? 'D' : tier === 'C' ? 'B' : tier;
+  // Start on the user's highest tier tab
+  const startTab = tier;
   portal.switchDashTab(startTab);
 
   if (tier === 'D' || userTierIdx >= 3) {
@@ -520,7 +520,7 @@ const portal = {
     });
     document.getElementById('panelLocked').classList.add('hidden');
 
-    // C tab is coming soon for everyone — show its panel (not locked)
+    // C tab shows for everyone — tier gating will be added when billing is live
     if (tab === 'C') {
       document.getElementById('panelC').classList.remove('hidden');
       return;
