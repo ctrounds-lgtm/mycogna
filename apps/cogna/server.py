@@ -705,9 +705,13 @@ async def evi_session(payload: EviSessionRequest):
 
     # Check monthly usage cap before issuing a session token
     owner_email = cogna.get("owner_email", "")
+    used = 0.0
     if owner_email:
         month = _current_month()
-        used = _get_usage(owner_email, month)
+        try:
+            used = _get_usage(owner_email, month)
+        except Exception:
+            used = 0.0
         if used >= COMPANION_MONTHLY_MINUTES:
             raise HTTPException(
                 status_code=402,
