@@ -627,6 +627,24 @@
   </div>
 
   <!-- ── SCREEN 6: Prompt selection ── -->
+  <!-- ── SCREEN: First-time onboarding ── -->
+  <div class="screen hidden" id="screenOnboarding">
+    <div class="inner" style="max-width:480px;text-align:center">
+      <div class="eyebrow">MyCogna · Storyteller</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">Before you begin</h2>
+      <p class="sub" style="font-size:18px;line-height:1.7;margin-top:20px">
+        Just talk like you're telling a friend over coffee.
+      </p>
+      <p class="sub" style="margin-top:16px;line-height:1.7">
+        Filler words, pauses, imperfect sentences — all fine. You don't need stylistic details or perfect phrasing. We'll clean it up later.
+      </p>
+      <p class="sub" style="margin-top:16px;line-height:1.7;font-style:italic">
+        The only thing that matters right now is the story.
+      </p>
+      <button class="btn-primary" style="margin-top:32px" onclick="st.finishOnboarding()">I'm ready →</button>
+    </div>
+  </div>
+
   <div class="screen hidden" id="screenPromptSelect">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
@@ -715,7 +733,7 @@
   <script>
     const API = window.location.origin + '/api/storyteller';
 
-    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
+    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenOnboarding','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
 
     const stState = {
       userCode: '',
@@ -1211,7 +1229,18 @@
         }
       },
 
+      finishOnboarding() {
+        localStorage.setItem('st_onboarded', '1');
+        st._showPromptSelect();
+      },
+
       async _showPromptSelect() {
+        // Show one-time welcome screen for first-time users
+        if (!localStorage.getItem('st_onboarded')) {
+          showScreen('screenOnboarding');
+          return;
+        }
+
         // Fetch which prompts this user has already recorded (merge, don't replace)
         try {
           const res = await fetch(API + '/my-recordings', {
