@@ -1315,7 +1315,13 @@ def create_promo_code(
 ):
     user = _auth_user(authorization)
     tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D"} else "A"
-    code = _generate_story_promo_code(tier)
+    print(f"[promo] user={user.get('email')} tier={tier} desc={payload.description!r}")
+    try:
+        code = _generate_story_promo_code(tier)
+        print(f"[promo] generated code={code}")
+    except Exception as exc:
+        print(f"[promo] generate failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"Code generation error: {exc}")
     record = {
         "code": code,
         "tier": tier,
@@ -1325,7 +1331,12 @@ def create_promo_code(
         "created_at": _utc_now(),
     }
     if supabase:
-        supabase.table("promo_codes").insert(record).execute()
+        try:
+            supabase.table("promo_codes").insert(record).execute()
+            print(f"[promo] inserted ok")
+        except Exception as exc:
+            print(f"[promo] insert failed: {exc}")
+            raise HTTPException(status_code=500, detail=f"DB insert error: {exc}")
     else:
         db = _load_db()
         db["promo_codes"][code] = record
