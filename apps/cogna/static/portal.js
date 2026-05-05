@@ -608,10 +608,19 @@ const portal = {
       return;
     }
     el.innerHTML = codes.map(c => `
-      <div class="story-item">
+      <div class="story-item" id="codeRow-${c.code}">
         <div class="story-item-main">
           <div class="story-item-code">${c.code}${c.active ? '' : ' <span style="opacity:0.4;font-size:11px;font-weight:400">(inactive)</span>'}</div>
-          ${c.description ? `<div class="story-item-desc">${c.description}</div>` : ''}
+          <div class="code-label-row" id="labelDisplay-${c.code}">
+            <span class="story-item-desc" style="flex:1">${c.description || '<em style="opacity:0.4">No label</em>'}</span>
+            <button class="link-btn" style="font-size:12px;color:var(--ink-muted)" onclick="portal.editCodeLabel('${c.code}', '${suffix}')">Edit label</button>
+          </div>
+          <div class="code-label-edit" id="labelEdit-${c.code}" style="display:none;gap:6px;margin-top:4px">
+            <input type="text" class="text-input" style="padding:6px 10px;font-size:13px;flex:1" value="${c.description || ''}" placeholder="Label this code…" maxlength="80"
+              onkeydown="if(event.key==='Enter') portal.saveCodeLabel('${c.code}','${suffix}'); if(event.key==='Escape') portal.cancelCodeLabel('${c.code}')">
+            <button class="story-action-btn" onclick="portal.saveCodeLabel('${c.code}','${suffix}')">Save</button>
+            <button class="story-action-btn" onclick="portal.cancelCodeLabel('${c.code}')">Cancel</button>
+          </div>
         </div>
         <div class="story-item-actions">
           <button class="copy-code-btn" onclick="portal.copyCode('${c.code}', this)">Copy</button>
@@ -747,6 +756,36 @@ const portal = {
         headers: authHeaders(),
       });
       await portal.loadStoryPanel(tier || 'A');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  editCodeLabel(code, tier) {
+    document.getElementById('labelDisplay-' + code).style.display = 'none';
+    const editRow = document.getElementById('labelEdit-' + code);
+    editRow.style.display = 'flex';
+    editRow.querySelector('input').focus();
+  },
+
+  cancelCodeLabel(code) {
+    document.getElementById('labelDisplay-' + code).style.display = '';
+    document.getElementById('labelEdit-' + code).style.display = 'none';
+  },
+
+  async saveCodeLabel(code, tier) {
+    const input = document.getElementById('labelEdit-' + code).querySelector('input');
+    const description = input.value.trim();
+    try {
+      await req(`${api}/storyteller/user-codes/${code}`, {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description }),
+      });
+      // Update display inline without full reload
+      const display = document.getElementById('labelDisplay-' + code);
+      display.querySelector('span').innerHTML = description || '<em style="opacity:0.4">No label</em>';
+      portal.cancelCodeLabel(code);
     } catch (err) {
       alert('Error: ' + err.message);
     }

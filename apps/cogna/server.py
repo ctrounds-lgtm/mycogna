@@ -1385,6 +1385,25 @@ def create_promo_code(
     return {"code": record}
 
 
+@app.patch("/api/storyteller/user-codes/{code}")
+def rename_promo_code(
+    code: str,
+    payload: PromoCodeCreate,
+    authorization: Optional[str] = Header(default=None),
+):
+    _auth_user(authorization)
+    code = code.upper()
+    description = payload.description.strip()
+    if supabase:
+        supabase.table("promo_codes").update({"description": description}).eq("code", code).execute()
+    else:
+        db = _load_db()
+        if code in db["promo_codes"]:
+            db["promo_codes"][code]["description"] = description
+        _save_db(db)
+    return {"ok": True}
+
+
 @app.delete("/api/storyteller/user-codes/{code}")
 def deactivate_promo_code(
     code: str,

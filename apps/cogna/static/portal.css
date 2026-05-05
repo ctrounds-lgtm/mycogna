@@ -931,6 +931,20 @@ input[type=range]:focus { outline: none; }
   color: var(--ink-muted);
 }
 
+.code-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.code-label-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 .story-item-text {
   font-size: 14px;
   line-height: 1.5;
