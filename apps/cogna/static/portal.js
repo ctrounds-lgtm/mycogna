@@ -711,16 +711,21 @@ const portal = {
     portal._renderRecordingRows(code ? recs.filter(r => r.promo_code === code) : recs, t);
   },
 
-  async generatePromoCode(tier) {
-    const t = tier || 'A';
+  async generatePromoCode(codeTier, displayTier) {
+    const t = codeTier || 'A';
+    const dt = displayTier || t;
     const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
     try {
-      await req(`${api}/storyteller/user-codes`, {
+      const result = await req(`${api}/storyteller/user-codes`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: desc, tier: t }),
       });
-      await portal.loadStoryPanel(t);
+      const newCode = result?.code?.code || '';
+      if (newCode) {
+        prompt(`Code created! Copy it below to share with your storyteller:`, newCode);
+      }
+      await portal.loadStoryPanel(dt, dt !== t ? t : undefined);
     } catch (err) {
       alert('Error: ' + err.message);
     }

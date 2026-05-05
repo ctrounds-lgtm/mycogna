@@ -250,7 +250,7 @@
     <div id="panelE" class="hidden">
       <div class="section-header-row" style="margin-top:8px">
         <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection — 5 new per month)</span></h2>
-        <button class="add-btn" onclick="portal.generatePromoCode('B')">+ Generate Code</button>
+        <button class="add-btn" onclick="portal.generatePromoCode('B', 'E')">+ Generate Code</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Generate codes to give storytellers unlimited access. Each code remains active permanently — generate up to 5 new ones per month to grow your collection.</p>
       <div id="promoCodesListE" class="stories-list">
@@ -258,7 +258,7 @@
       </div>
       <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Recordings</h2>
-        <button class="add-btn" onclick="portal.loadStoryPanel('E')">Refresh</button>
+        <button class="add-btn" onclick="portal.loadStoryPanel('E', 'B')">Refresh</button>
       </div>
       <div id="recordingsFilterRowE" class="hidden" style="margin-bottom:12px">
         <select id="recordingsFilterE" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'E')"></select>
