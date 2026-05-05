@@ -146,17 +146,6 @@
         <div class="empty-state"><p>No A-codes yet.</p></div>
       </div>
       <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Story Prompts</h2>
-      </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Active prompts are shown to all storyteller users. Toggle each one on or off independently.</p>
-      <div class="add-prompt-row">
-        <textarea id="newPromptText" class="text-input textarea" rows="3" placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
-        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
-      </div>
-      <div id="promptsList" class="stories-list" style="margin-top:16px">
-        <div class="empty-state"><p>No prompts yet.</p></div>
-      </div>
-      <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Recordings</h2>
         <button class="add-btn" onclick="portal.loadStoryPanel('A')">Refresh</button>
       </div>
@@ -179,6 +168,17 @@
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a B-code with someone to give them unlimited storytelling access.</p>
       <div id="promoCodesListB" class="stories-list">
         <div class="empty-state"><p>No B-codes yet.</p></div>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Story Prompts</h2>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Active prompts are shown to all storytellers. Add custom questions or toggle system prompts on and off.</p>
+      <div class="add-prompt-row">
+        <textarea id="newPromptText" class="text-input textarea" rows="3" placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
+        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
+      </div>
+      <div id="promptsList" class="stories-list" style="margin-top:16px">
+        <div class="empty-state"><p>No prompts yet.</p></div>
       </div>
       <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Recordings</h2>
@@ -256,7 +256,10 @@
       <div id="promoCodesListE" class="stories-list">
         <div class="empty-state"><p>No codes yet.</p></div>
       </div>
-      <div class="section-header-row" style="margin-top:32px">
+      <div style="margin-top:32px;margin-bottom:24px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:10px;font-size:13px;color:var(--ink-muted)">
+        <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
+      </div>
+      <div class="section-header-row" style="margin-top:8px">
         <h2 class="section-title">Recordings</h2>
         <button class="add-btn" onclick="portal.loadStoryPanel('E', 'B')">Refresh</button>
       </div>

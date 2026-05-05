@@ -558,7 +558,7 @@ const portal = {
         req(`${api}/storyteller/recordings?tier=${ft}`, { headers: authHeaders() }),
       ]);
       portal._renderPromoCodes(codesData.codes || [], tier);
-      if (tier === 'A') portal._renderPrompts(promptsData.prompts || []);
+      if (tier === 'A' || tier === 'B') portal._renderPrompts(promptsData.prompts || []);
       portal._renderRecordings(recsData.recordings || [], tier);
 
       // Enforce free tier: disable generate button if already has 1 active code
