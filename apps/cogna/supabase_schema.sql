@@ -235,3 +235,14 @@ CREATE POLICY "Allow story audio uploads"
 CREATE POLICY "Allow story audio reads"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'story-audio');
+
+-- ─────────────────────────────────────────────
+-- Migration: tier-based routing (2026-05-04)
+-- ─────────────────────────────────────────────
+
+-- Add tier and managed flag to storyteller user accounts
+-- tier: 'A'=Free, 'B'=Storyteller, 'C'=Storyteller+AI, 'D'=AI Companion
+--       E-code invitees are stored as tier 'B' with managed=true
+-- managed: true = institutional invitee (no AI features, no upgrade prompts)
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'A';
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS managed BOOLEAN NOT NULL DEFAULT false;

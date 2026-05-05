@@ -541,6 +541,27 @@
       margin-bottom: 32px;
       max-width: 360px;
     }
+
+    /* ── Upgrade modal ── */
+    .upgrade-modal {
+      position: fixed; inset: 0; background: rgba(28,26,23,0.55);
+      z-index: 200; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .upgrade-modal.hidden { display: none; }
+    .upgrade-card {
+      background: var(--cream); border-radius: 18px; padding: 40px 32px 32px;
+      max-width: 380px; width: 100%; text-align: center; position: relative;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    }
+    .upgrade-close {
+      position: absolute; top: 14px; right: 16px; background: none; border: none;
+      font-size: 18px; color: var(--ink-muted); cursor: pointer; padding: 4px 8px;
+    }
+    .upgrade-icon { font-size: 32px; color: var(--gold); margin-bottom: 14px; }
+    .upgrade-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; margin-bottom: 10px; }
+    .upgrade-body { color: var(--ink-muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .upgrade-cta { display: block; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -670,6 +691,17 @@
     </div>
   </div>
 
+  <!-- ── SCREEN: Tier D choice ── -->
+  <div class="screen hidden" id="screenChoice">
+    <div class="inner" style="max-width:480px;text-align:center">
+      <div class="eyebrow">MyCogna</div>
+      <h2 class="headline" style="font-size:clamp(26px,5vw,38px)">What would you<br><em>like to do?</em></h2>
+      <p class="sub" style="margin-top:16px">You have full access. Choose where to begin.</p>
+      <button class="btn-primary" style="margin-top:40px" onclick="st._proceedToStories()">Tell my stories →</button>
+      <button class="btn-secondary" style="margin-top:14px" onclick="window.location='/'">Talk to a Cogna →</button>
+    </div>
+  </div>
+
   <div class="screen hidden" id="screenPromptSelect">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
@@ -681,7 +713,7 @@
       <div id="promptSelectError" class="error-msg hidden" style="margin-top:12px">Please select at least one question.</div>
       <button class="btn-primary" style="margin-top:20px" onclick="st.startWithSelectedPrompts()">Start recording →</button>
       <button class="btn-secondary" style="margin-top:10px" onclick="st.showMyStories()">View all my stories →</button>
-      <button class="btn-secondary" style="margin-top:10px" onclick="window.location='/memoir'">My Memoir →</button>
+      <button class="btn-secondary" id="memoirBtn" style="margin-top:10px" onclick="st.memoirClick()">My Memoir →</button>
     </div>
   </div>
 
@@ -735,7 +767,7 @@
       </div>
 
       <button class="btn-primary" onclick="st.recordAnother()">Record another story</button>
-      <button class="btn-secondary" onclick="window.location='/memoir'">Go deeper with AI →</button>
+      <button class="btn-secondary" id="goDeeperBtn" onclick="st.goDeeperClick()">Go deeper with AI →</button>
       <button class="btn-secondary" onclick="st.showMyStories()">View all my stories</button>
     </div>
   </div>
@@ -747,6 +779,18 @@
       <div id="myStoriesList"></div>
       <button class="btn-primary" id="downloadStoriesBtn" style="margin-top:24px;display:none;" onclick="st.downloadMyStories()">Download my stories</button>
       <button class="btn-secondary" style="margin-top:10px;" onclick="st.recordAnother()">← Record another</button>
+    </div>
+  </div>
+
+  <!-- ── Upgrade Modal ── -->
+  <div id="upgradeModal" class="upgrade-modal hidden" onclick="if(event.target===this) st.dismissUpgrade()">
+    <div class="upgrade-card">
+      <button class="upgrade-close" onclick="st.dismissUpgrade()">✕</button>
+      <div class="upgrade-icon">✦</div>
+      <h2 class="upgrade-title" id="upgradeTitle">Unlock this feature</h2>
+      <p class="upgrade-body" id="upgradeBody">Upgrade your plan to access this.</p>
+      <a href="/portal/signup" class="btn-primary upgrade-cta" id="upgradeCta">See plans</a>
+      <button class="btn-secondary" style="margin-top:10px" onclick="st.dismissUpgrade()">Maybe later</button>
     </div>
   </div>
 
@@ -764,11 +808,15 @@
       { name: 'Significant Challenges', ids: ['sys-020','sys-021','sys-022','sys-023'] },
     ];
 
-    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenOnboarding','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
+    const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenOnboarding','screenChoice','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
 
     const stState = {
       userCode: '',
       authToken: '',
+      tier: 'A',           // 'A' | 'B' | 'C' | 'D'
+      managed: false,      // true = institutional invitee — no AI buttons, no upgrade prompts
+      monthlyCount: 0,     // recordings this calendar month (tier A limit)
+      _choosingStories: false,  // internal flag: tier D already clicked "Tell my stories"
       prompts: [],
       allPrompts: [],
       answeredPromptIds: new Set(),
@@ -787,6 +835,7 @@
       ALL_SCREENS.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', s !== id);
       });
+      if (typeof st !== 'undefined') st._applyTierUI();
     }
 
     async function apiFetch(path, opts = {}) {
@@ -871,9 +920,14 @@
             body: JSON.stringify({ user_code: stState.userCode, email, password }),
           });
           stState.authToken = result.token;
+          stState.tier = result.user.tier || 'A';
+          stState.managed = !!result.user.managed;
+          stState.monthlyCount = result.user.this_month_count || 0;
           localStorage.setItem('st_token', result.token);
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
+          localStorage.setItem('st_tier', stState.tier);
+          localStorage.setItem('st_managed', stState.managed ? '1' : '0');
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.allPrompts = [...stState.prompts];
           st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
@@ -909,9 +963,14 @@
             body: JSON.stringify({ email, password }),
           });
           stState.authToken = result.token;
+          stState.tier = result.user.tier || 'A';
+          stState.managed = !!result.user.managed;
+          stState.monthlyCount = result.user.this_month_count || 0;
           localStorage.setItem('st_token', result.token);
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
+          localStorage.setItem('st_tier', stState.tier);
+          localStorage.setItem('st_managed', stState.managed ? '1' : '0');
           stState.prompts = result.prompts || [];
           stState.allPrompts = [...stState.prompts];
           st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
@@ -1117,6 +1176,7 @@
             question: stState.prompts[stState.currentPromptIndex].text,
             transcript: data.transcript || '',
           });
+          stState.monthlyCount++;
           stState.currentPromptIndex++;
           if (stState.currentPromptIndex < stState.prompts.length) {
             st._showCurrentPrompt();
@@ -1164,6 +1224,15 @@
       },
 
       async recordAnother() {
+        if (stState.tier === 'A' && !stState.managed && stState.monthlyCount >= 1) {
+          st.showUpgrade(
+            "You've shared your story for this month",
+            "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
+            'Upgrade to Storyteller',
+            '/portal/signup'
+          );
+          return;
+        }
         stState.prompts = [...stState.allPrompts];
         stState.currentPromptIndex = 0;
         stState.transcripts = [];
@@ -1262,10 +1331,18 @@
 
       finishOnboarding() {
         localStorage.setItem('st_onboarded', '1');
+        stState._choosingStories = true;
         st._showPromptSelect();
       },
 
       async _showPromptSelect() {
+        // Tier D sees a choice screen first (unless already in the "tell stories" flow)
+        if (stState.tier === 'D' && !stState._choosingStories) {
+          showScreen('screenChoice');
+          return;
+        }
+        stState._choosingStories = false;
+
         // Show one-time welcome screen for first-time users
         if (!localStorage.getItem('st_onboarded')) {
           showScreen('screenOnboarding');
@@ -1386,6 +1463,83 @@
         st._showCurrentPrompt();
         showScreen('screenRecord');
       },
+
+      // ── Tier D choice screen ──
+      _proceedToStories() {
+        stState._choosingStories = true;
+        if (!localStorage.getItem('st_onboarded')) {
+          showScreen('screenOnboarding');
+        } else {
+          st._showPromptSelect();
+        }
+      },
+
+      // ── Upgrade modal ──
+      showUpgrade(title, body, ctaText, ctaHref) {
+        document.getElementById('upgradeTitle').textContent = title;
+        document.getElementById('upgradeBody').textContent = body;
+        const cta = document.getElementById('upgradeCta');
+        cta.textContent = ctaText || 'See plans';
+        if (ctaHref) cta.href = ctaHref;
+        document.getElementById('upgradeModal').classList.remove('hidden');
+      },
+
+      dismissUpgrade() {
+        document.getElementById('upgradeModal').classList.add('hidden');
+      },
+
+      // ── Tier-gated feature clicks ──
+      goDeeperClick() {
+        if (stState.managed) return;
+        if (stState.tier === 'C' || stState.tier === 'D') {
+          window.location = '/memoir';
+        } else {
+          st.showUpgrade(
+            'Unlock AI-assisted memoir',
+            'The Storyteller+AI plan lets you go deeper with Claude — follow-up questions, memoir assembly, and chapter editing.',
+            'Upgrade to Storyteller+AI',
+            '/portal/signup'
+          );
+        }
+      },
+
+      memoirClick() {
+        if (stState.managed) return;
+        if (stState.tier === 'C' || stState.tier === 'D') {
+          window.location = '/memoir';
+        } else {
+          st.showUpgrade(
+            'Unlock AI memoir writing',
+            'The Storyteller+AI plan lets you build a memoir from your recordings — with Claude helping you deepen, assemble, and edit your chapters.',
+            'Upgrade to Storyteller+AI',
+            '/portal/signup'
+          );
+        }
+      },
+
+      // ── Apply tier-based UI visibility (called on every showScreen) ──
+      _applyTierUI() {
+        const tier = stState.tier;
+        const managed = stState.managed;
+
+        const goDeeperBtn = document.getElementById('goDeeperBtn');
+        if (goDeeperBtn) {
+          goDeeperBtn.style.display = managed ? 'none' : '';
+          if (!managed) {
+            goDeeperBtn.textContent = (tier === 'C' || tier === 'D')
+              ? 'Go deeper with AI →' : 'Go deeper with AI ✦';
+          }
+        }
+
+        const memoirBtn = document.getElementById('memoirBtn');
+        if (memoirBtn) {
+          memoirBtn.style.display = managed ? 'none' : '';
+          if (!managed) {
+            memoirBtn.textContent = (tier === 'C' || tier === 'D')
+              ? 'My Memoir →' : 'My Memoir ✦';
+          }
+        }
+      },
     };
 
     // On load: check for reset token, then check stored auth
@@ -1396,6 +1550,10 @@
         return;
       }
 
+      // Fast-path: pre-populate tier/managed from localStorage before /me responds
+      stState.tier = localStorage.getItem('st_tier') || 'A';
+      stState.managed = localStorage.getItem('st_managed') === '1';
+
       const storedToken = localStorage.getItem('st_token');
       if (storedToken) {
         try {
@@ -1405,6 +1563,11 @@
           if (res.ok) {
             const data = await res.json();
             stState.authToken = storedToken;
+            stState.tier = data.user.tier || 'A';
+            stState.managed = !!data.user.managed;
+            stState.monthlyCount = data.user.this_month_count || 0;
+            localStorage.setItem('st_tier', stState.tier);
+            localStorage.setItem('st_managed', stState.managed ? '1' : '0');
             stState.prompts = data.prompts || [];
             stState.allPrompts = [...stState.prompts];
             st._mergeCustomPrompts(data.user && data.user.email, data.user && data.user.custom_prompts);
@@ -1418,6 +1581,8 @@
             localStorage.removeItem('st_token');
             localStorage.removeItem('st_email');
             localStorage.removeItem('st_first_name');
+            localStorage.removeItem('st_tier');
+            localStorage.removeItem('st_managed');
           }
         } catch (_) {
           // Network error — fall through to entry screen

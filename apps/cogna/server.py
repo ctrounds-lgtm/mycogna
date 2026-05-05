@@ -925,7 +925,16 @@ def storyteller_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_storyteller_user(authorization)
     prompts = _get_active_prompts()
     return {
-        "user": {"email": user["email"], "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", ""), "custom_prompts": _user_custom_prompts(user)},
+        "user": {
+            "email": user["email"],
+            "first_name": user.get("first_name", ""),
+            "last_name": user.get("last_name", ""),
+            "signup_code": user.get("signup_code", ""),
+            "tier": user.get("tier", "A"),
+            "managed": bool(user.get("managed", False)),
+            "this_month_count": _this_month_recording_count(user["id"]),
+            "custom_prompts": _user_custom_prompts(user),
+        },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -946,6 +955,7 @@ def storyteller_validate(payload: StoryValidateRequest):
 def storyteller_signup(payload: StorySignupRequest):
     # Validate user code if provided
     code = payload.user_code.strip().upper() if payload.user_code else None
+    pc = None
     if code:
         pc = _get_promo_code(code)
         if not pc:
@@ -961,6 +971,22 @@ def storyteller_signup(payload: StorySignupRequest):
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in instead.")
 
+    # Derive tier and managed flag from promo code
+    if code and pc:
+        code_tier = pc.get("tier", "A").upper()
+        if code_tier == "E":
+            user_tier = "B"      # E-code invitees get unlimited recording
+            user_managed = True
+        elif code_tier in {"B", "C", "D"}:
+            user_tier = code_tier
+            user_managed = False
+        else:
+            user_tier = "A"
+            user_managed = False
+    else:
+        user_tier = "A"
+        user_managed = False
+
     user_id = "stuser_" + secrets.token_hex(8)
     salt = secrets.token_hex(8)
     pw_hash = _hash_password(payload.password, salt)
@@ -972,6 +998,8 @@ def storyteller_signup(payload: StorySignupRequest):
         "password_salt": salt,
         "password_hash": pw_hash,
         "signup_code": code,
+        "tier": user_tier,
+        "managed": user_managed,
         "created_at": _utc_now(),
     }
     _create_storyteller_user(user)
@@ -995,7 +1023,16 @@ def storyteller_signup(payload: StorySignupRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": payload.first_name.strip(), "last_name": payload.last_name.strip(), "signup_code": code or "", "custom_prompts": []},
+        "user": {
+            "email": email,
+            "first_name": payload.first_name.strip(),
+            "last_name": payload.last_name.strip(),
+            "signup_code": code or "",
+            "tier": user_tier,
+            "managed": user_managed,
+            "this_month_count": 0,
+            "custom_prompts": [],
+        },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -1014,7 +1051,16 @@ def storyteller_login(payload: StoryLoginRequest):
     token = _create_story_session(email)
     return {
         "token": token,
-        "user": {"email": email, "first_name": user.get("first_name", ""), "last_name": user.get("last_name", ""), "signup_code": user.get("signup_code", ""), "custom_prompts": _user_custom_prompts(user)},
+        "user": {
+            "email": email,
+            "first_name": user.get("first_name", ""),
+            "last_name": user.get("last_name", ""),
+            "signup_code": user.get("signup_code", ""),
+            "tier": user.get("tier", "A"),
+            "managed": bool(user.get("managed", False)),
+            "this_month_count": _this_month_recording_count(user["id"]),
+            "custom_prompts": _user_custom_prompts(user),
+        },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
 
@@ -1314,13 +1360,10 @@ def create_promo_code(
     authorization: Optional[str] = Header(default=None),
 ):
     user = _auth_user(authorization)
-    tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D"} else "A"
-    print(f"[promo] user={user.get('email')} tier={tier} desc={payload.description!r}")
+    tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D", "E"} else "A"
     try:
         code = _generate_story_promo_code(tier)
-        print(f"[promo] generated code={code}")
     except Exception as exc:
-        print(f"[promo] generate failed: {exc}")
         raise HTTPException(status_code=500, detail=f"Code generation error: {exc}")
     record = {
         "code": code,
@@ -1333,9 +1376,7 @@ def create_promo_code(
     if supabase:
         try:
             supabase.table("promo_codes").insert(record).execute()
-            print(f"[promo] inserted ok")
         except Exception as exc:
-            print(f"[promo] insert failed: {exc}")
             raise HTTPException(status_code=500, detail=f"DB insert error: {exc}")
     else:
         db = _load_db()
@@ -1931,6 +1972,24 @@ def _user_custom_prompts(user: Dict[str, Any]) -> List[Dict[str, Any]]:
     return cp if isinstance(cp, list) else []
 
 
+def _this_month_recording_count(user_id: str) -> int:
+    from datetime import date
+    month_start = date.today().replace(day=1).isoformat()
+    if supabase:
+        r = (supabase.table("story_recordings")
+             .select("id", count="exact")
+             .eq("storyteller_user_id", user_id)
+             .gte("created_at", month_start)
+             .execute())
+        return r.count or 0
+    db = _load_db()
+    return sum(
+        1 for rec in db["story_recordings"].values()
+        if rec.get("storyteller_user_id") == user_id
+        and rec.get("created_at", "") >= month_start
+    )
+
+
 def _get_storyteller_user(email: str) -> Optional[Dict[str, Any]]:
     if supabase:
         r = supabase.table("storyteller_users").select("*").eq("email", email).limit(1).execute()
@@ -2002,7 +2061,7 @@ def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:
 
 def _generate_story_promo_code(tier: str = "A") -> str:
     chars = string.ascii_uppercase + string.digits
-    prefix = tier.upper() if tier.upper() in {"A", "B", "C", "D"} else "A"
+    prefix = tier.upper() if tier.upper() in {"A", "B", "C", "D", "E"} else "A"
     for _ in range(20):
         suffix = "".join(secrets.choice(chars) for _ in range(4))
         code = f"{prefix}-{suffix}"
