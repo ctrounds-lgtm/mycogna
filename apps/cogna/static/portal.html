@@ -195,14 +195,28 @@
 
     <!-- ── PANEL C — AI Assisted ── -->
     <div id="panelC" class="hidden">
-      <div style="text-align:center;padding:60px 24px">
-        <div style="font-size:40px;margin-bottom:16px">✦</div>
-        <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:12px">Storyteller + Memoir Builder</h2>
-        <p style="color:var(--ink-muted);max-width:400px;margin:0 auto 24px">Record your stories, then let AI help you go deeper — asking follow-up questions and shaping everything into a memoir outline.</p>
-        <div style="display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto">
-          <a href="/storyteller" style="display:block;padding:12px 24px;background:var(--gold);color:#fff;border-radius:8px;text-decoration:none;font-size:15px;font-weight:500">Record stories →</a>
-          <a href="/memoir" style="display:block;padding:12px 24px;background:var(--gold-pale);border:1px solid var(--gold-light);color:var(--gold);border-radius:8px;text-decoration:none;font-size:15px;font-weight:500">My Memoir →</a>
-        </div>
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(AI Assisted)</span></h2>
+        <button class="add-btn" onclick="portal.generatePromoCode('C')">+ Generate Code</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a C-code with someone to give them AI-assisted storytelling and memoir builder access.</p>
+      <div id="promoCodesListC" class="stories-list">
+        <div class="empty-state"><p>No C-codes yet.</p></div>
+      </div>
+      <div style="margin-top:32px;margin-bottom:24px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:10px;font-size:13px;color:var(--ink-muted)">
+        <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
+      </div>
+      <div class="section-header-row" style="margin-top:8px">
+        <h2 class="section-title">Recordings</h2>
+        <button class="add-btn" onclick="portal.loadStoryPanel('C')">Refresh</button>
+      </div>
+      <div id="recordingsFilterRowC" class="hidden" style="margin-bottom:12px">
+        <select id="recordingsFilterC" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'C')">
+          <option value="">All C-codes</option>
+        </select>
+      </div>
+      <div id="recordingsListC" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No recordings yet.</p></div>
       </div>
     </div>
 

@@ -514,22 +514,17 @@ const portal = {
     const userTierIdx = tierOrder.indexOf(tier);
     const tabIdx = tierOrder.indexOf(tab);
 
-    ['A', 'B', 'C', 'D', 'E'].forEach(t => {
-      document.getElementById('dashTab' + t).classList.toggle('active', t === tab);
+    ['B', 'C', 'D', 'E'].forEach(t => {
+      const btn = document.getElementById('dashTab' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
       const panel = document.getElementById('panel' + t);
       if (panel) panel.classList.add('hidden');
     });
     document.getElementById('panelLocked').classList.add('hidden');
 
-    // C tab shows for everyone — tier gating will be added when billing is live
-    if (tab === 'C') {
-      document.getElementById('panelC').classList.remove('hidden');
-      return;
-    }
-
     // Check if this tab is above the user's tier
     if (tabIdx > userTierIdx) {
-      const labels = { A: 'Free Storyteller', B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection' };
+      const labels = { B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection' };
       document.getElementById('lockedTitle').textContent = `Upgrade to unlock ${labels[tab]}`;
       document.getElementById('lockedBody').textContent = `Your current plan doesn't include the ${labels[tab]} tier. Upgrade to access this feature.`;
       document.getElementById('panelLocked').classList.remove('hidden');
@@ -538,8 +533,8 @@ const portal = {
 
     document.getElementById('panel' + tab).classList.remove('hidden');
 
-    if (tab === 'A') portal.loadStoryPanel('A');
-    else if (tab === 'B') portal.loadStoryPanel('B');
+    if (tab === 'B') portal.loadStoryPanel('B');
+    else if (tab === 'C') portal.loadStoryPanel('C');
     else if (tab === 'E') portal.loadStoryPanel('E', 'B');
     else if (tab === 'D' && state.user) {
       req(`${api}/cognas`, { headers: authHeaders() })
@@ -573,7 +568,7 @@ const portal = {
   },
 
   // Legacy alias
-  async loadStories() { return portal.loadStoryPanel('A'); },
+  async loadStories() { return portal.loadStoryPanel('B'); },
 
   async loadUsage() {
     try {
