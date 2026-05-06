@@ -1402,16 +1402,18 @@
           </div>`;
         }
 
-        // Uncategorized custom prompts (added before categories were introduced)
+        // Uncategorized custom prompts — always show so storytellers can add their own
         const uncategorized = (customByCategory['My Questions'] || []);
-        if (uncategorized.length) {
-          html += `<div class="prompt-category" data-category="My Questions">
-            <div class="prompt-category-header">My Questions</div>
-            <div class="prompt-category-body">
-              ${uncategorized.map(renderPrompt).join('')}
+        html += `<div class="prompt-category" data-category="My Questions">
+          <div class="prompt-category-header">My Questions</div>
+          <div class="prompt-category-body">
+            ${uncategorized.map(renderPrompt).join('')}
+            <div class="custom-prompt-row">
+              <textarea placeholder="Add your own question…" maxlength="300"></textarea>
+              <button onclick="st.addCustomPrompt('My Questions', this)">+ Add</button>
             </div>
-          </div>`;
-        }
+          </div>
+        </div>`;
 
         container.innerHTML = html;
         document.getElementById('promptSelectError').classList.add('hidden');
