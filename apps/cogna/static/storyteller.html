@@ -1389,6 +1389,7 @@
           const systemPrompts = cat.ids.map(id => promptById[id]).filter(Boolean);
           const customPrompts = customByCategory[cat.name] || [];
           const allInCat = [...systemPrompts, ...customPrompts];
+          if (!allInCat.length) continue;
           html += `<div class="prompt-category" data-category="${cat.name}">
             <div class="prompt-category-header">${cat.name}</div>
             <div class="prompt-category-body">
