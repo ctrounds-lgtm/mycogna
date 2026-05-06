@@ -648,7 +648,7 @@ const portal = {
         </div>
         <div class="story-item-actions">
           <button class="story-action-btn${p.active ? '' : ' activate'}" onclick="portal.activatePrompt('${p.id}')">${p.active ? 'Deactivate' : 'Set Active'}</button>
-          <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>
+          ${p.portal_user_email ? `<button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>` : ''}
         </div>
       </div>`).join('');
   },

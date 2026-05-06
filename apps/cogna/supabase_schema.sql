@@ -301,3 +301,11 @@ ON CONFLICT (email) DO UPDATE SET
   first_name = EXCLUDED.first_name,
   last_name = EXCLUDED.last_name;
 -- Note: existing portal admin password is preserved on conflict (we don't overwrite password_hash)
+
+-- ─────────────────────────────────────────────
+-- Migration: per-account prompt ownership (2026-05-06)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- Add owner column: NULL = system prompt (shared, not deletable), email = portal user's custom prompt
+ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS portal_user_email TEXT REFERENCES users(email) ON DELETE CASCADE;

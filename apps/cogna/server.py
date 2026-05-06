@@ -941,7 +941,7 @@ def list_sessions(
 @app.get("/api/storyteller/me")
 def storyteller_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_storyteller_user(authorization)
-    prompts = _get_active_prompts()
+    prompts = _get_active_prompts(_get_portal_owner_email(user))
     return {
         "user": {
             "email": user["email"],
@@ -963,7 +963,7 @@ def storyteller_validate(payload: StoryValidateRequest):
     pc = _get_promo_code(code)
     if not pc:
         raise HTTPException(status_code=404, detail="User code not found or inactive")
-    prompts = _get_active_prompts()
+    prompts = _get_active_prompts(pc.get("created_by"))
     if not prompts:
         raise HTTPException(status_code=404, detail="No active story prompt. Ask a collaborator to set one up.")
     return {"valid": True, "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts]}
@@ -1063,7 +1063,7 @@ def storyteller_signup(payload: StorySignupRequest):
                     rec["storyteller_user_id"] = user_id
             _save_db(db)
 
-    prompts = _get_active_prompts()
+    prompts = _get_active_prompts(pc.get("created_by") if pc else None)
     token = _create_story_session(email)
     return {
         "token": token,
@@ -1097,7 +1097,7 @@ def storyteller_login(payload: StoryLoginRequest):
     if not st_user:
         raise HTTPException(status_code=403, detail="No storyteller account found for this email. Please use the portal login.")
 
-    prompts = _get_active_prompts()
+    prompts = _get_active_prompts(_get_portal_owner_email(st_user))
     token = _create_story_session(email)
     return {
         "token": token,
@@ -1288,12 +1288,20 @@ def add_custom_prompt(
 
 @app.get("/api/storyteller/prompts")
 def list_story_prompts(authorization: Optional[str] = Header(default=None)):
-    _auth_user(authorization)
+    user = _auth_user(authorization)
     if supabase:
-        r = supabase.table("story_prompts").select("*").order("sort_order").order("created_at").execute()
-        return {"prompts": r.data or []}
+        sys_r = (supabase.table("story_prompts").select("*")
+                 .is_("portal_user_email", "null")
+                 .order("sort_order").order("created_at").execute())
+        custom_r = (supabase.table("story_prompts").select("*")
+                    .eq("portal_user_email", user["email"])
+                    .order("sort_order").order("created_at").execute())
+        all_prompts = (sys_r.data or []) + (custom_r.data or [])
+        all_prompts.sort(key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+        return {"prompts": all_prompts}
     db = _load_db()
     prompts = sorted(db["story_prompts"].values(), key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+    prompts = [p for p in prompts if not p.get("portal_user_email") or p.get("portal_user_email") == user["email"]]
     return {"prompts": list(prompts)}
 
 
@@ -1320,6 +1328,7 @@ def create_story_prompt(
         "active": False,
         "sort_order": next_order,
         "created_by": user["email"],
+        "portal_user_email": user["email"],
         "created_at": _utc_now(),
     }
     if supabase:
@@ -1354,13 +1363,28 @@ def delete_story_prompt(
     prompt_id: str,
     authorization: Optional[str] = Header(default=None),
 ):
-    _auth_user(authorization)
+    user = _auth_user(authorization)
     if supabase:
+        r = supabase.table("story_prompts").select("portal_user_email").eq("id", prompt_id).limit(1).execute()
+        if not r.data:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        owner = r.data[0].get("portal_user_email")
+        if owner is None:
+            raise HTTPException(status_code=403, detail="System prompts cannot be deleted")
+        if owner != user["email"]:
+            raise HTTPException(status_code=403, detail="You can only delete your own prompts")
         supabase.table("story_prompts").delete().eq("id", prompt_id).execute()
     else:
         db = _load_db()
-        db["story_prompts"].pop(prompt_id, None)
-        _save_db(db)
+        prompt = db["story_prompts"].get(prompt_id)
+        if prompt:
+            owner = prompt.get("portal_user_email")
+            if owner is None:
+                raise HTTPException(status_code=403, detail="System prompts cannot be deleted")
+            if owner != user["email"]:
+                raise HTTPException(status_code=403, detail="You can only delete your own prompts")
+            db["story_prompts"].pop(prompt_id, None)
+            _save_db(db)
     return {"ok": True}
 
 
@@ -2106,12 +2130,37 @@ def _create_story_session(email: str) -> str:
 # Storyteller data helpers
 # ----------------------------------------------------
 
-def _get_active_prompts() -> List[Dict[str, Any]]:
+def _get_portal_owner_email(st_user: Optional[Dict]) -> Optional[str]:
+    signup_code = st_user.get("signup_code") if st_user else None
+    if not signup_code:
+        return None
     if supabase:
-        r = supabase.table("story_prompts").select("*").eq("active", True).order("sort_order").order("created_at").execute()
-        return r.data or []
+        r = supabase.table("promo_codes").select("created_by").eq("code", signup_code).limit(1).execute()
+        return r.data[0].get("created_by") if r.data else None
+    db = _load_db()
+    pc = db["promo_codes"].get(signup_code)
+    return pc.get("created_by") if pc else None
+
+
+def _get_active_prompts(portal_user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+    if supabase:
+        sys_r = (supabase.table("story_prompts").select("*")
+                 .eq("active", True).is_("portal_user_email", "null")
+                 .order("sort_order").order("created_at").execute())
+        results = sys_r.data or []
+        if portal_user_email:
+            custom_r = (supabase.table("story_prompts").select("*")
+                        .eq("active", True).eq("portal_user_email", portal_user_email)
+                        .order("sort_order").order("created_at").execute())
+            results = results + (custom_r.data or [])
+            results.sort(key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+        return results
     db = _load_db()
     active = [p for p in db["story_prompts"].values() if p.get("active")]
+    if portal_user_email:
+        active = [p for p in active if not p.get("portal_user_email") or p.get("portal_user_email") == portal_user_email]
+    else:
+        active = [p for p in active if not p.get("portal_user_email")]
     return sorted(active, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
 
 
