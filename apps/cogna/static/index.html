@@ -366,6 +366,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 24px;
+      padding-top: 16px;
     }
 
     .product-card {
@@ -382,6 +383,7 @@
     .product-card.featured {
       border-color: var(--gold);
       box-shadow: 0 0 0 1px var(--gold);
+      overflow: visible;
     }
     .product-card.featured::before {
       content: 'Most Popular';
@@ -974,7 +976,7 @@
 
         <div class="product-card featured">
           <div class="product-badge">Available now</div>
-          <h3>Storyteller<br>+ AI</h3>
+          <h3>Storyteller +<br>Memoir Builder</h3>
           <div class="product-tagline">Guided by Intelligence</div>
           <p class="product-desc">
             Everything in Storyteller, plus an AI memoir assistant that helps you go deeper. Like having a skilled interviewer and editor in the room.
@@ -1131,7 +1133,7 @@
           <a href="/storyteller" class="pricing-btn pricing-btn-outline">Get started free</a>
         </div>
 
-        <div class="pricing-card featured">
+        <div class="pricing-card">
           <div class="pricing-tier">Storyteller</div>
           <div class="pricing-name">Unlimited</div>
           <div class="pricing-price"><sup>$</sup>5</div>
@@ -1146,9 +1148,9 @@
           <a href="/signup" class="pricing-btn pricing-btn-fill">Start recording</a>
         </div>
 
-        <div class="pricing-card">
+        <div class="pricing-card featured">
           <div class="pricing-tier">AI Assisted</div>
-          <div class="pricing-name">Storyteller+</div>
+          <div class="pricing-name">Storyteller + Memoir Builder</div>
           <div class="pricing-price"><sup>$</sup>10</div>
           <div class="pricing-period">per month</div>
           <div class="pricing-divider"></div>
@@ -1168,7 +1170,7 @@
           <div class="pricing-period">per month</div>
           <div class="pricing-divider"></div>
           <ul class="pricing-features">
-            <li>Everything in Storyteller+</li>
+            <li>Everything in Storyteller + Memoir Builder</li>
             <li>Unlimited Cogna companions</li>
             <li>Custom voice per Cogna</li>
             <li>Multi-voice conversations</li>
