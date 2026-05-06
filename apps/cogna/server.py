@@ -362,17 +362,15 @@ def auth_register(payload: FamilyRegisterRequest):
     user = {
         "email": email,
         "name": payload.name.strip(),
-        "first_name": "",
-        "last_name": "",
         "password_salt": salt,
         "password_hash": password_hash,
         "setup_type": setup_type,
         "tier": tier,
-        "role": "portal_admin",
         "child_access_code": _generate_child_access_code(tier),
         "created_at": _utc_now(),
     }
     _create_user(user)
+    _update_user(email, {"role": "portal_admin", "first_name": "", "last_name": ""})
     token = _create_session(email)
     return {"token": token, "user": _public_user(user)}
 
@@ -1034,19 +1032,22 @@ def storyteller_signup(payload: StorySignupRequest):
             "last_name": payload.last_name.strip(),
         })
     else:
-        # New storyteller-only account — create unified users row for auth
+        # New storyteller-only account — create unified users row for auth.
+        # Insert only original-schema columns, then update with ALTER TABLE columns
+        # to avoid PostgREST schema cache timing issues.
         auth_user = {
             "email": email,
             "name": (payload.first_name.strip() + " " + payload.last_name.strip()).strip(),
-            "first_name": payload.first_name.strip(),
-            "last_name": payload.last_name.strip(),
             "password_salt": salt,
             "password_hash": pw_hash,
-            "role": "storyteller",
-            "child_access_code": None,
             "created_at": _utc_now(),
         }
         _create_user(auth_user)
+        _update_user(email, {
+            "role": "storyteller",
+            "first_name": payload.first_name.strip(),
+            "last_name": payload.last_name.strip(),
+        })
 
     # Transfer any existing recordings for this code to the new account
     if code:
