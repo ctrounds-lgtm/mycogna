@@ -636,21 +636,28 @@ const portal = {
       el.innerHTML = '<div class="empty-state"><p>No prompts yet.</p></div>';
       return;
     }
-    el.innerHTML = prompts.map((p, i) => `
-      <div class="story-item">
+    el.innerHTML = prompts.map((p, i) => {
+      const isSystem = !p.portal_user_email;
+      const badge = isSystem
+        ? (p.hidden_by_me ? '<span class="active-badge" style="background:var(--ink-faint)">Hidden</span>' : '<span class="active-badge">Visible</span>')
+        : (p.active ? '<span class="active-badge">Active</span>' : '');
+      const actions = isSystem
+        ? `<button class="story-action-btn${p.hidden_by_me ? ' activate' : ''}" onclick="portal.hidePrompt('${p.id}', ${p.hidden_by_me})">${p.hidden_by_me ? 'Show' : 'Hide'}</button>`
+        : `<button class="story-action-btn${p.active ? '' : ' activate'}" onclick="portal.activatePrompt('${p.id}')">${p.active ? 'Deactivate' : 'Set Active'}</button>
+           <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>`;
+      return `
+      <div class="story-item${p.hidden_by_me ? '" style="opacity:0.55' : ''}">
         <div class="story-item-reorder">
           <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','up')" ${i === 0 ? 'disabled' : ''}>↑</button>
           <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','down')" ${i === prompts.length - 1 ? 'disabled' : ''}>↓</button>
         </div>
         <div class="story-item-main">
-          <div class="story-item-text">${p.text}${p.active ? '<span class="active-badge">Active</span>' : ''}</div>
-          <div class="story-item-meta">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
+          <div class="story-item-text">${p.text} ${badge}</div>
+          <div class="story-item-meta">${isSystem ? 'System prompt' : (p.created_at ? new Date(p.created_at).toLocaleDateString() : '')}</div>
         </div>
-        <div class="story-item-actions">
-          <button class="story-action-btn${p.active ? '' : ' activate'}" onclick="portal.activatePrompt('${p.id}')">${p.active ? 'Deactivate' : 'Set Active'}</button>
-          ${p.portal_user_email ? `<button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>` : ''}
-        </div>
-      </div>`).join('');
+        <div class="story-item-actions">${actions}</div>
+      </div>`;
+    }).join('');
   },
 
   async movePrompt(promptId, direction) {
@@ -810,6 +817,18 @@ const portal = {
   async activatePrompt(promptId) {
     try {
       await req(`${api}/storyteller/prompts/${promptId}/activate`, {
+        method: 'PUT',
+        headers: authHeaders(),
+      });
+      await portal.loadStories();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async hidePrompt(promptId) {
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}/hide`, {
         method: 'PUT',
         headers: authHeaders(),
       });

@@ -309,3 +309,11 @@ ON CONFLICT (email) DO UPDATE SET
 
 -- Add owner column: NULL = system prompt (shared, not deletable), email = portal user's custom prompt
 ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS portal_user_email TEXT REFERENCES users(email) ON DELETE CASCADE;
+
+-- ─────────────────────────────────────────────
+-- Migration: per-user system prompt hiding (2026-05-06)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- Array of system prompt IDs the portal user has hidden from their storytellers
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hidden_prompt_ids JSONB NOT NULL DEFAULT '[]';

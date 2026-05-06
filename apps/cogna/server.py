@@ -1289,6 +1289,7 @@ def add_custom_prompt(
 @app.get("/api/storyteller/prompts")
 def list_story_prompts(authorization: Optional[str] = Header(default=None)):
     user = _auth_user(authorization)
+    hidden = set(_get_hidden_prompt_ids(user["email"]))
     if supabase:
         sys_r = (supabase.table("story_prompts").select("*")
                  .is_("portal_user_email", "null")
@@ -1296,13 +1297,22 @@ def list_story_prompts(authorization: Optional[str] = Header(default=None)):
         custom_r = (supabase.table("story_prompts").select("*")
                     .eq("portal_user_email", user["email"])
                     .order("sort_order").order("created_at").execute())
-        all_prompts = (sys_r.data or []) + (custom_r.data or [])
+        sys_prompts = sys_r.data or []
+        for p in sys_prompts:
+            p["hidden_by_me"] = p["id"] in hidden
+        all_prompts = sys_prompts + (custom_r.data or [])
         all_prompts.sort(key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
         return {"prompts": all_prompts}
     db = _load_db()
     prompts = sorted(db["story_prompts"].values(), key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
     prompts = [p for p in prompts if not p.get("portal_user_email") or p.get("portal_user_email") == user["email"]]
-    return {"prompts": list(prompts)}
+    result = []
+    for p in prompts:
+        p_copy = dict(p)
+        if not p_copy.get("portal_user_email"):
+            p_copy["hidden_by_me"] = p_copy["id"] in hidden
+        result.append(p_copy)
+    return {"prompts": result}
 
 
 @app.post("/api/storyteller/prompts")
@@ -1356,6 +1366,22 @@ def activate_story_prompt(
             db["story_prompts"][prompt_id]["active"] = not db["story_prompts"][prompt_id].get("active", False)
         _save_db(db)
     return {"ok": True}
+
+
+@app.put("/api/storyteller/prompts/{prompt_id}/hide")
+def toggle_hide_story_prompt(
+    prompt_id: str,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    hidden = _get_hidden_prompt_ids(user["email"])
+    was_hidden = prompt_id in hidden
+    if was_hidden:
+        hidden = [pid for pid in hidden if pid != prompt_id]
+    else:
+        hidden = hidden + [prompt_id]
+    _set_hidden_prompt_ids(user["email"], hidden)
+    return {"ok": True, "hidden": not was_hidden}
 
 
 @app.delete("/api/storyteller/prompts/{prompt_id}")
@@ -2130,6 +2156,24 @@ def _create_story_session(email: str) -> str:
 # Storyteller data helpers
 # ----------------------------------------------------
 
+def _get_hidden_prompt_ids(portal_user_email: str) -> List[str]:
+    if supabase:
+        r = supabase.table("users").select("hidden_prompt_ids").eq("email", portal_user_email).limit(1).execute()
+        return r.data[0].get("hidden_prompt_ids") or [] if r.data else []
+    db = _load_db()
+    return db.get("users", {}).get(portal_user_email, {}).get("hidden_prompt_ids") or []
+
+
+def _set_hidden_prompt_ids(portal_user_email: str, ids: List[str]) -> None:
+    if supabase:
+        supabase.table("users").update({"hidden_prompt_ids": ids}).eq("email", portal_user_email).execute()
+    else:
+        db = _load_db()
+        if portal_user_email in db.get("users", {}):
+            db["users"][portal_user_email]["hidden_prompt_ids"] = ids
+        _save_db(db)
+
+
 def _get_portal_owner_email(st_user: Optional[Dict]) -> Optional[str]:
     signup_code = st_user.get("signup_code") if st_user else None
     if not signup_code:
@@ -2143,11 +2187,12 @@ def _get_portal_owner_email(st_user: Optional[Dict]) -> Optional[str]:
 
 
 def _get_active_prompts(portal_user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+    hidden = set(_get_hidden_prompt_ids(portal_user_email)) if portal_user_email else set()
     if supabase:
         sys_r = (supabase.table("story_prompts").select("*")
                  .eq("active", True).is_("portal_user_email", "null")
                  .order("sort_order").order("created_at").execute())
-        results = sys_r.data or []
+        results = [p for p in (sys_r.data or []) if p["id"] not in hidden]
         if portal_user_email:
             custom_r = (supabase.table("story_prompts").select("*")
                         .eq("active", True).eq("portal_user_email", portal_user_email)
@@ -2159,6 +2204,7 @@ def _get_active_prompts(portal_user_email: Optional[str] = None) -> List[Dict[st
     active = [p for p in db["story_prompts"].values() if p.get("active")]
     if portal_user_email:
         active = [p for p in active if not p.get("portal_user_email") or p.get("portal_user_email") == portal_user_email]
+        active = [p for p in active if p.get("portal_user_email") or p["id"] not in hidden]
     else:
         active = [p for p in active if not p.get("portal_user_email")]
     return sorted(active, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
