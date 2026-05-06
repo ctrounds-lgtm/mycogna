@@ -100,22 +100,22 @@ async function loadDashboard() {
   document.getElementById('dashWelcome').textContent = `Welcome back, ${state.user.name}`;
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
-  // Set up tab locking based on tier
-  const tierOrder = ['A', 'B', 'C', 'D', 'E'];
-  const rawTier = state.user.tier || 'A';
+  // Set up tab locking based on tier (A tab removed — portal users start at B minimum)
+  const tierOrder = ['B', 'C', 'D', 'E'];
+  const rawTier = state.user.tier || 'B';
   const tier = tierOrder.includes(rawTier) ? rawTier : 'B';
   const userTierIdx = tierOrder.indexOf(tier);
 
   tierOrder.forEach((t, idx) => {
     const btn = document.getElementById('dashTab' + t);
-    if (idx > userTierIdx) {
+    if (btn && idx > userTierIdx) {
       btn.classList.add('locked');
       btn.title = 'Upgrade to unlock';
     }
   });
 
-  // Start on the user's highest tier tab
-  const startTab = tier;
+  // Start on the user's highest tier tab (minimum B)
+  const startTab = tier === 'A' ? 'B' : tier;
   portal.switchDashTab(startTab);
 
   if (tier === 'D') {
