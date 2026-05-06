@@ -815,6 +815,7 @@
       authToken: '',
       tier: 'A',           // 'A' | 'B' | 'C' | 'D'
       managed: false,      // true = institutional invitee — no AI buttons, no upgrade prompts
+      signupCode: '',      // non-empty = arrived via portal code — no upgrade prompts for A/B tier
       monthlyCount: 0,     // recordings this calendar month (tier A limit)
       _choosingStories: false,  // internal flag: tier D already clicked "Tell my stories"
       prompts: [],
@@ -922,12 +923,14 @@
           stState.authToken = result.token;
           stState.tier = result.user.tier || 'A';
           stState.managed = !!result.user.managed;
+          stState.signupCode = result.user.signup_code || '';
           stState.monthlyCount = result.user.this_month_count || 0;
           localStorage.setItem('st_token', result.token);
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
           localStorage.setItem('st_tier', stState.tier);
           localStorage.setItem('st_managed', stState.managed ? '1' : '0');
+          localStorage.setItem('st_signup_code', stState.signupCode);
           if (result.prompts && result.prompts.length) stState.prompts = result.prompts;
           stState.allPrompts = [...stState.prompts];
           st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
@@ -965,12 +968,14 @@
           stState.authToken = result.token;
           stState.tier = result.user.tier || 'A';
           stState.managed = !!result.user.managed;
+          stState.signupCode = result.user.signup_code || '';
           stState.monthlyCount = result.user.this_month_count || 0;
           localStorage.setItem('st_token', result.token);
           localStorage.setItem('st_email', result.user.email);
           localStorage.setItem('st_first_name', result.user.first_name || '');
           localStorage.setItem('st_tier', stState.tier);
           localStorage.setItem('st_managed', stState.managed ? '1' : '0');
+          localStorage.setItem('st_signup_code', stState.signupCode);
           stState.prompts = result.prompts || [];
           stState.allPrompts = [...stState.prompts];
           st._mergeCustomPrompts(result.user.email, result.user.custom_prompts);
@@ -1493,7 +1498,8 @@
 
       // ── Tier-gated feature clicks ──
       goDeeperClick() {
-        if (stState.managed) return;
+        const hideUpgrade = stState.managed || (stState.signupCode && (stState.tier === 'A' || stState.tier === 'B'));
+        if (hideUpgrade) return;
         if (stState.tier === 'C' || stState.tier === 'D') {
           window.location = '/memoir';
         } else {
@@ -1507,7 +1513,8 @@
       },
 
       memoirClick() {
-        if (stState.managed) return;
+        const hideUpgrade = stState.managed || (stState.signupCode && (stState.tier === 'A' || stState.tier === 'B'));
+        if (hideUpgrade) return;
         if (stState.tier === 'C' || stState.tier === 'D') {
           window.location = '/memoir';
         } else {
@@ -1523,12 +1530,12 @@
       // ── Apply tier-based UI visibility (called on every showScreen) ──
       _applyTierUI() {
         const tier = stState.tier;
-        const managed = stState.managed;
+        const hideUpgrade = stState.managed || (stState.signupCode && (tier === 'A' || tier === 'B'));
 
         const goDeeperBtn = document.getElementById('goDeeperBtn');
         if (goDeeperBtn) {
-          goDeeperBtn.style.display = managed ? 'none' : '';
-          if (!managed) {
+          goDeeperBtn.style.display = hideUpgrade ? 'none' : '';
+          if (!hideUpgrade) {
             goDeeperBtn.textContent = (tier === 'C' || tier === 'D')
               ? 'Go deeper with AI →' : 'Go deeper with AI ✦';
           }
@@ -1536,8 +1543,8 @@
 
         const memoirBtn = document.getElementById('memoirBtn');
         if (memoirBtn) {
-          memoirBtn.style.display = managed ? 'none' : '';
-          if (!managed) {
+          memoirBtn.style.display = hideUpgrade ? 'none' : '';
+          if (!hideUpgrade) {
             memoirBtn.textContent = (tier === 'C' || tier === 'D')
               ? 'My Memoir →' : 'My Memoir ✦';
           }
@@ -1556,6 +1563,7 @@
       // Fast-path: pre-populate tier/managed from localStorage before /me responds
       stState.tier = localStorage.getItem('st_tier') || 'A';
       stState.managed = localStorage.getItem('st_managed') === '1';
+      stState.signupCode = localStorage.getItem('st_signup_code') || '';
 
       const storedToken = localStorage.getItem('st_token');
       if (storedToken) {
@@ -1568,9 +1576,11 @@
             stState.authToken = storedToken;
             stState.tier = data.user.tier || 'A';
             stState.managed = !!data.user.managed;
+            stState.signupCode = data.user.signup_code || '';
             stState.monthlyCount = data.user.this_month_count || 0;
             localStorage.setItem('st_tier', stState.tier);
             localStorage.setItem('st_managed', stState.managed ? '1' : '0');
+            localStorage.setItem('st_signup_code', stState.signupCode);
             stState.prompts = data.prompts || [];
             stState.allPrompts = [...stState.prompts];
             st._mergeCustomPrompts(data.user && data.user.email, data.user && data.user.custom_prompts);
@@ -1586,6 +1596,7 @@
             localStorage.removeItem('st_first_name');
             localStorage.removeItem('st_tier');
             localStorage.removeItem('st_managed');
+            localStorage.removeItem('st_signup_code');
           }
         } catch (_) {
           // Network error — fall through to entry screen
