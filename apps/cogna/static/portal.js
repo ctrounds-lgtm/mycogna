@@ -639,7 +639,7 @@ const portal = {
     el.innerHTML = prompts.map((p, i) => {
       const isSystem = !p.portal_user_email;
       const badge = isSystem
-        ? (p.hidden_by_me ? '<span class="active-badge" style="background:var(--ink-faint)">Hidden</span>' : '<span class="active-badge">Visible</span>')
+        ? ''
         : (p.active ? '<span class="active-badge">Active</span>' : '');
       const actions = isSystem
         ? `<button class="story-action-btn${p.hidden_by_me ? ' activate' : ''}" onclick="portal.hidePrompt('${p.id}', ${p.hidden_by_me})">${p.hidden_by_me ? 'Show' : 'Hide'}</button>`
