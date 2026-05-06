@@ -258,24 +258,70 @@
 
     .hero-invite a:hover { color: var(--gold); }
 
-    /* Hero video */
-    .hero-image-area {
+    /* Hero photo + audio */
+    .hero-media-wrap {
       margin-top: 56px;
-      width: 100%;
-      max-width: 680px;
-      height: 320px;
-      border-radius: 12px;
-      border: 1px solid rgba(201,150,58,0.15);
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
       position: relative;
       z-index: 1;
     }
 
-    .hero-image-area video {
-      width: 100%;
-      height: 100%;
+    .hero-photo {
+      width: 260px;
+      height: 300px;
+      border-radius: 16px;
       object-fit: cover;
+      object-position: center top;
+      border: 1px solid rgba(201,150,58,0.2);
+      box-shadow: 0 8px 32px rgba(28,26,23,0.10);
       display: block;
+    }
+
+    .audio-player-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .audio-label {
+      font-size: 13px;
+      font-style: italic;
+      color: var(--ink-faint);
+      margin: 0;
+    }
+
+    .play-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 22px 10px 10px;
+      background: var(--gold-pale);
+      border: 1.5px solid var(--gold-light);
+      border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .play-btn:hover { background: #eddba0; border-color: var(--gold); }
+
+    .play-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
     }
 
     /* ── USE CASES ── */
@@ -812,7 +858,7 @@
       .pricing-grid { grid-template-columns: 1fr; }
       .footer-top { flex-direction: column; gap: 32px; }
       .footer-nav { flex-direction: column; gap: 28px; }
-      .hero-image-area { height: 200px; }
+      .hero-photo { width: 200px; height: 230px; }
       .pull-quote { padding: 28px 24px; }
     }
   </style>
@@ -855,10 +901,16 @@
       <p class="hero-invite">
         <a href="/storyteller">Have an invite code? Enter it here.</a>
       </p>
-      <div class="hero-image-area">
-        <video autoplay muted loop playsinline>
-          <source src="/static/MyCogna.mp4" type="video/mp4">
-        </video>
+      <div class="hero-media-wrap">
+        <img src="/static/christy-headshot.jpeg" alt="Christy Rounds, founder of MyCogna" class="hero-photo">
+        <div class="audio-player-wrap">
+          <p class="audio-label">Hear it in Christy's words →</p>
+          <button class="play-btn" id="playBtn" onclick="toggleFounderAudio()">
+            <span class="play-icon" id="playIcon">▶</span>
+            <span id="playLabel">Listen — 1 min</span>
+          </button>
+          <audio id="founderAudio" src="/static/MyCogna.m4a" onended="resetFounderAudio()"></audio>
+        </div>
       </div>
     </div>
   </section>
@@ -1142,40 +1194,29 @@
         <div class="story-text">
           <div class="section-label">My Story</div>
           <h2 class="section-title" style="margin-bottom:8px">Why I built<br><em>MyCogna</em></h2>
-          <p>Three life events inspired MyCogna.</p>
-
-          <h4>My Grandmother's Stories</h4>
           <p>
-            I tried for years to get my grandmother to tell me her stories. She was sharp and funny and full of life — but getting her to talk about the past was like pulling teeth. She'd deflect, change the subject, insist there wasn't much to tell. I'd sit across from her with a little cassette recorder, hoping she'd open up.
+            Five years ago, someone paid me $10,000 to write their memoir. Three months later, both of us were frustrated. The book got finished — but I learned something important: the best writer in the world can't tell your stories as well as you can.
           </p>
           <p>
-            Then one day, she did. She told stories our family had never heard. Though she lived to be 103, she only shared those stories once.
-          </p>
-          <p>Tragically, the tapes got lost between moves.</p>
-
-          <h4>My Most Painful — and Transformative — Life Experience</h4>
-          <p>
-            Thirty years later, I went through a surprise divorce. I spent four months traveling 18,000 miles across the western United States. Writing my travel memoir, <em>Escape Bound</em>, was more therapeutic than any amount of talk therapy. But it took two years. The voice that needed to be heard was mine — and finding the words took everything I had.
-          </p>
-
-          <h4>An Unexpected New Friend</h4>
-          <p>
-            Recently, I began working with AI as a creative collaborator — exploring what it means to be in relationship with an intelligence that isn't quite human. And I started asking: what if we could use this technology not to replace human connection, but to preserve it?
+            That insight led me to write my own memoir. <em>Escape Bound</em> was the story of an 18,000-mile road trip after a surprise divorce. It took two years. But it saved me decades of therapy.
           </p>
           <p>
-            MyCogna is my answer to that question. What began as a way to capture stories from the past has evolved into something with longevity — a way to document the stories still being written.
+            I wanted other people to have that experience — without the two years or the $10,000.
           </p>
           <p>
-            We're just getting started. But the mission is simple: every voice deserves to be heard.
+            MyCogna lets you tell your stories out loud, the way you'd tell them to a friend. An AI assistant asks follow-up questions that draw out what's really there. And when you're ready, it helps you shape everything into a memoir you can actually hold.
           </p>
-          <p><em>Which of your stories will you share today?</em></p>
+          <p>
+            Your stories deserve to be told. In your voice. Because you've always known there was a book inside of you.
+          </p>
+          <p><em>I'm glad you found your way here.</em></p>
           <p><em>— Christy Rounds, founder</em></p>
         </div>
 
         <div class="story-sidebar">
           <div class="story-pull-quote">
-            "Without intentionality, these stories disappear. Not because people don't care — but because life is busy and we always think there's more time."
-            <cite>Christy Rounds — Author, <em>Escape Bound</em></cite>
+            "The best writer in the world can't tell your stories as well as you can."
+            <cite>Christy Rounds — Founder, MyCogna &amp; Author, <em>Escape Bound</em></cite>
           </div>
           <figure style="margin:0">
             <img src="/static/images/grandma-christy-christopher.jpg"
@@ -1230,5 +1271,26 @@
     </div>
   </footer>
 
+  <script>
+    function toggleFounderAudio() {
+      const audio = document.getElementById('founderAudio');
+      const icon = document.getElementById('playIcon');
+      const label = document.getElementById('playLabel');
+      if (audio.paused) {
+        audio.play();
+        icon.textContent = '⏸';
+        label.textContent = 'Playing…';
+      } else {
+        audio.pause();
+        icon.textContent = '▶';
+        label.textContent = 'Listen — 1 min';
+      }
+    }
+
+    function resetFounderAudio() {
+      document.getElementById('playIcon').textContent = '▶';
+      document.getElementById('playLabel').textContent = 'Listen — 1 min';
+    }
+  </script>
 </body>
 </html>
