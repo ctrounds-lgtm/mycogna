@@ -76,8 +76,7 @@ SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 STORY_RECORDINGS_DIR = PORTAL_DATA_DIR / "story_recordings"
 STORY_RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
-SESSIONS: Dict[str, str] = {}
-STORY_SESSIONS: Dict[str, str] = {}  # storyteller token → email
+SESSIONS: Dict[str, str] = {}  # unified token → email (portal admins + storytellers)
 
 # Claude API setup
 CLAUDE_API_KEY = os.getenv(CONFIG.get("claude_api_key_env", "CLAUDE_API_KEY"))
@@ -333,27 +332,46 @@ def serve_audio(filename: str):
 @app.post("/api/auth/register")
 def auth_register(payload: FamilyRegisterRequest):
     email = payload.email.strip().lower()
-
     existing = _get_user(email)
-    if existing:
-        raise HTTPException(status_code=400, detail="Account already exists")
 
     setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
-    tier = payload.tier if payload.tier in {"A", "B", "C", "D"} else "A"
+    tier = payload.tier if payload.tier in {"A", "B", "C", "D", "E"} else "A"
+
+    if existing:
+        if existing.get("role") in ("portal_admin", "both"):
+            raise HTTPException(status_code=400, detail="Account already exists")
+        # Existing storyteller upgrading to portal — upgrade role, set new password
+        salt = secrets.token_hex(8)
+        password_hash = _hash_password(payload.password, salt)
+        access_code = _generate_child_access_code(tier)
+        _update_user(email, {
+            "role": "both",
+            "name": payload.name.strip(),
+            "setup_type": setup_type,
+            "tier": tier,
+            "child_access_code": access_code,
+            "password_salt": salt,
+            "password_hash": password_hash,
+        })
+        user = _get_user(email)
+        token = _create_session(email)
+        return {"token": token, "user": _public_user(user)}
+
     salt = secrets.token_hex(8)
     password_hash = _hash_password(payload.password, salt)
-
     user = {
         "email": email,
         "name": payload.name.strip(),
+        "first_name": "",
+        "last_name": "",
         "password_salt": salt,
         "password_hash": password_hash,
         "setup_type": setup_type,
         "tier": tier,
+        "role": "portal_admin",
         "child_access_code": _generate_child_access_code(tier),
         "created_at": _utc_now(),
     }
-
     _create_user(user)
     token = _create_session(email)
     return {"token": token, "user": _public_user(user)}
@@ -967,9 +985,13 @@ def storyteller_signup(payload: StorySignupRequest):
     if len(payload.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
 
-    existing = _get_storyteller_user(email)
-    if existing:
+    # Check storyteller_users first (existing storyteller account)
+    existing_st = _get_storyteller_user(email)
+    if existing_st:
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in instead.")
+
+    # Check users table (existing portal admin adding storyteller access)
+    existing_u = _get_user(email)
 
     # Derive tier and managed flag from promo code
     if code and pc:
@@ -990,7 +1012,7 @@ def storyteller_signup(payload: StorySignupRequest):
     user_id = "stuser_" + secrets.token_hex(8)
     salt = secrets.token_hex(8)
     pw_hash = _hash_password(payload.password, salt)
-    user = {
+    st_user = {
         "id": user_id,
         "email": email,
         "first_name": payload.first_name.strip(),
@@ -1002,7 +1024,29 @@ def storyteller_signup(payload: StorySignupRequest):
         "managed": user_managed,
         "created_at": _utc_now(),
     }
-    _create_storyteller_user(user)
+    _create_storyteller_user(st_user)
+
+    if existing_u:
+        # Portal admin adding storyteller access — upgrade role only
+        _update_user(email, {
+            "role": "both",
+            "first_name": payload.first_name.strip(),
+            "last_name": payload.last_name.strip(),
+        })
+    else:
+        # New storyteller-only account — create unified users row for auth
+        auth_user = {
+            "email": email,
+            "name": (payload.first_name.strip() + " " + payload.last_name.strip()).strip(),
+            "first_name": payload.first_name.strip(),
+            "last_name": payload.last_name.strip(),
+            "password_salt": salt,
+            "password_hash": pw_hash,
+            "role": "storyteller",
+            "child_access_code": None,
+            "created_at": _utc_now(),
+        }
+        _create_user(auth_user)
 
     # Transfer any existing recordings for this code to the new account
     if code:
@@ -1040,12 +1084,18 @@ def storyteller_signup(payload: StorySignupRequest):
 @app.post("/api/storyteller/login")
 def storyteller_login(payload: StoryLoginRequest):
     email = payload.email.strip().lower()
-    user = _get_storyteller_user(email)
-    if not user:
+    # Authenticate against unified users table
+    auth_user = _get_user(email)
+    if not auth_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    expected = _hash_password(payload.password, user["password_salt"])
-    if expected != user["password_hash"]:
+    expected = _hash_password(payload.password, auth_user["password_salt"])
+    if expected != auth_user["password_hash"]:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Load storyteller-specific app data
+    st_user = _get_storyteller_user(email)
+    if not st_user:
+        raise HTTPException(status_code=403, detail="No storyteller account found for this email. Please use the portal login.")
 
     prompts = _get_active_prompts()
     token = _create_story_session(email)
@@ -1053,13 +1103,13 @@ def storyteller_login(payload: StoryLoginRequest):
         "token": token,
         "user": {
             "email": email,
-            "first_name": user.get("first_name", ""),
-            "last_name": user.get("last_name", ""),
-            "signup_code": user.get("signup_code", ""),
-            "tier": user.get("tier", "A"),
-            "managed": bool(user.get("managed", False)),
-            "this_month_count": _this_month_recording_count(user["id"]),
-            "custom_prompts": _user_custom_prompts(user),
+            "first_name": st_user.get("first_name", auth_user.get("first_name", "")),
+            "last_name": st_user.get("last_name", auth_user.get("last_name", "")),
+            "signup_code": st_user.get("signup_code", ""),
+            "tier": st_user.get("tier", "A"),
+            "managed": bool(st_user.get("managed", False)),
+            "this_month_count": _this_month_recording_count(st_user["id"]),
+            "custom_prompts": _user_custom_prompts(st_user),
         },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
@@ -1070,46 +1120,43 @@ def storyteller_request_reset(payload: StoryPasswordResetRequest):
     from datetime import timedelta
     email = payload.email.strip().lower()
     print(f"[RESET] request for {email} | resend_sdk={resend_sdk is not None} | has_key={bool(RESEND_API_KEY)}")
-    user = _get_storyteller_user(email)
+    # Delegate to unified users table
+    user = _get_user(email)
     if not user:
         print(f"[RESET] no user found for {email}")
         return {"ok": True}
 
     token = secrets.token_urlsafe(32)
     expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    _update_storyteller_user(email, {"password_reset_token": token, "password_reset_expires": expires})
+    _update_user(email, {"password_reset_token": token, "password_reset_expires": expires})
 
     reset_url = f"{APP_URL}/login?reset_token={token}"
     if resend_sdk and RESEND_API_KEY:
         resend_sdk.Emails.send({
             "from": RESEND_FROM,
             "to": [email],
-            "subject": "Reset your MyCogna Storyteller password",
+            "subject": "Reset your MyCogna password",
             "html": (
-                f"<p>Click the link below to reset your Storyteller password. "
+                f"<p>Click the link below to reset your MyCogna password. "
                 f"This link expires in 1 hour.</p>"
                 f"<p><a href='{reset_url}'>{reset_url}</a></p>"
                 f"<p>If you didn't request this, you can safely ignore this email.</p>"
             ),
         })
     else:
-        print(f"[DEV] Storyteller reset link for {email}: {reset_url}")
+        print(f"[DEV] Reset link for {email}: {reset_url}")
     return {"ok": True}
 
 
 @app.post("/api/storyteller/reset-password")
 def storyteller_reset_password(payload: StoryPasswordResetConfirm):
+    # Delegate to unified users table
     if supabase:
-        r = (supabase.table("storyteller_users")
-             .select("*").eq("password_reset_token", payload.token).limit(1).execute())
+        r = supabase.table("users").select("*").eq("password_reset_token", payload.token).limit(1).execute()
         user = r.data[0] if r.data else None
     else:
         db = _load_db()
-        user = next(
-            (u for u in db.get("storyteller_users", {}).values()
-             if u.get("password_reset_token") == payload.token),
-            None,
-        )
+        user = next((u for u in db["users"].values() if u.get("password_reset_token") == payload.token), None)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
 
@@ -1126,7 +1173,7 @@ def storyteller_reset_password(payload: StoryPasswordResetConfirm):
 
     new_salt = secrets.token_hex(8)
     new_hash = _hash_password(payload.password, new_salt)
-    _update_storyteller_user(user["email"], {
+    _update_user(user["email"], {
         "password_salt": new_salt,
         "password_hash": new_hash,
         "password_reset_token": None,
@@ -2040,7 +2087,7 @@ def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
     token = authorization.split(" ", 1)[1].strip()
-    email = STORY_SESSIONS.get(token)
+    email = SESSIONS.get(token)
     if not email:
         raise HTTPException(status_code=401, detail="Session expired. Please sign in again.")
     user = _get_storyteller_user(email)
@@ -2051,7 +2098,7 @@ def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
 
 def _create_story_session(email: str) -> str:
     token = secrets.token_urlsafe(32)
-    STORY_SESSIONS[token] = email
+    SESSIONS[token] = email
     return token
 
 
@@ -2142,9 +2189,12 @@ def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "email": user["email"],
         "name": user.get("name", ""),
+        "first_name": user.get("first_name", ""),
+        "last_name": user.get("last_name", ""),
         "setup_type": user.get("setup_type", "guardian"),
         "tier": user.get("tier", "A"),
-        "child_access_code": user.get("child_access_code", ""),
+        "child_access_code": user.get("child_access_code") or "",
+        "role": user.get("role", "portal_admin"),
     }
 
 

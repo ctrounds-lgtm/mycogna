@@ -848,6 +848,14 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
         password: document.getElementById('loginPassword').value,
       }),
     });
+    // Storyteller-only accounts don't have portal access — redirect gracefully
+    if (result.user && result.user.role === 'storyteller') {
+      localStorage.setItem('st_token', result.token);
+      localStorage.setItem('st_email', result.user.email);
+      localStorage.setItem('st_first_name', result.user.first_name || '');
+      window.location.href = '/storyteller';
+      return;
+    }
     state.token = result.token;
     localStorage.setItem('portalToken', result.token);
     await loadDashboard();

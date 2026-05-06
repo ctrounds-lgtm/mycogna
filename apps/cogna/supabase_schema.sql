@@ -1,5 +1,12 @@
 -- MyCogna schema
 -- Run once in Supabase SQL editor: https://app.supabase.com → SQL editor
+--
+-- Auth architecture (as of 2026-05-05):
+--   users            — unified auth table for ALL users (portal admins + storytellers)
+--                      role column: 'portal_admin', 'storyteller', or 'both'
+--   storyteller_users — storyteller app-data table (tier, managed, custom_prompts, FK anchor
+--                       for story_recordings / memoir_sessions / chapters / book_bibles)
+--                       auth columns on this table are DEPRECATED — auth is handled by users table
 
 -- Users
 CREATE TABLE IF NOT EXISTS users (
@@ -246,3 +253,51 @@ CREATE POLICY "Allow story audio reads"
 -- managed: true = institutional invitee (no AI features, no upgrade prompts)
 ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'A';
 ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS managed BOOLEAN NOT NULL DEFAULT false;
+
+-- ─────────────────────────────────────────────
+-- Migration: unified auth (2026-05-05)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- Add unified fields to the users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'portal_admin';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT NOT NULL DEFAULT '';
+
+-- child_access_code is only for portal admins; storyteller-only users won't have one
+ALTER TABLE users ALTER COLUMN child_access_code DROP NOT NULL;
+
+-- Migrate storyteller_users credentials into users.
+-- If the email already exists (portal admin who also signed up as storyteller),
+-- upgrade their role to 'both'. Otherwise insert as role='storyteller'.
+INSERT INTO users (
+  email,
+  name,
+  first_name,
+  last_name,
+  password_salt,
+  password_hash,
+  password_reset_token,
+  password_reset_expires,
+  role,
+  child_access_code,
+  created_at
+)
+SELECT
+  su.email,
+  TRIM(COALESCE(NULLIF(su.first_name, ''), '') || ' ' || COALESCE(NULLIF(su.last_name, ''), '')),
+  su.first_name,
+  su.last_name,
+  su.password_salt,
+  su.password_hash,
+  su.password_reset_token,
+  su.password_reset_expires,
+  'storyteller',
+  NULL,
+  su.created_at
+FROM storyteller_users su
+ON CONFLICT (email) DO UPDATE SET
+  role = 'both',
+  first_name = EXCLUDED.first_name,
+  last_name = EXCLUDED.last_name;
+-- Note: existing portal admin password is preserved on conflict (we don't overwrite password_hash)

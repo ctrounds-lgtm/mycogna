@@ -307,6 +307,21 @@
           </form>
         </div>
 
+        <!-- Choice panel — shown when user has both portal and storyteller access -->
+        <div id="panelChoice" class="panel">
+          <div class="card-title">Welcome back</div>
+          <div class="card-sub">Where would you like to go?</div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+            <button class="btn-primary" onclick="window.location.href='/storyteller'">
+              Go to my stories →
+            </button>
+            <button class="btn-primary" style="background:transparent;color:var(--ink);border:1.5px solid var(--border)"
+                    onclick="window.location.href='/portal'">
+              Go to my portal →
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -320,12 +335,43 @@
       showPanel('panelNewPassword');
     }
 
-    // If already logged in, redirect to storyteller
-    const existingToken = localStorage.getItem('st_token');
-    if (existingToken && !resetToken) {
-      fetch('/api/storyteller/me', { headers: { Authorization: 'Bearer ' + existingToken } })
-        .then(r => { if (r.ok) window.location.href = '/storyteller'; })
-        .catch(() => {});
+    // Route user based on their role
+    function routeByRole(user, token) {
+      const role = user.role || 'storyteller';
+      if (role === 'both') {
+        localStorage.setItem('portalToken', token);
+        localStorage.setItem('st_token', token);
+        localStorage.setItem('st_email', user.email);
+        localStorage.setItem('st_first_name', user.first_name || '');
+        showPanel('panelChoice');
+      } else if (role === 'portal_admin') {
+        localStorage.setItem('portalToken', token);
+        window.location.href = '/portal';
+      } else {
+        localStorage.setItem('st_token', token);
+        localStorage.setItem('st_email', user.email);
+        localStorage.setItem('st_first_name', user.first_name || '');
+        window.location.href = '/storyteller';
+      }
+    }
+
+    // If already logged in, redirect to the right destination
+    if (!resetToken) {
+      const portalToken = localStorage.getItem('portalToken');
+      if (portalToken) {
+        fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + portalToken } })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => { if (data && data.user) routeByRole(data.user, portalToken); })
+          .catch(() => {});
+      } else {
+        const stToken = localStorage.getItem('st_token');
+        if (stToken) {
+          fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + stToken } })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data && data.user) routeByRole(data.user, stToken); })
+            .catch(() => {});
+        }
+      }
     }
 
     function showPanel(id) {
@@ -349,7 +395,7 @@
       btn.textContent = 'Signing in…';
 
       try {
-        const res = await fetch('/api/storyteller/login', {
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -364,11 +410,7 @@
           return;
         }
 
-        localStorage.setItem('st_token', data.token);
-        localStorage.setItem('st_email', data.user.email);
-        localStorage.setItem('st_first_name', data.user.first_name || '');
-
-        window.location.href = '/storyteller';
+        routeByRole(data.user, data.token);
       } catch (err) {
         errEl.textContent = 'Network error. Please check your connection and try again.';
         errEl.className = 'error-msg visible';
@@ -391,7 +433,7 @@
       btn.textContent = 'Sending…';
 
       try {
-        await fetch('/api/storyteller/request-reset', {
+        await fetch('/api/auth/request-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
@@ -430,7 +472,7 @@
       btn.textContent = 'Saving…';
 
       try {
-        const res = await fetch('/api/storyteller/reset-password', {
+        const res = await fetch('/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, password }),
