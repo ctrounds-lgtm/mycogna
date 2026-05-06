@@ -1513,8 +1513,7 @@
       },
 
       memoirClick() {
-        const hideUpgrade = stState.managed || (stState.signupCode && (stState.tier === 'A' || stState.tier === 'B'));
-        if (hideUpgrade) return;
+        if (stState.managed || stState.signupCode) return;
         if (stState.tier === 'C' || stState.tier === 'D') {
           window.location = '/memoir';
         } else {
@@ -1543,8 +1542,9 @@
 
         const memoirBtn = document.getElementById('memoirBtn');
         if (memoirBtn) {
-          memoirBtn.style.display = hideUpgrade ? 'none' : '';
-          if (!hideUpgrade) {
+          const hideMemoirBtn = stState.managed || stState.signupCode;
+          memoirBtn.style.display = hideMemoirBtn ? 'none' : '';
+          if (!hideMemoirBtn) {
             memoirBtn.textContent = (tier === 'C' || tier === 'D')
               ? 'My Memoir →' : 'My Memoir ✦';
           }
