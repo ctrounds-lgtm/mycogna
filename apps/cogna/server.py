@@ -344,7 +344,18 @@ def auth_register(payload: FamilyRegisterRequest):
 
     if existing:
         if existing.get("role") in ("portal_admin", "both"):
-            raise HTTPException(status_code=400, detail="Account already exists")
+            # Allow tier upgrade if password matches and new tier is higher
+            _tier_order = ["A", "B", "C", "D", "E", "F"]
+            current_tier = existing.get("tier", "A")
+            if (tier in _tier_order and current_tier in _tier_order and
+                    _tier_order.index(tier) > _tier_order.index(current_tier)):
+                expected = _hash_password(payload.password, existing.get("password_salt", ""))
+                if expected == existing.get("password_hash"):
+                    _update_user(email, {"tier": tier})
+                    user = _get_user(email)
+                    token = _create_session(email)
+                    return {"token": token, "user": _public_user(user)}
+            raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
         # Existing storyteller upgrading to portal — upgrade role, set new password
         salt = secrets.token_hex(8)
         password_hash = _hash_password(payload.password, salt)

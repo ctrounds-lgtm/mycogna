@@ -301,7 +301,10 @@
         const data = await res.json();
 
         if (!res.ok) {
-          errEl.textContent = data.detail || 'Something went wrong. Please try again.';
+          const msg = data.detail || 'Something went wrong. Please try again.';
+          errEl.innerHTML = msg.includes('already exists')
+            ? msg + ' <a href="/portal" style="color:inherit;font-weight:600;text-decoration:underline">Go to portal →</a>'
+            : msg;
           errEl.className = 'error-msg visible';
           btn.disabled = false;
           btn.textContent = 'Create administrator account';
