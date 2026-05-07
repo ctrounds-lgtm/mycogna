@@ -49,7 +49,8 @@ function getDesc(param, val) {
 // ── Screen navigation ──
 function showScreen(id) {
   screens.forEach(sid => {
-    document.getElementById(sid).classList.toggle('hidden', sid !== id);
+    const el = document.getElementById(sid);
+    if (el) el.classList.toggle('hidden', sid !== id);
   });
 }
 
@@ -520,18 +521,22 @@ const portal = {
       const panel = document.getElementById('panel' + t);
       if (panel) panel.classList.add('hidden');
     });
-    document.getElementById('panelLocked').classList.add('hidden');
+    const panelLockedEl = document.getElementById('panelLocked');
+    if (panelLockedEl) panelLockedEl.classList.add('hidden');
 
     // Check if this tab is above the user's tier
     if (tabIdx > userTierIdx) {
       const labels = { B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
-      document.getElementById('lockedTitle').textContent = `Upgrade to unlock ${labels[tab]}`;
-      document.getElementById('lockedBody').textContent = `Your current plan doesn't include the ${labels[tab]} tier. Upgrade to access this feature.`;
-      document.getElementById('panelLocked').classList.remove('hidden');
+      const lockedTitle = document.getElementById('lockedTitle');
+      const lockedBody = document.getElementById('lockedBody');
+      if (lockedTitle) lockedTitle.textContent = `Upgrade to unlock ${labels[tab]}`;
+      if (lockedBody) lockedBody.textContent = `Your current plan doesn't include the ${labels[tab]} tier. Upgrade to access this feature.`;
+      if (panelLockedEl) panelLockedEl.classList.remove('hidden');
       return;
     }
 
-    document.getElementById('panel' + tab).classList.remove('hidden');
+    const activePanel = document.getElementById('panel' + tab);
+    if (activePanel) activePanel.classList.remove('hidden');
 
     if (tab === 'B') portal.loadStoryPanel('B');
     else if (tab === 'C') portal.loadInvitees();
