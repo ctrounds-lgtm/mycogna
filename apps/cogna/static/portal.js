@@ -798,10 +798,13 @@ const portal = {
         <div class="prompt-cat-header">${cat.name}</div>
         <div class="prompt-cat-body">
           ${inCat.map(p => `
-            <label class="prompt-check-label">
-              <input type="checkbox" data-id="${p.id}" data-type="system" ${!p.hidden_by_me ? 'checked' : ''}>
-              <span>${p.text}</span>
-            </label>`).join('')}
+            <div class="prompt-row">
+              <span class="prompt-row-text">${p.text}</span>
+              <button class="prompt-active-badge ${p.hidden_by_me ? 'hidden-badge' : 'active-badge'}"
+                      data-id="${p.id}" data-type="system">
+                ${p.hidden_by_me ? 'Hidden' : 'Active'}
+              </button>
+            </div>`).join('')}
         </div>
       </div>`;
     }
@@ -812,11 +815,14 @@ const portal = {
       <div class="prompt-cat-body">
         ${customPrompts.length
           ? customPrompts.map(p => `
-            <label class="prompt-check-label">
-              <input type="checkbox" data-id="${p.id}" data-type="custom" ${p.active ? 'checked' : ''}>
-              <span>${p.text}</span>
-              <button class="prompt-delete-btn" onclick="portal.deletePrompt('${p.id}')">✕</button>
-            </label>`).join('')
+            <div class="prompt-row">
+              <span class="prompt-row-text">${p.text}</span>
+              <button class="prompt-active-badge ${p.active ? 'active-badge' : 'hidden-badge'}"
+                      data-id="${p.id}" data-type="custom">
+                ${p.active ? 'Active' : 'Hidden'}
+              </button>
+              <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete">✕</button>
+            </div>`).join('')
           : '<p style="font-size:13px;color:var(--ink-faint);margin:4px 0 0">No custom questions yet — add one below.</p>'
         }
       </div>
@@ -824,9 +830,9 @@ const portal = {
 
     el.innerHTML = html;
 
-    // Attach event listeners directly (more reliable than inline onchange)
-    el.querySelectorAll('input[type=checkbox][data-id]').forEach(input => {
-      input.addEventListener('change', function() {
+    // Attach event listeners to toggle badges and delete buttons
+    el.querySelectorAll('.prompt-active-badge[data-id]').forEach(btn => {
+      btn.addEventListener('click', function() {
         if (this.dataset.type === 'system') {
           portal.toggleSystemPrompt(this.dataset.id, this);
         } else {
@@ -834,24 +840,35 @@ const portal = {
         }
       });
     });
+    el.querySelectorAll('.prompt-delete-btn[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        portal.deletePrompt(this.dataset.id);
+      });
+    });
   },
 
-  async toggleSystemPrompt(promptId, checkbox) {
+  async toggleSystemPrompt(promptId, badge) {
+    const wasActive = badge.classList.contains('active-badge');
     try {
       await req(`${api}/storyteller/prompts/${promptId}/hide`, { method: 'PUT', headers: authHeaders() });
+      badge.classList.toggle('active-badge', !wasActive);
+      badge.classList.toggle('hidden-badge', wasActive);
+      badge.textContent = wasActive ? 'Hidden' : 'Active';
     } catch (err) {
       console.error('toggleSystemPrompt failed:', err.message);
-      checkbox.checked = !checkbox.checked;
       alert('Could not save change: ' + err.message);
     }
   },
 
-  async toggleCustomPrompt(promptId, checkbox) {
+  async toggleCustomPrompt(promptId, badge) {
+    const wasActive = badge.classList.contains('active-badge');
     try {
       await req(`${api}/storyteller/prompts/${promptId}/activate`, { method: 'PUT', headers: authHeaders() });
+      badge.classList.toggle('active-badge', !wasActive);
+      badge.classList.toggle('hidden-badge', wasActive);
+      badge.textContent = wasActive ? 'Hidden' : 'Active';
     } catch (err) {
       console.error('toggleCustomPrompt failed:', err.message);
-      checkbox.checked = !checkbox.checked;
       alert('Could not save change: ' + err.message);
     }
   },
