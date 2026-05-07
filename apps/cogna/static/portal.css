@@ -898,6 +898,26 @@ input[type=range]:focus { outline: none; }
 
 .dash-tab.locked:hover { color: rgba(28,26,23,0.4); }
 
+.tab-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(28,26,23,0.35);
+  align-self: flex-end;
+  padding-bottom: 12px;
+  padding-left: 6px;
+  padding-right: 2px;
+}
+
+.tab-group-divider {
+  display: block;
+  width: 1px;
+  background: var(--border);
+  margin: 6px 6px 4px;
+  align-self: stretch;
+}
+
 /* ── Stories panel ── */
 .stories-list {
   display: flex;
