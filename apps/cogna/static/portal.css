@@ -395,6 +395,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 8px 10px;
+  resize: none;
 }
 
 .hint-text {
