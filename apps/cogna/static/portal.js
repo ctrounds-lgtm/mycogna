@@ -554,6 +554,7 @@ const portal = {
     if (tab === 'B') portal.loadStoryPanel('B');
     else if (tab === 'C') portal.loadInvitees();
     else if (tab === 'E') portal.loadLegacyPanel();
+    else if (tab === 'F') portal.loadBookBuilderPanel();
     else if (tab === 'D' && state.user) {
       req(`${api}/cognas`, { headers: authHeaders() })
         .then(d => renderCognaGrid(d.cognas))
@@ -624,19 +625,26 @@ const portal = {
 
   async loadLegacyPanel() {
     try {
-      const [codesEData, codesFData, recsData] = await Promise.all([
+      const [codesData, recsData] = await Promise.all([
         req(`${api}/storyteller/user-codes?tier=E`, { headers: authHeaders() }),
-        req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() }),
         req(`${api}/storyteller/recordings?tier=E`, { headers: authHeaders() }),
       ]);
-      const allCodes = [...(codesEData.codes || []), ...(codesFData.codes || [])];
-      portal._renderPromoCodes(allCodes, 'E');
+      portal._renderPromoCodes(codesData.codes || [], 'E');
       portal._renderRecordings(recsData.recordings || [], 'E');
     } catch (err) {
       console.error('loadLegacyPanel error:', err.message);
     }
-    portal.loadLegacyInvitees();
     portal.loadEPrompts();
+  },
+
+  async loadBookBuilderPanel() {
+    try {
+      const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
+      portal._renderPromoCodes(codesData.codes || [], 'F');
+    } catch (err) {
+      console.error('loadBookBuilderPanel error:', err.message);
+    }
+    portal.loadLegacyInvitees();
   },
 
   async loadLegacyInvitees() {
