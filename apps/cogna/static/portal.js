@@ -675,21 +675,56 @@ const portal = {
     try {
       const data = await req(`${api}/storyteller/prompts`, { headers: authHeaders() });
       const custom = (data.prompts || []).filter(p => p.portal_user_email);
-      if (!custom.length) {
-        el.innerHTML = '<div class="empty-state"><p>No questions yet. Add your first question above.</p></div>';
-        return;
-      }
-      el.innerHTML = custom.map(p => `
-        <div class="story-item">
-          <div class="story-item-main">
-            <div class="story-item-text">${p.text}</div>
-          </div>
-          <div class="story-item-actions">
-            <button class="story-action-btn" onclick="portal.deleteEPrompt('${p.id}')">Delete</button>
-          </div>
-        </div>`).join('');
+      portal._renderEPrompts(custom);
     } catch (err) {
       el.innerHTML = `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
+    }
+  },
+
+  _renderEPrompts(prompts) {
+    const el = document.getElementById('promptsListE');
+    if (!el) return;
+    portal._ePromptsOrder = prompts;
+    if (!prompts.length) {
+      el.innerHTML = '<div class="empty-state"><p>No questions yet. Add your first question above.</p></div>';
+      return;
+    }
+    el.innerHTML = prompts.map((p, i) => `
+      <div class="prompt-row">
+        <div class="prompt-move-btns">
+          <button class="prompt-move-btn" data-id="${p.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button class="prompt-move-btn" data-id="${p.id}" data-dir="down" ${i === prompts.length - 1 ? 'disabled' : ''}>▼</button>
+        </div>
+        <span class="prompt-row-text">${p.text}</span>
+        <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete-e">✕</button>
+      </div>`).join('');
+    el.querySelectorAll('.prompt-move-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', function() {
+        portal.moveEPrompt(this.dataset.id, this.dataset.dir);
+      });
+    });
+    el.querySelectorAll('.prompt-delete-btn[data-action="delete-e"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        portal.deleteEPrompt(this.dataset.id);
+      });
+    });
+  },
+
+  async moveEPrompt(promptId, direction) {
+    const prompts = portal._ePromptsOrder || [];
+    const idx = prompts.findIndex(p => p.id === promptId);
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= prompts.length) return;
+    [prompts[idx], prompts[newIdx]] = [prompts[newIdx], prompts[idx]];
+    portal._renderEPrompts([...prompts]);
+    try {
+      await req(`${api}/storyteller/prompts/reorder`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: prompts.map(p => p.id) }),
+      });
+    } catch (err) {
+      console.error('Reorder failed:', err.message);
     }
   },
 
@@ -714,7 +749,8 @@ const portal = {
     if (!confirm('Delete this question?')) return;
     try {
       await req(`${api}/storyteller/prompts/${promptId}`, { method: 'DELETE', headers: authHeaders() });
-      await portal.loadEPrompts();
+      const remaining = (portal._ePromptsOrder || []).filter(p => p.id !== promptId);
+      portal._renderEPrompts(remaining);
     } catch (err) {
       alert('Error: ' + err.message);
     }
