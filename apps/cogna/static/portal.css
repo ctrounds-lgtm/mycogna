@@ -865,10 +865,39 @@ input[type=range]:focus { outline: none; }
 /* ── Dashboard tabs ── */
 .dash-tabs {
   display: flex;
-  gap: 4px;
+  align-items: flex-end;
+  gap: 0;
   margin-bottom: 28px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 0;
+}
+
+.tab-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tab-group-tabs {
+  display: flex;
+}
+
+.tab-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(28,26,23,0.35);
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.tab-group-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 34px;
+  background: var(--gold-light);
+  align-self: flex-end;
+  margin: 0 10px 6px;
 }
 
 .dash-tab {
@@ -898,26 +927,6 @@ input[type=range]:focus { outline: none; }
 }
 
 .dash-tab.locked:hover { color: rgba(28,26,23,0.4); }
-
-.tab-group-label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(28,26,23,0.35);
-  align-self: flex-end;
-  padding-bottom: 12px;
-  padding-left: 6px;
-  padding-right: 2px;
-}
-
-.tab-group-divider {
-  display: block;
-  width: 1px;
-  background: var(--border);
-  margin: 6px 6px 4px;
-  align-self: stretch;
-}
 
 /* ── Stories panel ── */
 .stories-list {

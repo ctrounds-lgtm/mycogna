@@ -128,14 +128,22 @@
 
     <!-- Dashboard tabs: one per tier -->
     <div class="dash-tabs" id="dashTabs">
-      <span class="tab-group-label">Individual</span>
-      <button class="dash-tab" id="dashTabB" onclick="portal.switchDashTab('B')">Unlimited</button>
-      <button class="dash-tab" id="dashTabC" onclick="portal.switchDashTab('C')">AI Assisted</button>
-      <button class="dash-tab" id="dashTabD" onclick="portal.switchDashTab('D')">AI Companion</button>
-      <span class="tab-group-divider"></span>
-      <span class="tab-group-label">Institutional</span>
-      <button class="dash-tab" id="dashTabE" onclick="portal.switchDashTab('E')">Legacy Collection</button>
-      <button class="dash-tab" id="dashTabF" onclick="portal.switchDashTab('F')">Legacy Collection + Book Builder</button>
+      <div class="tab-group">
+        <div class="tab-group-label">Individual</div>
+        <div class="tab-group-tabs">
+          <button class="dash-tab" id="dashTabB" onclick="portal.switchDashTab('B')">Unlimited</button>
+          <button class="dash-tab" id="dashTabC" onclick="portal.switchDashTab('C')">AI Assisted</button>
+          <button class="dash-tab" id="dashTabD" onclick="portal.switchDashTab('D')">AI Companion</button>
+        </div>
+      </div>
+      <div class="tab-group-divider"></div>
+      <div class="tab-group">
+        <div class="tab-group-label">Institutional</div>
+        <div class="tab-group-tabs">
+          <button class="dash-tab" id="dashTabE" onclick="portal.switchDashTab('E')">Legacy Collection</button>
+          <button class="dash-tab" id="dashTabF" onclick="portal.switchDashTab('F')">Legacy Collection + Book Builder</button>
+        </div>
+      </div>
     </div>
 
     <!-- ── PANEL A — Free Storyteller ── -->
