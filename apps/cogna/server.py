@@ -1009,6 +1009,7 @@ def storyteller_signup(payload: StorySignupRequest):
     existing_u = _get_user(email)
 
     # Derive tier and managed flag from promo code
+    code_tier = "A"
     if code and pc:
         code_tier = pc.get("tier", "A").upper()
         if code_tier == "E":
