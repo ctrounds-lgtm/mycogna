@@ -1498,7 +1498,7 @@
 
       // ── Tier-gated feature clicks ──
       goDeeperClick() {
-        const hideUpgrade = stState.managed || !!stState.signupCode;
+        const hideUpgrade = stState.managed || (!!stState.signupCode && (stState.tier === 'A' || stState.tier === 'B'));
         if (hideUpgrade) return;
         if (stState.tier === 'C' || stState.tier === 'D') {
           window.location = '/memoir';
@@ -1529,7 +1529,7 @@
       // ── Apply tier-based UI visibility (called on every showScreen) ──
       _applyTierUI() {
         const tier = stState.tier;
-        const hideUpgrade = stState.managed || !!stState.signupCode;
+        const hideUpgrade = stState.managed || (!!stState.signupCode && (tier === 'A' || tier === 'B'));
 
         const goDeeperBtn = document.getElementById('goDeeperBtn');
         if (goDeeperBtn) {
