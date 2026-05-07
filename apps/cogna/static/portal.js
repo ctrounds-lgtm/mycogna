@@ -689,14 +689,9 @@ const portal = {
   },
 
   _renderEPrompts(prompts) {
-    const el = document.getElementById('promptsListE');
-    if (!el) return;
     portal._ePromptsOrder = prompts;
-    if (!prompts.length) {
-      el.innerHTML = '<div class="empty-state"><p>No questions yet. Add your first question above.</p></div>';
-      return;
-    }
-    el.innerHTML = prompts.map((p, i) => `
+    const emptyHtml = '<div class="empty-state"><p>No questions yet. Add your first question above.</p></div>';
+    const rowsHtml = prompts.length ? prompts.map((p, i) => `
       <div class="prompt-row">
         <div class="prompt-move-btns">
           <button class="prompt-move-btn" data-id="${p.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
@@ -704,15 +699,21 @@ const portal = {
         </div>
         <span class="prompt-row-text">${p.text}</span>
         <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete-e">✕</button>
-      </div>`).join('');
-    el.querySelectorAll('.prompt-move-btn:not([disabled])').forEach(btn => {
-      btn.addEventListener('click', function() {
-        portal.moveEPrompt(this.dataset.id, this.dataset.dir);
+      </div>`).join('') : null;
+
+    ['promptsListE', 'promptsListF'].forEach(elId => {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.innerHTML = rowsHtml || emptyHtml;
+      el.querySelectorAll('.prompt-move-btn:not([disabled])').forEach(btn => {
+        btn.addEventListener('click', function() {
+          portal.moveEPrompt(this.dataset.id, this.dataset.dir);
+        });
       });
-    });
-    el.querySelectorAll('.prompt-delete-btn[data-action="delete-e"]').forEach(btn => {
-      btn.addEventListener('click', function() {
-        portal.deleteEPrompt(this.dataset.id);
+      el.querySelectorAll('.prompt-delete-btn[data-action="delete-e"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          portal.deleteEPrompt(this.dataset.id);
+        });
       });
     });
   },
@@ -735,8 +736,8 @@ const portal = {
     }
   },
 
-  async createEPrompt() {
-    const ta = document.getElementById('newPromptTextE');
+  async createEPrompt(sourceId) {
+    const ta = document.getElementById(sourceId || 'newPromptTextE');
     const text = ta ? ta.value.trim() : '';
     if (!text) return;
     try {
@@ -1300,7 +1301,10 @@ const _addQuestionBtnB = document.getElementById('addPromptBtnB');
 if (_addQuestionBtnB) _addQuestionBtnB.addEventListener('click', () => portal.createPrompt());
 
 const _addQuestionBtnE = document.getElementById('addPromptBtnE');
-if (_addQuestionBtnE) _addQuestionBtnE.addEventListener('click', () => portal.createEPrompt());
+if (_addQuestionBtnE) _addQuestionBtnE.addEventListener('click', () => portal.createEPrompt('newPromptTextE'));
+
+const _addQuestionBtnF = document.getElementById('addPromptBtnF');
+if (_addQuestionBtnF) _addQuestionBtnF.addEventListener('click', () => portal.createEPrompt('newPromptTextF'));
 
 // ── Init ──
 async function init() {
