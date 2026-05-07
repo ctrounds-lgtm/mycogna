@@ -10,6 +10,18 @@ const state = {
 
 const screens = ['authScreen', 'forgotScreen', 'resetScreen', 'dashboardScreen', 'createCognaScreen', 'cognaDetailScreen'];
 
+// ── Sample question categories (same mapping as storyteller app) ──
+const PROMPT_CATEGORIES = [
+  { name: 'Childhood & Origins',    ids: ['sys-001','sys-002','sys-003'] },
+  { name: 'Turning Points',         ids: ['sys-004','sys-005','sys-006'] },
+  { name: 'Work & Purpose',         ids: ['sys-007','sys-008'] },
+  { name: 'Travel & Adventure',     ids: ['sys-016','sys-017','sys-018','sys-019'] },
+  { name: 'Relationships',          ids: ['sys-009','sys-010'] },
+  { name: 'Wisdom & Legacy',        ids: ['sys-011','sys-012','sys-013'] },
+  { name: 'Sensory Experiences',    ids: ['sys-014','sys-015'] },
+  { name: 'Significant Challenges', ids: ['sys-020','sys-021','sys-022','sys-023'] },
+];
+
 // ── Slider descriptions ──
 const sliderDescs = {
   warmth: [
@@ -623,6 +635,7 @@ const portal = {
       console.error('loadLegacyPanel error:', err.message);
     }
     portal.loadLegacyInvitees();
+    portal.loadEPrompts();
   },
 
   async loadLegacyInvitees() {
@@ -651,6 +664,58 @@ const portal = {
       }).join('');
     } catch (err) {
       el.innerHTML = `<div class="empty-state"><p>Error loading invitees: ${err.message}</p></div>`;
+    }
+  },
+
+  async loadEPrompts() {
+    const el = document.getElementById('promptsListE');
+    if (!el) return;
+    el.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+    try {
+      const data = await req(`${api}/storyteller/prompts`, { headers: authHeaders() });
+      const custom = (data.prompts || []).filter(p => p.portal_user_email);
+      if (!custom.length) {
+        el.innerHTML = '<div class="empty-state"><p>No questions yet. Add your first question above.</p></div>';
+        return;
+      }
+      el.innerHTML = custom.map(p => `
+        <div class="story-item">
+          <div class="story-item-main">
+            <div class="story-item-text">${p.text}</div>
+          </div>
+          <div class="story-item-actions">
+            <button class="story-action-btn" onclick="portal.deleteEPrompt('${p.id}')">Delete</button>
+          </div>
+        </div>`).join('');
+    } catch (err) {
+      el.innerHTML = `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
+    }
+  },
+
+  async createEPrompt() {
+    const ta = document.getElementById('newPromptTextE');
+    const text = ta ? ta.value.trim() : '';
+    if (!text) return;
+    try {
+      await req(`${api}/storyteller/prompts`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (ta) ta.value = '';
+      await portal.loadEPrompts();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async deleteEPrompt(promptId) {
+    if (!confirm('Delete this question?')) return;
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}`, { method: 'DELETE', headers: authHeaders() });
+      await portal.loadEPrompts();
+    } catch (err) {
+      alert('Error: ' + err.message);
     }
   },
 
@@ -710,33 +775,68 @@ const portal = {
 
   _renderPrompts(prompts) {
     const el = document.getElementById('promptsList');
+    if (!el) return;
     portal._promptsOrder = prompts;
     if (!prompts.length) {
-      el.innerHTML = '<div class="empty-state"><p>No prompts yet.</p></div>';
+      el.innerHTML = '<div class="empty-state"><p>No questions yet.</p></div>';
       return;
     }
-    el.innerHTML = prompts.map((p, i) => {
-      const isSystem = !p.portal_user_email;
-      const badge = isSystem
-        ? ''
-        : (p.active ? '<span class="active-badge">Active</span>' : '');
-      const actions = isSystem
-        ? `<button class="story-action-btn${p.hidden_by_me ? ' activate' : ''}" onclick="portal.hidePrompt('${p.id}', ${p.hidden_by_me})">${p.hidden_by_me ? 'Show' : 'Hide'}</button>`
-        : `<button class="story-action-btn${p.active ? '' : ' activate'}" onclick="portal.activatePrompt('${p.id}')">${p.active ? 'Deactivate' : 'Set Active'}</button>
-           <button class="story-action-btn" onclick="portal.deletePrompt('${p.id}')">Delete</button>`;
-      return `
-      <div class="story-item${p.hidden_by_me ? '" style="opacity:0.55' : ''}">
-        <div class="story-item-reorder">
-          <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','up')" ${i === 0 ? 'disabled' : ''}>↑</button>
-          <button class="reorder-btn" onclick="portal.movePrompt('${p.id}','down')" ${i === prompts.length - 1 ? 'disabled' : ''}>↓</button>
+    const promptById = Object.fromEntries(prompts.map(p => [p.id, p]));
+    const customPrompts = prompts.filter(p => p.portal_user_email);
+
+    let html = '';
+    for (const cat of PROMPT_CATEGORIES) {
+      const inCat = cat.ids.map(id => promptById[id]).filter(Boolean);
+      if (!inCat.length) continue;
+      html += `<div class="prompt-cat">
+        <div class="prompt-cat-header">${cat.name}</div>
+        <div class="prompt-cat-body">
+          ${inCat.map(p => `
+            <label class="prompt-check-label">
+              <input type="checkbox" ${!p.hidden_by_me ? 'checked' : ''}
+                onchange="portal.toggleSystemPrompt('${p.id}', this)">
+              <span>${p.text}</span>
+            </label>`).join('')}
         </div>
-        <div class="story-item-main">
-          <div class="story-item-text">${p.text} ${badge}</div>
-          <div class="story-item-meta">${isSystem ? 'System prompt' : (p.created_at ? new Date(p.created_at).toLocaleDateString() : '')}</div>
-        </div>
-        <div class="story-item-actions">${actions}</div>
       </div>`;
-    }).join('');
+    }
+
+    // My Questions section
+    html += `<div class="prompt-cat">
+      <div class="prompt-cat-header">My Questions</div>
+      <div class="prompt-cat-body">
+        ${customPrompts.length
+          ? customPrompts.map(p => `
+            <label class="prompt-check-label">
+              <input type="checkbox" ${p.active ? 'checked' : ''}
+                onchange="portal.toggleCustomPrompt('${p.id}', this)">
+              <span>${p.text}</span>
+              <button class="prompt-delete-btn" onclick="portal.deletePrompt('${p.id}')">✕</button>
+            </label>`).join('')
+          : '<p style="font-size:13px;color:var(--ink-faint);margin:4px 0 0">No custom questions yet — add one below.</p>'
+        }
+      </div>
+    </div>`;
+
+    el.innerHTML = html;
+  },
+
+  async toggleSystemPrompt(promptId, checkbox) {
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}/hide`, { method: 'PUT', headers: authHeaders() });
+    } catch (err) {
+      checkbox.checked = !checkbox.checked;
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async toggleCustomPrompt(promptId, checkbox) {
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}/activate`, { method: 'PUT', headers: authHeaders() });
+    } catch (err) {
+      checkbox.checked = !checkbox.checked;
+      alert('Error: ' + err.message);
+    }
   },
 
   async movePrompt(promptId, direction) {

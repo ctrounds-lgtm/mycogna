@@ -966,7 +966,8 @@ def storyteller_validate(payload: StoryValidateRequest):
     pc = _get_promo_code(code)
     if not pc:
         raise HTTPException(status_code=404, detail="User code not found or inactive")
-    prompts = _get_active_prompts(pc.get("created_by"))
+    code_tier = pc.get("tier", "A").upper()
+    prompts = _get_active_prompts(pc.get("created_by"), include_system=code_tier not in {"E", "F"})
     if not prompts:
         raise HTTPException(status_code=404, detail="No active story prompt. Ask a collaborator to set one up.")
     return {"valid": True, "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts]}
@@ -1072,7 +1073,10 @@ def storyteller_signup(payload: StorySignupRequest):
                     rec["storyteller_user_id"] = user_id
             _save_db(db)
 
-    prompts = _get_active_prompts(pc.get("created_by") if pc else None)
+    prompts = _get_active_prompts(
+        pc.get("created_by") if pc else None,
+        include_system=code_tier not in {"E", "F"},
+    )
     token = _create_story_session(email)
     return {
         "token": token,
@@ -1106,7 +1110,13 @@ def storyteller_login(payload: StoryLoginRequest):
     if not st_user:
         raise HTTPException(status_code=403, detail="No storyteller account found for this email. Please use the portal login.")
 
-    prompts = _get_active_prompts(_get_portal_owner_email(st_user))
+    signup_code = st_user.get("signup_code", "")
+    signup_pc = _get_promo_code(signup_code) if signup_code else None
+    login_code_tier = (signup_pc.get("tier", "A").upper() if signup_pc else "A")
+    prompts = _get_active_prompts(
+        _get_portal_owner_email(st_user),
+        include_system=login_code_tier not in {"E", "F"},
+    )
     token = _create_story_session(email)
     return {
         "token": token,
@@ -1344,7 +1354,7 @@ def create_story_prompt(
     prompt = {
         "id": prompt_id,
         "text": text,
-        "active": False,
+        "active": True,
         "sort_order": next_order,
         "created_by": user["email"],
         "portal_user_email": user["email"],
@@ -2407,13 +2417,15 @@ def _get_portal_owner_email(st_user: Optional[Dict]) -> Optional[str]:
     return pc.get("created_by") if pc else None
 
 
-def _get_active_prompts(portal_user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+def _get_active_prompts(portal_user_email: Optional[str] = None, include_system: bool = True) -> List[Dict[str, Any]]:
     hidden = set(_get_hidden_prompt_ids(portal_user_email)) if portal_user_email else set()
     if supabase:
-        sys_r = (supabase.table("story_prompts").select("*")
-                 .eq("active", True).is_("portal_user_email", "null")
-                 .order("sort_order").order("created_at").execute())
-        results = [p for p in (sys_r.data or []) if p["id"] not in hidden]
+        results = []
+        if include_system:
+            sys_r = (supabase.table("story_prompts").select("*")
+                     .eq("active", True).is_("portal_user_email", "null")
+                     .order("sort_order").order("created_at").execute())
+            results = [p for p in (sys_r.data or []) if p["id"] not in hidden]
         if portal_user_email:
             custom_r = (supabase.table("story_prompts").select("*")
                         .eq("active", True).eq("portal_user_email", portal_user_email)
@@ -2424,11 +2436,15 @@ def _get_active_prompts(portal_user_email: Optional[str] = None) -> List[Dict[st
     db = _load_db()
     active = [p for p in db["story_prompts"].values() if p.get("active")]
     if portal_user_email:
-        active = [p for p in active if not p.get("portal_user_email") or p.get("portal_user_email") == portal_user_email]
-        active = [p for p in active if p.get("portal_user_email") or p["id"] not in hidden]
-    else:
-        active = [p for p in active if not p.get("portal_user_email")]
-    return sorted(active, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+        custom = [p for p in active if p.get("portal_user_email") == portal_user_email]
+        if include_system:
+            system = [p for p in active if not p.get("portal_user_email") and p["id"] not in hidden]
+            return sorted(system + custom, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+        return sorted(custom, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
+    if not include_system:
+        return []
+    system_only = [p for p in active if not p.get("portal_user_email")]
+    return sorted(system_only, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
 
 
 def _get_promo_code(code: str) -> Optional[Dict[str, Any]]:

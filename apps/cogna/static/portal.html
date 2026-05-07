@@ -172,15 +172,16 @@
         <div class="empty-state"><p>No B-codes yet.</p></div>
       </div>
       <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Story Prompts</h2>
+        <h2 class="section-title">Story Questions</h2>
+        <button class="add-btn" onclick="portal.loadStoryPanel('B')">Refresh</button>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Active prompts are shown to all storytellers. Add custom questions or toggle system prompts on and off.</p>
-      <div class="add-prompt-row">
-        <textarea id="newPromptText" class="text-input textarea" rows="3" placeholder="e.g. Tell us about a moment that changed how you see the world."></textarea>
-        <button class="save-btn" style="margin-top:10px" onclick="portal.createPrompt()">Add Prompt</button>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Check the questions you want shown to your storytellers. Add your own in "My Questions" below.</p>
+      <div id="promptsList">
+        <div class="empty-state"><p>Loading questions…</p></div>
       </div>
-      <div id="promptsList" class="stories-list" style="margin-top:16px">
-        <div class="empty-state"><p>No prompts yet.</p></div>
+      <div class="add-prompt-row" style="margin-top:20px">
+        <textarea id="newPromptText" class="text-input textarea" rows="2" placeholder="Add your own question…"></textarea>
+        <button class="save-btn" style="margin-top:8px" onclick="portal.createPrompt()">+ Add My Question</button>
       </div>
       <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Recordings</h2>
@@ -271,8 +272,17 @@
       <div id="promoCodesListE" class="stories-list">
         <div class="empty-state"><p>No codes yet.</p></div>
       </div>
-      <div style="margin-top:32px;margin-bottom:24px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:10px;font-size:13px;color:var(--ink-muted)">
-        <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Story Questions</h2>
+        <button class="add-btn" onclick="portal.loadEPrompts()">Refresh</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Add questions for your specific project. These replace the general life-story questions for your storytellers.</p>
+      <div class="add-prompt-row">
+        <textarea id="newPromptTextE" class="text-input textarea" rows="2" placeholder="e.g. Describe how you became involved with this organization."></textarea>
+        <button class="save-btn" style="margin-top:8px" onclick="portal.createEPrompt()">+ Add Question</button>
+      </div>
+      <div id="promptsListE" class="stories-list" style="margin-top:16px;margin-bottom:32px">
+        <div class="empty-state"><p>No questions yet. Add your first question above.</p></div>
       </div>
       <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Book Workspaces</h2>
