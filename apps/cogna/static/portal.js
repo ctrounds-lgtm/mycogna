@@ -814,8 +814,12 @@ const portal = {
       <div class="prompt-cat-header">My Questions</div>
       <div class="prompt-cat-body">
         ${customPrompts.length
-          ? customPrompts.map(p => `
+          ? customPrompts.map((p, i) => `
             <div class="prompt-row">
+              <div class="prompt-move-btns">
+                <button class="prompt-move-btn" data-id="${p.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
+                <button class="prompt-move-btn" data-id="${p.id}" data-dir="down" ${i === customPrompts.length - 1 ? 'disabled' : ''}>▼</button>
+              </div>
               <span class="prompt-row-text">${p.text}</span>
               <button class="prompt-active-badge ${p.active ? 'active-badge' : 'hidden-badge'}"
                       data-id="${p.id}" data-type="custom">
@@ -830,7 +834,7 @@ const portal = {
 
     el.innerHTML = html;
 
-    // Attach event listeners to toggle badges and delete buttons
+    // Attach event listeners to toggle badges, delete buttons, and move buttons
     el.querySelectorAll('.prompt-active-badge[data-id]').forEach(btn => {
       btn.addEventListener('click', function() {
         if (this.dataset.type === 'system') {
@@ -843,6 +847,11 @@ const portal = {
     el.querySelectorAll('.prompt-delete-btn[data-action="delete"]').forEach(btn => {
       btn.addEventListener('click', function() {
         portal.deletePrompt(this.dataset.id);
+      });
+    });
+    el.querySelectorAll('.prompt-move-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', function() {
+        portal.movePrompt(this.dataset.id, this.dataset.dir);
       });
     });
   },
@@ -874,17 +883,19 @@ const portal = {
   },
 
   async movePrompt(promptId, direction) {
-    const prompts = portal._promptsOrder || [];
-    const idx = prompts.findIndex(p => p.id === promptId);
+    const allPrompts = portal._promptsOrder || [];
+    const customPrompts = allPrompts.filter(p => p.portal_user_email);
+    const idx = customPrompts.findIndex(p => p.id === promptId);
     const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= prompts.length) return;
-    [prompts[idx], prompts[newIdx]] = [prompts[newIdx], prompts[idx]];
-    portal._renderPrompts([...prompts]);
+    if (newIdx < 0 || newIdx >= customPrompts.length) return;
+    [customPrompts[idx], customPrompts[newIdx]] = [customPrompts[newIdx], customPrompts[idx]];
+    const systemPrompts = allPrompts.filter(p => !p.portal_user_email);
+    portal._renderPrompts([...systemPrompts, ...customPrompts]);
     try {
       await req(`${api}/storyteller/prompts/reorder`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: prompts.map(p => p.id) }),
+        body: JSON.stringify({ ids: customPrompts.map(p => p.id) }),
       });
     } catch (err) {
       console.error('Reorder failed:', err.message);
