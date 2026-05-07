@@ -1138,3 +1138,89 @@ input[type=range]:focus { outline: none; }
   min-width: 220px;
   max-width: 100%;
 }
+
+/* ── First-time onboarding card ── */
+.onboarding-card {
+  background: linear-gradient(135deg, rgba(201,150,58,0.06) 0%, rgba(58,123,114,0.04) 100%);
+  border: 1px solid var(--gold-light);
+  border-radius: 16px;
+  padding: 32px 36px 28px;
+  margin-top: 8px;
+  margin-bottom: 36px;
+}
+
+.onboarding-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.onboarding-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.onboarding-sub {
+  font-size: 14px;
+  color: var(--ink-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.onboarding-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.onboarding-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.onboarding-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.onboarding-step-body strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.onboarding-step-body p {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.onboarding-footer {
+  font-size: 13px;
+  color: var(--ink-muted);
+  border-top: 1px solid var(--gold-light);
+  padding-top: 16px;
+  font-style: italic;
+}

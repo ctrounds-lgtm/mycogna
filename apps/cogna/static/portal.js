@@ -745,6 +745,11 @@ const portal = {
 
   _renderPromoCodes(codes, tier) {
     const suffix = tier || 'A';
+    // Hide onboarding card once the user has at least one B-code
+    if (suffix === 'B') {
+      const card = document.getElementById('onboardingCard');
+      if (card) card.classList.toggle('hidden', codes.length > 0);
+    }
     const el = document.getElementById('promoCodesList' + suffix);
     if (!el) return;
     if (!codes.length) {

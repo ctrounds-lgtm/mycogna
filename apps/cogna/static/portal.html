@@ -163,6 +163,38 @@
 
     <!-- ── PANEL B — Unlimited Storyteller ── -->
     <div id="panelB" class="hidden">
+
+      <!-- First-time onboarding — hidden once the user generates their first code -->
+      <div id="onboardingCard" class="onboarding-card">
+        <div class="onboarding-eyebrow">Getting started</div>
+        <h2 class="onboarding-title">Welcome to your <em>MyCogna Portal.</em></h2>
+        <p class="onboarding-sub">You're here to help someone capture their stories. Here's how to get started:</p>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">1</div>
+            <div class="onboarding-step-body">
+              <strong>Choose your questions</strong>
+              <p>Scroll down to Story Questions and check the ones you want your storyteller to see. You can also add your own.</p>
+            </div>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">2</div>
+            <div class="onboarding-step-body">
+              <strong>Generate a user code</strong>
+              <p>Click <strong>+ Generate Code</strong> above and give it a label so you remember who it's for. Each person needs their own code.</p>
+            </div>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">3</div>
+            <div class="onboarding-step-body">
+              <strong>Send the invitation</strong>
+              <p>Copy the code and send it to your storyteller with this link: <strong>mycogna.org</strong>. They'll click "Have an invite code?" on the homepage, create a simple account, and they're ready to go.</p>
+            </div>
+          </div>
+        </div>
+        <p class="onboarding-footer">Once they're set up, their recordings will appear here in your dashboard.</p>
+      </div>
+
       <div class="section-header-row" style="margin-top:8px">
         <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Unlimited)</span></h2>
         <button class="add-btn" onclick="portal.generatePromoCode('B')">+ Generate Code</button>
