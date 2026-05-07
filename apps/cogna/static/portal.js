@@ -538,7 +538,7 @@ const portal = {
 
     // Check if this tab is above the user's tier
     if (tabIdx > userTierIdx) {
-      const labels = { B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
+      const labels = { B: 'Storytelling Unlimited', C: 'Storytelling Unlimited + Memoir Builder', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
       const lockedTitle = document.getElementById('lockedTitle');
       const lockedBody = document.getElementById('lockedBody');
       if (lockedTitle) lockedTitle.textContent = `Upgrade to unlock ${labels[tab]}`;
