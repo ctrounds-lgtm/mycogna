@@ -778,6 +778,7 @@
       <p style="color:var(--ink-muted);font-size:14px;margin-bottom:24px;">Everything you've shared so far.</p>
       <div id="myStoriesList"></div>
       <button class="btn-primary" id="downloadStoriesBtn" style="margin-top:24px;display:none;" onclick="st.downloadMyStories()">Download my stories</button>
+      <button class="btn-secondary" id="goDeeperBtnStories" style="margin-top:10px;display:none;" onclick="st.goDeeperClick()">Go deeper with AI →</button>
       <button class="btn-secondary" style="margin-top:10px;" onclick="st.recordAnother()">← Record another</button>
     </div>
   </div>
@@ -1531,14 +1532,16 @@
         const tier = stState.tier;
         const hideUpgrade = stState.managed || (!!stState.signupCode && (tier === 'A' || tier === 'B'));
 
-        const goDeeperBtn = document.getElementById('goDeeperBtn');
-        if (goDeeperBtn) {
-          goDeeperBtn.style.display = hideUpgrade ? 'none' : '';
-          if (!hideUpgrade) {
-            goDeeperBtn.textContent = (tier === 'C' || tier === 'D')
-              ? 'Go deeper with AI →' : 'Go deeper with AI ✦';
+        ['goDeeperBtn', 'goDeeperBtnStories'].forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) {
+            btn.style.display = hideUpgrade ? 'none' : '';
+            if (!hideUpgrade) {
+              btn.textContent = (tier === 'C' || tier === 'D')
+                ? 'Go deeper with AI →' : 'Go deeper with AI ✦';
+            }
           }
-        }
+        });
 
         const memoirBtn = document.getElementById('memoirBtn');
         if (memoirBtn) {
