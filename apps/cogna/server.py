@@ -124,7 +124,7 @@ class FamilyRegisterRequest(BaseModel):
     password: str
     name: str
     setup_type: str = "guardian"  # "guardian" or "self"
-    tier: str = "A"  # A=Free, B=Unlimited, C=AI Assisted, D=AI Companion
+    tier: str = "B"  # B=Unlimited, C=AI Assisted, D=AI Companion, E=Legacy, F=Legacy+Book
 
 
 class FamilyLoginRequest(BaseModel):

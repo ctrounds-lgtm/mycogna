@@ -522,7 +522,8 @@ const portal = {
   // ── Stories / Storyteller ──
 
   switchDashTab(tab) {
-    const tier = (state.user && state.user.tier) || 'A';
+    const rawTier = (state.user && state.user.tier) || 'A';
+    const tier = ['B', 'C', 'D', 'E', 'F'].includes(rawTier) ? rawTier : 'B';
     const tierOrder = ['A', 'B', 'C', 'D', 'E', 'F'];
     const userTierIdx = tierOrder.indexOf(tier);
     const tabIdx = tierOrder.indexOf(tab);
@@ -798,8 +799,7 @@ const portal = {
         <div class="prompt-cat-body">
           ${inCat.map(p => `
             <label class="prompt-check-label">
-              <input type="checkbox" ${!p.hidden_by_me ? 'checked' : ''}
-                onchange="portal.toggleSystemPrompt('${p.id}', this)">
+              <input type="checkbox" data-id="${p.id}" data-type="system" ${!p.hidden_by_me ? 'checked' : ''}>
               <span>${p.text}</span>
             </label>`).join('')}
         </div>
@@ -813,8 +813,7 @@ const portal = {
         ${customPrompts.length
           ? customPrompts.map(p => `
             <label class="prompt-check-label">
-              <input type="checkbox" ${p.active ? 'checked' : ''}
-                onchange="portal.toggleCustomPrompt('${p.id}', this)">
+              <input type="checkbox" data-id="${p.id}" data-type="custom" ${p.active ? 'checked' : ''}>
               <span>${p.text}</span>
               <button class="prompt-delete-btn" onclick="portal.deletePrompt('${p.id}')">✕</button>
             </label>`).join('')
@@ -824,14 +823,26 @@ const portal = {
     </div>`;
 
     el.innerHTML = html;
+
+    // Attach event listeners directly (more reliable than inline onchange)
+    el.querySelectorAll('input[type=checkbox][data-id]').forEach(input => {
+      input.addEventListener('change', function() {
+        if (this.dataset.type === 'system') {
+          portal.toggleSystemPrompt(this.dataset.id, this);
+        } else {
+          portal.toggleCustomPrompt(this.dataset.id, this);
+        }
+      });
+    });
   },
 
   async toggleSystemPrompt(promptId, checkbox) {
     try {
       await req(`${api}/storyteller/prompts/${promptId}/hide`, { method: 'PUT', headers: authHeaders() });
     } catch (err) {
+      console.error('toggleSystemPrompt failed:', err.message);
       checkbox.checked = !checkbox.checked;
-      alert('Error: ' + err.message);
+      alert('Could not save change: ' + err.message);
     }
   },
 
@@ -839,8 +850,9 @@ const portal = {
     try {
       await req(`${api}/storyteller/prompts/${promptId}/activate`, { method: 'PUT', headers: authHeaders() });
     } catch (err) {
+      console.error('toggleCustomPrompt failed:', err.message);
       checkbox.checked = !checkbox.checked;
-      alert('Error: ' + err.message);
+      alert('Could not save change: ' + err.message);
     }
   },
 
