@@ -1467,15 +1467,16 @@ def list_promo_codes(
     authorization: Optional[str] = Header(default=None),
     tier: Optional[str] = Query(default=None),
 ):
-    _auth_user(authorization)
+    user = _auth_user(authorization)
     if supabase:
-        q = supabase.table("promo_codes").select("*").order("created_at", desc=True)
+        q = supabase.table("promo_codes").select("*").eq("created_by", user["email"]).order("created_at", desc=True)
         if tier:
             q = q.eq("tier", tier.upper())
         r = q.execute()
         return {"codes": r.data or []}
     db = _load_db()
     codes = sorted(db["promo_codes"].values(), key=lambda x: x.get("created_at", ""), reverse=True)
+    codes = [c for c in codes if c.get("created_by") == user["email"]]
     if tier:
         codes = [c for c in codes if c.get("tier", "A").upper() == tier.upper()]
     return {"codes": list(codes)}
