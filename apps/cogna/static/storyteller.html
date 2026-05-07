@@ -562,9 +562,18 @@
     .upgrade-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; margin-bottom: 10px; }
     .upgrade-body { color: var(--ink-muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
     .upgrade-cta { display: block; text-decoration: none; }
+
+    #logoutBar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: flex-end; padding: 10px 16px; pointer-events: none; }
+    #logoutBar.visible { pointer-events: auto; }
+    #logoutBtn { font-size: 12px; color: var(--ink-muted); background: none; border: none; cursor: pointer; padding: 4px 8px; opacity: 0; transition: opacity 0.2s; }
+    #logoutBar.visible #logoutBtn { opacity: 1; }
+    #logoutBtn:hover { color: var(--ink); }
   </style>
 </head>
 <body>
+  <div id="logoutBar">
+    <button id="logoutBtn" onclick="st.logout()">Sign out</button>
+  </div>
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
 
@@ -833,10 +842,13 @@
       seconds: 0,
     };
 
+    const GUEST_SCREENS = new Set(['screenEntry', 'screenSignup', 'screenLogin', 'screenResetRequest', 'screenResetConfirm']);
     function showScreen(id) {
       ALL_SCREENS.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', s !== id);
       });
+      const logoutBar = document.getElementById('logoutBar');
+      if (logoutBar) logoutBar.classList.toggle('visible', !GUEST_SCREENS.has(id));
       if (typeof st !== 'undefined') st._applyTierUI();
     }
 
@@ -1552,6 +1564,15 @@
               ? 'My Memoir →' : 'My Memoir ✦';
           }
         }
+      },
+
+      async logout() {
+        const token = localStorage.getItem('st_token');
+        if (token) {
+          try { await fetch(API + '/storyteller/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+        }
+        ['st_token','st_email','st_first_name','st_tier','st_managed','st_signup_code'].forEach(k => localStorage.removeItem(k));
+        showScreen('screenEntry');
       },
     };
 

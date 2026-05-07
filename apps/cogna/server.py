@@ -1106,6 +1106,14 @@ def storyteller_signup(payload: StorySignupRequest):
     }
 
 
+@app.post("/api/storyteller/logout")
+def storyteller_logout(authorization: Optional[str] = Header(default=None)):
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ", 1)[1]
+        SESSIONS.pop(token, None)
+    return {"ok": True}
+
+
 @app.post("/api/storyteller/login")
 def storyteller_login(payload: StoryLoginRequest):
     email = payload.email.strip().lower()
