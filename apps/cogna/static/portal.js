@@ -647,7 +647,7 @@ const portal = {
       const data = await req(`${api}/portal/invitees?tier=F`, { headers: authHeaders() });
       const invitees = data.invitees || [];
       if (!invitees.length) {
-        el.innerHTML = '<div class="empty-state"><p>No F-code invitees yet. Generate an F-code and share it to get started.</p></div>';
+        el.innerHTML = '<div class="empty-state"><p>No Book Builder invitees yet. Generate a Book Builder code and share it to get started.</p></div>';
         return;
       }
       el.innerHTML = invitees.map(inv => {
@@ -746,6 +746,7 @@ const portal = {
 
   _renderPromoCodes(codes, tier) {
     const suffix = tier || 'A';
+    const tierLabel = { E: 'Storyteller', F: 'Book Builder' }[suffix] || suffix;
     // Hide onboarding card once the user has at least one B-code
     if (suffix === 'B') {
       const card = document.getElementById('onboardingCard');
@@ -754,7 +755,7 @@ const portal = {
     const el = document.getElementById('promoCodesList' + suffix);
     if (!el) return;
     if (!codes.length) {
-      el.innerHTML = `<div class="empty-state"><p>No ${suffix}-codes yet. Generate one to get started.</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>No ${tierLabel} codes yet. Generate one to get started.</p></div>`;
       return;
     }
     el.innerHTML = codes.map(c => `
