@@ -36,7 +36,15 @@
     .page-sub { font-size: 15px; color: var(--ink-muted); text-align: center; max-width: 520px; margin-bottom: 48px; }
 
     /* Plan picker */
-    .plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; width: 100%; max-width: 900px; margin-bottom: 48px; }
+    .plan-section { width: 100%; max-width: 900px; margin-bottom: 40px; }
+    .plan-section-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; text-align: center; }
+    .plan-section-lead { font-size: 15px; color: var(--ink-muted); text-align: center; max-width: 620px; margin: 0 auto 28px; line-height: 1.6; }
+    .plans { display: grid; gap: 16px; width: 100%; }
+    .plans-individual { grid-template-columns: repeat(3, 1fr); }
+    .plans-institutional { grid-template-columns: repeat(2, 1fr); max-width: 580px; margin: 0 auto; }
+    .plan-section-divider { width: 100%; max-width: 900px; display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
+    .plan-section-divider::before, .plan-section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .plan-section-divider span { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); white-space: nowrap; }
 
     .plan-card {
       background: rgba(255,255,255,0.55);
@@ -95,8 +103,8 @@
     .link-row a { color: var(--ink); font-weight: 500; text-decoration: none; border-bottom: 1px solid var(--gold-light); }
     .link-row a:hover { border-color: var(--gold); }
 
-    @media (max-width: 860px) { .plans { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 520px) { .plans { grid-template-columns: 1fr; } .card { padding: 24px 18px; } }
+    @media (max-width: 860px) { .plans-individual { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .plans-individual, .plans-institutional { grid-template-columns: 1fr; } .card { padding: 24px 18px; } }
   </style>
 </head>
 <body>
@@ -106,87 +114,101 @@
   <div class="page">
     <a href="/" class="wordmark">MYCOGNA</a>
     <h1 class="page-title">Administrator <em>Portal</em></h1>
-    <p class="page-sub">Choose the plan that fits your needs. You can generate user codes for the people you support — at any tier you've unlocked.</p>
+    <!-- Individual section -->
+    <div class="plan-section">
+      <div class="plan-section-eyebrow">For individuals</div>
+      <p class="plan-section-lead">Are you helping a friend or loved one tell their stories or create their memoir? Select one of these tools for individual storytellers.</p>
+      <div class="plans plans-individual">
 
-    <!-- Plan picker -->
-    <div class="plans" id="planGrid">
+        <div class="plan-card" id="planB" onclick="selectPlan('B')">
+          <div class="plan-selector"></div>
+          <div class="plan-badge">Storyteller</div>
+          <div class="plan-name">Unlimited</div>
+          <div class="plan-price"><sup>$</sup>5</div>
+          <div class="plan-period">per month</div>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Unlimited story recordings</li>
+            <li>All story prompts</li>
+            <li>Voice recording &amp; transcription</li>
+            <li>Shareable story archive</li>
+          </ul>
+        </div>
 
-      <div class="plan-card" id="planB" onclick="selectPlan('B')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">Storyteller</div>
-        <div class="plan-name">Unlimited</div>
-        <div class="plan-price"><sup>$</sup>5</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>Unlimited story recordings</li>
-          <li>All story prompts</li>
-          <li>Voice recording &amp; transcription</li>
-          <li>Shareable story archive</li>
-        </ul>
+        <div class="plan-card" id="planC" onclick="selectPlan('C')">
+          <div class="plan-selector"></div>
+          <div class="plan-badge">AI Assisted</div>
+          <div class="plan-name">Storyteller + Memoir Builder</div>
+          <div class="plan-price"><sup>$</sup>10</div>
+          <div class="plan-period">per month</div>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Everything in Unlimited</li>
+            <li>AI follow-up questions</li>
+            <li>Intelligent story editing</li>
+            <li>Extended story sessions</li>
+          </ul>
+        </div>
+
+        <div class="plan-card" id="planD" onclick="selectPlan('D')">
+          <div class="plan-selector"></div>
+          <div class="plan-badge">Full Access</div>
+          <div class="plan-name">AI Companion</div>
+          <div class="plan-price"><sup>$</sup>15</div>
+          <div class="plan-period">per month</div>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Everything in Storyteller + Memoir Builder</li>
+            <li>Unlimited Cogna companions</li>
+            <li>Custom voice per Cogna</li>
+            <li>Multi-voice conversations</li>
+            <li>Session transcripts saved</li>
+          </ul>
+        </div>
+
       </div>
+    </div>
 
-      <div class="plan-card" id="planC" onclick="selectPlan('C')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">AI Assisted</div>
-        <div class="plan-name">Storyteller + Memoir Builder</div>
-        <div class="plan-price"><sup>$</sup>10</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>Everything in Unlimited</li>
-          <li>AI follow-up questions</li>
-          <li>Intelligent story editing</li>
-          <li>Extended story sessions</li>
-        </ul>
+    <!-- Section divider -->
+    <div class="plan-section-divider"><span>or, for organizations</span></div>
+
+    <!-- Institutional section -->
+    <div class="plan-section">
+      <div class="plan-section-eyebrow">For organizations</div>
+      <p class="plan-section-lead">Do you work for a non-profit, historical society, or another organization that needs to collect stories from multiple people? Select our story collection tool, or upgrade to our AI-assisted Book Builder that also prompts your storytellers to go deeper.</p>
+      <div class="plans plans-institutional">
+
+        <div class="plan-card" id="planE" onclick="selectPlan('E')">
+          <div class="plan-selector"></div>
+          <div class="plan-badge">Story Collection</div>
+          <div class="plan-name">Legacy Collection</div>
+          <div class="plan-price"><sup>$</sup>25</div>
+          <div class="plan-period">per month</div>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>5 new storyteller codes per month</li>
+            <li>All codes remain active permanently</li>
+            <li>Stories accumulate over time</li>
+            <li>Ideal for organizations &amp; communities</li>
+          </ul>
+        </div>
+
+        <div class="plan-card" id="planF" onclick="selectPlan('F')">
+          <div class="plan-selector"></div>
+          <div class="plan-badge">AI-Assisted Book Builder</div>
+          <div class="plan-name">Legacy Collection +<br>Book Builder</div>
+          <div class="plan-price"><sup>$</sup>50</div>
+          <div class="plan-period">per month</div>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Everything in Legacy Collection</li>
+            <li>AI deepening sessions for invitees</li>
+            <li>Portal book assembly &amp; editing</li>
+            <li>Ideal for oral history projects</li>
+          </ul>
+        </div>
+
       </div>
-
-      <div class="plan-card" id="planD" onclick="selectPlan('D')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">Full Access</div>
-        <div class="plan-name">AI Companion</div>
-        <div class="plan-price"><sup>$</sup>15</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>Everything in Storyteller + Memoir Builder</li>
-          <li>Unlimited Cogna companions</li>
-          <li>Custom voice per Cogna</li>
-          <li>Multi-voice conversations</li>
-          <li>Session transcripts saved</li>
-        </ul>
-      </div>
-
-      <div class="plan-card" id="planE" onclick="selectPlan('E')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">Institutional</div>
-        <div class="plan-name">Legacy Collection</div>
-        <div class="plan-price"><sup>$</sup>25</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>5 new storyteller codes per month</li>
-          <li>All codes remain active permanently</li>
-          <li>Stories accumulate over time</li>
-          <li>Ideal for organizations &amp; communities</li>
-        </ul>
-      </div>
-
-      <div class="plan-card" id="planF" onclick="selectPlan('F')">
-        <div class="plan-selector"></div>
-        <div class="plan-badge">Institutional</div>
-        <div class="plan-name">Legacy Collection +<br>Book Builder</div>
-        <div class="plan-price"><sup>$</sup>50</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-divider"></div>
-        <ul class="plan-features">
-          <li>Everything in Legacy Collection</li>
-          <li>AI deepening sessions for invitees</li>
-          <li>Portal book assembly &amp; editing</li>
-          <li>Ideal for oral history projects</li>
-        </ul>
-      </div>
-
     </div>
 
     <!-- Signup form (shown after plan selection) -->
