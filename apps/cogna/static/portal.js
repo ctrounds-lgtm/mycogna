@@ -127,8 +127,7 @@ async function loadDashboard() {
     }
   });
 
-  // Start on the user's highest tier tab (minimum B); F shares the E tab
-  const startTab = tier === 'A' ? 'B' : (tier === 'F' ? 'E' : tier);
+  const startTab = tier === 'A' ? 'B' : tier;
   portal.switchDashTab(startTab);
 
   if (tier === 'D') {
