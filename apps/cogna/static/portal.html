@@ -207,16 +207,12 @@
         <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
       </div>
       <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">Recordings</h2>
-        <button class="add-btn" onclick="portal.loadStoryPanel('C')">Refresh</button>
+        <h2 class="section-title">Memoir Workspaces</h2>
+        <button class="add-btn" onclick="portal.loadInvitees()">Refresh</button>
       </div>
-      <div id="recordingsFilterRowC" class="hidden" style="margin-bottom:12px">
-        <select id="recordingsFilterC" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'C')">
-          <option value="">All C-codes</option>
-        </select>
-      </div>
-      <div id="recordingsListC" class="stories-list" style="margin-bottom:40px">
-        <div class="empty-state"><p>No recordings yet.</p></div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Each person who used a C-code gets their own memoir workspace — view their recordings, assemble a memoir, and edit chapters.</p>
+      <div id="inviteeList" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No invitees yet. Generate a C-code and share it to get started.</p></div>
       </div>
     </div>
 
@@ -262,19 +258,30 @@
     <!-- ── PANEL E — Legacy Collection ── -->
     <div id="panelE" class="hidden">
       <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection — 5 new per month)</span></h2>
-        <button class="add-btn" onclick="portal.generatePromoCode('E', 'E')">+ Generate Code</button>
+        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection)</span></h2>
+        <div style="display:flex;gap:8px;">
+          <button class="add-btn" onclick="portal.generatePromoCode('E', 'E')">+ E-Code (Recording)</button>
+          <button class="add-btn" onclick="portal.generatePromoCode('F')">+ F-Code (Book Builder)</button>
+        </div>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Generate codes to give storytellers unlimited access. Each code remains active permanently — generate up to 5 new ones per month to grow your collection.</p>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">E-codes: recording only. F-codes: recording + AI deepening + book assembly. Both accumulate permanently.</p>
       <div id="promoCodesListE" class="stories-list">
         <div class="empty-state"><p>No codes yet.</p></div>
       </div>
       <div style="margin-top:32px;margin-bottom:24px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:10px;font-size:13px;color:var(--ink-muted)">
         <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
       </div>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Book Workspaces</h2>
+        <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">F-code invitees can record, go deeper with AI, and have their stories compiled into a book. Click to open their workspace.</p>
+      <div id="inviteeListF" class="stories-list" style="margin-bottom:40px">
+        <div class="empty-state"><p>No F-code invitees yet. Generate an F-code and share it to get started.</p></div>
+      </div>
       <div class="section-header-row" style="margin-top:8px">
         <h2 class="section-title">Recordings</h2>
-        <button class="add-btn" onclick="portal.loadStoryPanel('E', 'B')">Refresh</button>
+        <button class="add-btn" onclick="portal.loadLegacyPanel()">Refresh</button>
       </div>
       <div id="recordingsFilterRowE" class="hidden" style="margin-bottom:12px">
         <select id="recordingsFilterE" class="text-input recordings-filter" onchange="portal.filterRecordings(this.value, 'E')"></select>

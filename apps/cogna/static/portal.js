@@ -101,7 +101,7 @@ async function loadDashboard() {
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
   // Set up tab locking based on tier (A tab removed — portal users start at B minimum)
-  const tierOrder = ['B', 'C', 'D', 'E'];
+  const tierOrder = ['B', 'C', 'D', 'E', 'F'];
   const rawTier = state.user.tier || 'B';
   const tier = tierOrder.includes(rawTier) ? rawTier : 'B';
   const userTierIdx = tierOrder.indexOf(tier);
@@ -114,8 +114,8 @@ async function loadDashboard() {
     }
   });
 
-  // Start on the user's highest tier tab (minimum B)
-  const startTab = tier === 'A' ? 'B' : tier;
+  // Start on the user's highest tier tab (minimum B); F shares the E tab
+  const startTab = tier === 'A' ? 'B' : (tier === 'F' ? 'E' : tier);
   portal.switchDashTab(startTab);
 
   if (tier === 'D') {
@@ -510,11 +510,11 @@ const portal = {
 
   switchDashTab(tab) {
     const tier = (state.user && state.user.tier) || 'A';
-    const tierOrder = ['A', 'B', 'C', 'D', 'E'];
+    const tierOrder = ['A', 'B', 'C', 'D', 'E', 'F'];
     const userTierIdx = tierOrder.indexOf(tier);
     const tabIdx = tierOrder.indexOf(tab);
 
-    ['B', 'C', 'D', 'E'].forEach(t => {
+    ['B', 'C', 'D', 'E', 'F'].forEach(t => {
       const btn = document.getElementById('dashTab' + t);
       if (btn) btn.classList.toggle('active', t === tab);
       const panel = document.getElementById('panel' + t);
@@ -524,7 +524,7 @@ const portal = {
 
     // Check if this tab is above the user's tier
     if (tabIdx > userTierIdx) {
-      const labels = { B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection' };
+      const labels = { B: 'Unlimited Storyteller', C: 'AI Assisted', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
       document.getElementById('lockedTitle').textContent = `Upgrade to unlock ${labels[tab]}`;
       document.getElementById('lockedBody').textContent = `Your current plan doesn't include the ${labels[tab]} tier. Upgrade to access this feature.`;
       document.getElementById('panelLocked').classList.remove('hidden');
@@ -534,8 +534,8 @@ const portal = {
     document.getElementById('panel' + tab).classList.remove('hidden');
 
     if (tab === 'B') portal.loadStoryPanel('B');
-    else if (tab === 'C') portal.loadStoryPanel('C');
-    else if (tab === 'E') portal.loadStoryPanel('E', 'B');
+    else if (tab === 'C') portal.loadInvitees();
+    else if (tab === 'E') portal.loadLegacyPanel();
     else if (tab === 'D' && state.user) {
       req(`${api}/cognas`, { headers: authHeaders() })
         .then(d => renderCognaGrid(d.cognas))
@@ -569,6 +569,85 @@ const portal = {
 
   // Legacy alias
   async loadStories() { return portal.loadStoryPanel('B'); },
+
+  async loadInvitees() {
+    const el = document.getElementById('inviteeList');
+    if (!el) return;
+    el.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+    try {
+      const data = await req(`${api}/portal/invitees?tier=C`, { headers: authHeaders() });
+      const invitees = data.invitees || [];
+      if (!invitees.length) {
+        el.innerHTML = '<div class="empty-state"><p>No invitees yet. Generate a C-code and share it to get started.</p></div>';
+        return;
+      }
+      el.innerHTML = invitees.map(inv => {
+        const name = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email;
+        return `
+          <div class="story-item">
+            <div class="story-item-main">
+              <div class="story-item-text">${name}</div>
+              <div class="story-item-meta">${inv.email}</div>
+            </div>
+            <div class="story-item-actions">
+              <button class="story-action-btn" onclick="portal.openMemoirWorkspace('${inv.id}')">Open Memoir Workspace →</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      el.innerHTML = `<div class="empty-state"><p>Error loading invitees: ${err.message}</p></div>`;
+    }
+  },
+
+  openMemoirWorkspace(storytellerId, type) {
+    const t = type || 'memoir';
+    window.location = `/portal/memoir?id=${storytellerId}&type=${t}`;
+  },
+
+  async loadLegacyPanel() {
+    try {
+      const [codesEData, codesFData, recsData] = await Promise.all([
+        req(`${api}/storyteller/user-codes?tier=E`, { headers: authHeaders() }),
+        req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() }),
+        req(`${api}/storyteller/recordings?tier=E`, { headers: authHeaders() }),
+      ]);
+      const allCodes = [...(codesEData.codes || []), ...(codesFData.codes || [])];
+      portal._renderPromoCodes(allCodes, 'E');
+      portal._renderRecordings(recsData.recordings || [], 'E');
+    } catch (err) {
+      console.error('loadLegacyPanel error:', err.message);
+    }
+    portal.loadLegacyInvitees();
+  },
+
+  async loadLegacyInvitees() {
+    const el = document.getElementById('inviteeListF');
+    if (!el) return;
+    el.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+    try {
+      const data = await req(`${api}/portal/invitees?tier=F`, { headers: authHeaders() });
+      const invitees = data.invitees || [];
+      if (!invitees.length) {
+        el.innerHTML = '<div class="empty-state"><p>No F-code invitees yet. Generate an F-code and share it to get started.</p></div>';
+        return;
+      }
+      el.innerHTML = invitees.map(inv => {
+        const name = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email;
+        return `
+          <div class="story-item">
+            <div class="story-item-main">
+              <div class="story-item-text">${name}</div>
+              <div class="story-item-meta">${inv.email}</div>
+            </div>
+            <div class="story-item-actions">
+              <button class="story-action-btn" onclick="portal.openMemoirWorkspace('${inv.id}', 'book')">Open Book Workspace →</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      el.innerHTML = `<div class="empty-state"><p>Error loading invitees: ${err.message}</p></div>`;
+    }
+  },
 
   async loadUsage() {
     try {

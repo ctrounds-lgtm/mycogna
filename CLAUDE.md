@@ -169,6 +169,13 @@ MyCogna is a voice companion app. A **Cogna** is one voice/persona — Mom is on
 3. Select one or more → start a multi-voice conversation
 4. Conversation is audio-only; full transcript saved as a session journal at the end
 
+**Portal tiers:**
+- B: Unlimited Storyteller — unlimited recording codes, custom prompts
+- C: Storyteller + Memoir Builder — AI deepening + portal memoir assembly/editing for invitees
+- D: AI Companion — Cogna voice companion builder
+- E: Legacy Collection — institutional recording-only codes (managed invitees)
+- F: Legacy Collection + Book Builder — like E plus AI deepening for invitees + portal book assembly/editing; book workspace at `/portal/memoir?type=book`
+
 **Guardian portal features:**
 - Self-service account creation (no invite code required)
 - Create Cognas with name, relationship, term of endearment, and 5 relational parameter sliders (Warmth, Validation, Tone, Structure, Stance)
