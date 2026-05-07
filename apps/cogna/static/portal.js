@@ -1240,6 +1240,13 @@ document.getElementById('resetForm').addEventListener('submit', async e => {
   }
 });
 
+// ── Panel button listeners (reliable alternative to inline onclick) ──
+const _addQuestionBtnB = document.getElementById('addPromptBtnB');
+if (_addQuestionBtnB) _addQuestionBtnB.addEventListener('click', () => portal.createPrompt());
+
+const _addQuestionBtnE = document.getElementById('addPromptBtnE');
+if (_addQuestionBtnE) _addQuestionBtnE.addEventListener('click', () => portal.createEPrompt());
+
 // ── Init ──
 async function init() {
   // Check for password reset token in URL
