@@ -1394,15 +1394,21 @@ def activate_story_prompt(
     prompt_id: str,
     authorization: Optional[str] = Header(default=None),
 ):
-    _auth_user(authorization)
+    user = _auth_user(authorization)
     if supabase:
-        r = supabase.table("story_prompts").select("active").eq("id", prompt_id).limit(1).execute()
-        current = r.data[0]["active"] if r.data else False
+        r = supabase.table("story_prompts").select("active, portal_user_email").eq("id", prompt_id).limit(1).execute()
+        if not r.data:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        if r.data[0].get("portal_user_email") != user["email"]:
+            raise HTTPException(status_code=403, detail="Cannot modify system prompts")
+        current = r.data[0]["active"]
         supabase.table("story_prompts").update({"active": not current}).eq("id", prompt_id).execute()
     else:
         db = _load_db()
-        if prompt_id in db["story_prompts"]:
-            db["story_prompts"][prompt_id]["active"] = not db["story_prompts"][prompt_id].get("active", False)
+        prompt = db["story_prompts"].get(prompt_id)
+        if not prompt or prompt.get("portal_user_email") != user["email"]:
+            raise HTTPException(status_code=403, detail="Cannot modify system prompts")
+        prompt["active"] = not prompt.get("active", False)
         _save_db(db)
     return {"ok": True}
 
@@ -2444,7 +2450,7 @@ def _get_active_prompts(portal_user_email: Optional[str] = None, include_system:
         results = []
         if include_system:
             sys_r = (supabase.table("story_prompts").select("*")
-                     .eq("active", True).is_("portal_user_email", "null")
+                     .is_("portal_user_email", "null")
                      .order("sort_order").order("created_at").execute())
             results = [p for p in (sys_r.data or []) if p["id"] not in hidden]
         if portal_user_email:
@@ -2455,16 +2461,16 @@ def _get_active_prompts(portal_user_email: Optional[str] = None, include_system:
             results.sort(key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
         return results
     db = _load_db()
-    active = [p for p in db["story_prompts"].values() if p.get("active")]
+    all_prompts = list(db["story_prompts"].values())
     if portal_user_email:
-        custom = [p for p in active if p.get("portal_user_email") == portal_user_email]
+        custom = [p for p in all_prompts if p.get("portal_user_email") == portal_user_email and p.get("active")]
         if include_system:
-            system = [p for p in active if not p.get("portal_user_email") and p["id"] not in hidden]
+            system = [p for p in all_prompts if not p.get("portal_user_email") and p["id"] not in hidden]
             return sorted(system + custom, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
         return sorted(custom, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
     if not include_system:
         return []
-    system_only = [p for p in active if not p.get("portal_user_email")]
+    system_only = [p for p in all_prompts if not p.get("portal_user_email")]
     return sorted(system_only, key=lambda x: (x.get("sort_order", 0), x.get("created_at", "")))
 
 
