@@ -1569,7 +1569,7 @@
       async logout() {
         const token = localStorage.getItem('st_token');
         if (token) {
-          try { await fetch(API + '/storyteller/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
+          try { await fetch(API + '/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (_) {}
         }
         ['st_token','st_email','st_first_name','st_tier','st_managed','st_signup_code'].forEach(k => localStorage.removeItem(k));
         showScreen('screenEntry');

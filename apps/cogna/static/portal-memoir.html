@@ -356,7 +356,7 @@
 
       const inv = pmState.invitee;
       const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email) : '';
-      document.getElementById('recPageTitle').textContent = name ? `${name}'s Memoir` : 'Memoir Workspace';
+      document.getElementById('recPageTitle').textContent = name ? `${name}'s ${IS_BOOK ? 'Book' : 'Memoir'}` : (IS_BOOK ? 'Book Workspace' : 'Memoir Workspace');
       document.getElementById('recPageSub').textContent =
         `${recs.length} recording${recs.length !== 1 ? 's' : ''}, ${deepened} deepened. Review below, then assemble.`;
 
@@ -591,7 +591,7 @@
 
   // ── Boot ──
   window.addEventListener('load', async () => {
-    const token = localStorage.getItem('portal_token');
+    const token = localStorage.getItem('portalToken');
     if (!token || !STORYTELLER_ID) { window.location = '/portal'; return; }
     pmState.authToken = token;
 
@@ -616,6 +616,8 @@
       if (assembleHeading) assembleHeading.textContent = L.assembleHeading;
       const assembleBtn = document.getElementById('assembleBtn');
       if (assembleBtn) assembleBtn.textContent = L.assembleBtn;
+      const assembleBtnMain = document.getElementById('assembleBtnMain');
+      if (assembleBtnMain) assembleBtnMain.textContent = L.assembleBtn;
       const downloadBibleBtn = document.getElementById('downloadBibleBtn');
       if (downloadBibleBtn) downloadBibleBtn.textContent = L.downloadBible;
       const downloadManuscriptBtn = document.getElementById('downloadManuscriptBtn');
