@@ -1127,6 +1127,10 @@ window.portal = portal;
 document.getElementById('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   clearError('loginError');
+  const btn = e.target.querySelector('button[type=submit]');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
   try {
     const result = await req(`${api}/auth/login`, {
       method: 'POST',
@@ -1149,6 +1153,8 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     await loadDashboard();
   } catch (err) {
     showError('loginError', err.message);
+    btn.disabled = false;
+    btn.textContent = origText;
   }
 });
 

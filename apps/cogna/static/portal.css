@@ -29,7 +29,7 @@ body {
 
 /* ── Screens ── */
 .screen { display: block; }
-.screen.hidden { display: none; }
+.screen.hidden { display: none !important; }
 
 /* ── Auth screen ── */
 .auth-wrap {
