@@ -1153,6 +1153,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     await loadDashboard();
   } catch (err) {
     showError('loginError', err.message);
+  } finally {
     btn.disabled = false;
     btn.textContent = origText;
   }
