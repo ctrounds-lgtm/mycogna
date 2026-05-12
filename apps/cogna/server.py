@@ -955,7 +955,13 @@ def list_sessions(
 @app.get("/api/storyteller/me")
 def storyteller_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_storyteller_user(authorization)
-    prompts = _get_active_prompts(_get_portal_owner_email(user))
+    signup_code = user.get("signup_code", "")
+    signup_pc = _get_promo_code(signup_code) if signup_code else None
+    me_code_tier = (signup_pc.get("tier", "A").upper() if signup_pc else "A")
+    prompts = _get_active_prompts(
+        _get_portal_owner_email(user),
+        include_system=me_code_tier not in {"E", "F"},
+    )
     return {
         "user": {
             "email": user["email"],
