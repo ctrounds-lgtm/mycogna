@@ -1660,11 +1660,33 @@ async def respond(
 # TODO: Add tier check here when Stripe is integrated — Tier 2 (Storyteller+) only
 # ----------------------------------------------------
 
-MEMOIR_DEEPEN_SYSTEM = """You are a warm, skilled memoir interviewer. You have just read the following story transcript from the user. Your job is to ask thoughtful follow-up questions that help the user go deeper — drawing out specific details, sensory memories, emotions, and context they didn't include the first time.
+MEMOIR_DEEPEN_SYSTEM = """You are a warm, skilled interviewer. You have just read a story transcript from the user. Your job is to ask thoughtful follow-up questions that help the user go deeper — drawing out specific details, sensory memories, emotions, and context they didn't include the first time.
 
 Ask one or two questions at a time. Never more. Listen carefully to each response before asking the next question. Your tone is curious and warm, never clinical or journalistic. You are not evaluating the story — you are helping the storyteller find what's already there.
 
 When the user indicates they are finished, thank them warmly and let them know their story has been saved."""
+
+
+def _build_deepen_system(st_user: Dict, transcript: str) -> str:
+    """Build the full deepen system prompt, injecting project questions as context if available."""
+    system = MEMOIR_DEEPEN_SYSTEM
+    portal_owner = _get_portal_owner_email(st_user)
+    if portal_owner:
+        project_prompts = _get_active_prompts(portal_owner, include_system=False)
+        if project_prompts:
+            numbered = "\n".join(f"{i+1}. {p['text']}" for i, p in enumerate(project_prompts))
+            system += (
+                f"\n\nThis storyteller is part of a structured collection project. "
+                f"The project will ask them the following questions across multiple recording sessions:\n\n"
+                f"{numbered}\n\n"
+                f"Use these questions as context when deepening the current story. "
+                f"Your follow-up questions should complement — not duplicate — the topics already covered by those questions. "
+                f"If the storyteller touches on something that has its own dedicated question above, "
+                f"you can briefly acknowledge it and let them know they'll have a chance to explore it more in another session. "
+                f"Keep your focus on drawing out more depth from what they shared in this specific story."
+            )
+    system += f"\n\nHere is the story transcript:\n\n{transcript}"
+    return system
 
 MEMOIR_ASSEMBLE_SYSTEM = """You are a skilled memoir editor. You have been given a collection of voice-recorded stories and follow-up interview transcripts from one person.
 
@@ -1775,7 +1797,7 @@ async def memoir_deepen_start(payload: MemoirDeepenStartRequest, authorization: 
     if existing:
         return {"session_id": existing["id"], "messages": existing["messages"], "transcript": transcript}
 
-    system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
+    system = _build_deepen_system(st_user, transcript)
     opening = _generate_memoir_response(system, [{"role": "user", "content": "Please begin."}])
 
     session_id = "msess_" + secrets.token_hex(8)
@@ -1817,7 +1839,7 @@ async def memoir_deepen_chat(payload: MemoirDeepenChatRequest, authorization: Op
     messages = session.get("messages") or []
     messages.append({"role": "user", "content": payload.message})
 
-    system = MEMOIR_DEEPEN_SYSTEM + f"\n\nHere is the story transcript:\n\n{transcript}"
+    system = _build_deepen_system(st_user, transcript)
     reply = _generate_memoir_response(system, messages)
     messages.append({"role": "assistant", "content": reply})
 
