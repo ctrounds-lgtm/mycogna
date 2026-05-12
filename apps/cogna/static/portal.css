@@ -1322,3 +1322,41 @@ input[type=range]:focus { outline: none; }
   padding-top: 16px;
   font-style: italic;
 }
+
+/* ── Upgrade CTA card ── */
+.upgrade-cta-card {
+  margin-top: 48px;
+  padding: 20px 24px;
+  background: rgba(28,26,23,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.upgrade-cta-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.upgrade-cta-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.upgrade-cta-body {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+.upgrade-cta-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gold);
+  text-decoration: none;
+}
+.upgrade-cta-link:hover { text-decoration: underline; }

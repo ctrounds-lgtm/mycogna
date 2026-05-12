@@ -113,27 +113,13 @@ async function loadDashboard() {
   document.getElementById('dashWelcome').textContent = `Welcome back, ${state.user.name}`;
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
-  // Set up tab locking based on tier (A tab removed — portal users start at B minimum)
   const tierOrder = ['B', 'C', 'D', 'E', 'F'];
   const rawTier = state.user.tier || 'B';
   const tier = tierOrder.includes(rawTier) ? rawTier : 'B';
-  const userTierIdx = tierOrder.indexOf(tier);
 
-  // E/F tier users are institutional-only — hide individual product tabs entirely
-  if (tier === 'E' || tier === 'F') {
-    const indGroup = document.getElementById('tabGroupIndividual');
-    const indDivider = document.getElementById('tabGroupDivider');
-    if (indGroup) indGroup.style.display = 'none';
-    if (indDivider) indDivider.style.display = 'none';
-  } else {
-    tierOrder.forEach((t, idx) => {
-      const btn = document.getElementById('dashTab' + t);
-      if (btn && idx > userTierIdx) {
-        btn.classList.add('locked');
-        btn.title = 'Upgrade to unlock';
-      }
-    });
-  }
+  // Each user sees only their own plan — hide the tab bar entirely
+  const dashTabs = document.getElementById('dashTabs');
+  if (dashTabs) dashTabs.style.display = 'none';
 
   const startTab = tier === 'A' ? 'B' : tier;
   portal.switchDashTab(startTab);
@@ -559,7 +545,7 @@ const portal = {
     if (activePanel) activePanel.classList.remove('hidden');
 
     if (tab === 'B') portal.loadStoryPanel('B');
-    else if (tab === 'C') portal.loadInvitees();
+    else if (tab === 'C') { portal.loadInvitees(); portal.loadCStoryQuestions(); }
     else if (tab === 'E') portal.loadLegacyPanel();
     else if (tab === 'F') portal.loadBookBuilderPanel();
     else if (tab === 'D' && state.user) {
@@ -595,6 +581,38 @@ const portal = {
 
   // Legacy alias
   async loadStories() { return portal.loadStoryPanel('B'); },
+
+  async loadCStoryQuestions() {
+    try {
+      const data = await req(`${api}/storyteller/prompts`, { headers: authHeaders() });
+      portal._renderPrompts(data.prompts || [], 'promptsListC', 'C');
+    } catch (err) {
+      console.error('loadCStoryQuestions error:', err.message);
+    }
+  },
+
+  _reloadPrompts() {
+    const tier = (state.user && state.user.tier) || 'B';
+    if (tier === 'C') return portal.loadCStoryQuestions();
+    return portal.loadStories();
+  },
+
+  async createPromptC() {
+    const ta = document.getElementById('newPromptTextC');
+    const text = (ta?.value || '').trim();
+    if (!text) { alert('Please enter a prompt.'); return; }
+    try {
+      await req(`${api}/storyteller/prompts`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (ta) ta.value = '';
+      await portal.loadCStoryQuestions();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
 
   async loadInvitees() {
     const el = document.getElementById('inviteeList');
@@ -838,8 +856,8 @@ const portal = {
       </div>`).join('');
   },
 
-  _renderPrompts(prompts) {
-    const el = document.getElementById('promptsList');
+  _renderPrompts(prompts, targetId = 'promptsList', editSource = 'B') {
+    const el = document.getElementById(targetId);
     if (!el) return;
     portal._promptsOrder = prompts;
     if (!prompts.length) {
@@ -884,7 +902,7 @@ const portal = {
                       data-id="${p.id}" data-type="custom">
                 ${p.active ? 'Active' : 'Hidden'}
               </button>
-              <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-b">✏</button>
+              <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-b" data-source="${editSource}">✏</button>
               <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete">✕</button>
             </div>`).join('')
           : '<p style="font-size:13px;color:var(--ink-faint);margin:4px 0 0">No custom questions yet — add one below.</p>'
@@ -906,7 +924,7 @@ const portal = {
     });
     el.querySelectorAll('.prompt-edit-btn[data-action="edit-b"]').forEach(btn => {
       btn.addEventListener('click', function() {
-        portal.startEditPrompt(this.closest('.prompt-row'), this.dataset.id, this.dataset.text, 'B');
+        portal.startEditPrompt(this.closest('.prompt-row'), this.dataset.id, this.dataset.text, this.dataset.source || 'B');
       });
     });
     el.querySelectorAll('.prompt-delete-btn[data-action="delete"]').forEach(btn => {
@@ -955,7 +973,9 @@ const portal = {
     if (newIdx < 0 || newIdx >= customPrompts.length) return;
     [customPrompts[idx], customPrompts[newIdx]] = [customPrompts[newIdx], customPrompts[idx]];
     const systemPrompts = allPrompts.filter(p => !p.portal_user_email);
-    portal._renderPrompts([...systemPrompts, ...customPrompts]);
+    const tier = (state.user && state.user.tier) || 'B';
+    const tgt = tier === 'C' ? 'promptsListC' : 'promptsList';
+    portal._renderPrompts([...systemPrompts, ...customPrompts], tgt, tier === 'C' ? 'C' : 'B');
     try {
       await req(`${api}/storyteller/prompts/reorder`, {
         method: 'POST',
@@ -1097,7 +1117,7 @@ const portal = {
         body: JSON.stringify({ text }),
       });
       document.getElementById('newPromptText').value = '';
-      await portal.loadStories();
+      await portal._reloadPrompts();
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1109,7 +1129,7 @@ const portal = {
         method: 'PUT',
         headers: authHeaders(),
       });
-      await portal.loadStories();
+      await portal._reloadPrompts();
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1121,7 +1141,7 @@ const portal = {
         method: 'PUT',
         headers: authHeaders(),
       });
-      await portal.loadStories();
+      await portal._reloadPrompts();
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1143,7 +1163,7 @@ const portal = {
     });
     rowEl.querySelector('.prompt-cancel-edit-btn').addEventListener('click', () => {
       if (source === 'E') portal._renderEPrompts([...(portal._ePromptsOrder || [])]);
-      else portal.loadStories();
+      else portal._reloadPrompts();
     });
   },
 
@@ -1160,7 +1180,7 @@ const portal = {
         if (p) p.text = newText;
         portal._renderEPrompts([...prompts]);
       } else {
-        await portal.loadStories();
+        await portal._reloadPrompts();
       }
     } catch (err) {
       alert('Error saving: ' + err.message);
@@ -1174,7 +1194,7 @@ const portal = {
         method: 'DELETE',
         headers: authHeaders(),
       });
-      await portal.loadStories();
+      await portal._reloadPrompts();
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1366,6 +1386,9 @@ document.getElementById('resetForm').addEventListener('submit', async e => {
 // ── Panel button listeners (reliable alternative to inline onclick) ──
 const _addQuestionBtnB = document.getElementById('addPromptBtnB');
 if (_addQuestionBtnB) _addQuestionBtnB.addEventListener('click', () => portal.createPrompt());
+
+const _addQuestionBtnC = document.getElementById('addPromptBtnC');
+if (_addQuestionBtnC) _addQuestionBtnC.addEventListener('click', () => portal.createPromptC());
 
 const _addQuestionBtnE = document.getElementById('addPromptBtnE');
 if (_addQuestionBtnE) _addQuestionBtnE.addEventListener('click', () => portal.createEPrompt('newPromptTextE'));

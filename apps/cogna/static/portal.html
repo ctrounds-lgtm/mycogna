@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyCogna — Guardian Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/portal.css?v=20260512">
+<link rel="stylesheet" href="/static/portal.css?v=20260512c">
 </head>
 <body>
 
@@ -236,6 +236,13 @@
       <div id="recordingsListB" class="stories-list" style="margin-bottom:40px">
         <div class="empty-state"><p>No recordings yet.</p></div>
       </div>
+
+      <div class="upgrade-cta-card">
+        <div class="upgrade-cta-eyebrow">Upgrade available</div>
+        <h3 class="upgrade-cta-title">Storytelling + Memoir Builder</h3>
+        <p class="upgrade-cta-body">Your storyteller's recordings become a structured memoir — assembled by AI, organized into chapters, and edited right here in your portal.</p>
+        <a href="https://mycogna.org" target="_blank" class="upgrade-cta-link">Learn more →</a>
+      </div>
     </div>
 
     <!-- ── PANEL C — AI Assisted ── -->
@@ -248,16 +255,32 @@
       <div id="promoCodesListC" class="stories-list">
         <div class="empty-state"><p>No C-codes yet.</p></div>
       </div>
-      <div style="margin-top:32px;margin-bottom:24px;padding:16px 20px;background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:10px;font-size:13px;color:var(--ink-muted)">
-        <strong style="color:var(--ink)">Story questions</strong> are managed under the <button class="link-btn" style="font-size:13px" onclick="portal.switchDashTab('B')">Storyteller tab →</button>
+      <div class="section-header-row" style="margin-top:32px">
+        <h2 class="section-title">Story Questions</h2>
+        <button class="add-btn" onclick="portal.loadCStoryQuestions()">Refresh</button>
       </div>
-      <div class="section-header-row" style="margin-top:8px">
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Check the questions you want shown to your storytellers. Add your own in "My Questions" below.</p>
+      <div id="promptsListC">
+        <div class="empty-state"><p>Loading questions…</p></div>
+      </div>
+      <div class="add-prompt-row" style="margin-top:20px">
+        <textarea id="newPromptTextC" class="text-input textarea" rows="2" placeholder="Add your own question…"></textarea>
+        <button id="addPromptBtnC" class="save-btn" style="margin-top:8px">+ Add My Question</button>
+      </div>
+      <div class="section-header-row" style="margin-top:32px">
         <h2 class="section-title">Memoir Workspaces</h2>
         <button class="add-btn" onclick="portal.loadInvitees()">Refresh</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Each person who used a C-code gets their own memoir workspace — view their recordings, assemble a memoir, and edit chapters.</p>
       <div id="inviteeList" class="stories-list" style="margin-bottom:40px">
         <div class="empty-state"><p>No invitees yet. Generate a C-code and share it to get started.</p></div>
+      </div>
+
+      <div class="upgrade-cta-card">
+        <div class="upgrade-cta-eyebrow">Upgrade available</div>
+        <h3 class="upgrade-cta-title">AI Companion</h3>
+        <p class="upgrade-cta-body">Build a real-time voice companion your family can talk to — using your own voice recordings as the foundation.</p>
+        <a href="https://mycogna.org" target="_blank" class="upgrade-cta-link">Learn more →</a>
       </div>
     </div>
 
@@ -296,6 +319,13 @@
           <p>No Cognas yet.</p>
           <p>Each Cogna is one voice — Mom, a friend, a coach. Add one to get started.</p>
         </div>
+      </div>
+
+      <div class="upgrade-cta-card">
+        <div class="upgrade-cta-eyebrow">Upgrade available</div>
+        <h3 class="upgrade-cta-title">Legacy Collection</h3>
+        <p class="upgrade-cta-body">Gather stories from multiple storytellers for family or organizational history. Each person gets their own recording code and responds to your curated questions at their own pace.</p>
+        <a href="https://mycogna.org" target="_blank" class="upgrade-cta-link">Learn more →</a>
       </div>
     </div>
 
@@ -681,6 +711,6 @@
   </div>
 </div>
 
-<script src="/static/portal.js?v=20260512b"></script>
+<script src="/static/portal.js?v=20260512c"></script>
 </body>
 </html>
