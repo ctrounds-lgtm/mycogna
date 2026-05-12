@@ -212,13 +212,14 @@
     <div class="section-label">Your stories</div>
     <div id="dashStoryList"><p class="loading-msg">Loading…</p></div>
 
+    <div id="dashMemoirOutlineSection">
     <hr class="divider" />
-
     <div class="section-label">Memoir outline</div>
     <div id="dashAssembleSection">
       <p class="sub" style="font-size:14px;">When you have enough stories, click below to have Claude read everything and generate your Book Bible and chapter outline.</p>
       <button class="btn-primary" onclick="m.showAssemble()">Assemble my memoir →</button>
     </div>
+    </div><!-- /dashMemoirOutlineSection -->
 
     <div id="dashChapterSection" style="display:none; margin-top:24px;">
       <div class="section-label">Chapters</div>
@@ -799,7 +800,7 @@
       document.getElementById('stepAssemble').style.display = 'none';
       document.getElementById('stepEdit').style.display = 'none';
       document.getElementById('statChaptersDiv').style.display = 'none';
-      document.getElementById('dashAssembleSection').style.display = 'none';
+      document.getElementById('dashMemoirOutlineSection').style.display = 'none';
       document.getElementById('dashCompleteSection').style.display = '';
     }
 
