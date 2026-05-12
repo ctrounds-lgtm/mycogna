@@ -171,17 +171,17 @@
 ══════════════════════════════════════════════ -->
 <div class="screen" id="screenDashboard">
   <nav class="top-nav">
-    <span class="wordmark">MyCogna · Memoir</span>
+    <span class="wordmark" id="dashWordmark">MyCogna · Memoir</span>
     <div class="nav-right">
       <a href="/storyteller">← Storyteller</a>
       <button class="link-btn" onclick="m.signOut()">Sign out</button>
     </div>
   </nav>
   <div class="page">
-    <h1>Your Memoir</h1>
+    <h1 id="dashTitle">Your Memoir</h1>
     <p class="sub" id="dashWelcome">Building your story, one memory at a time.</p>
 
-    <div class="progress-steps">
+    <div class="progress-steps" id="progressSteps">
       <div class="progress-step done" id="stepRecord">1 · Record</div>
       <div class="progress-step" id="stepDeepen">2 · Deepen</div>
       <div class="progress-step" id="stepAssemble">3 · Assemble</div>
@@ -191,7 +191,7 @@
     <div class="stat-row">
       <div class="stat"><div class="stat-num" id="statRecordings">—</div><div class="stat-label">Stories recorded</div></div>
       <div class="stat"><div class="stat-num" id="statDeepened">—</div><div class="stat-label">Deepened</div></div>
-      <div class="stat"><div class="stat-num" id="statChapters">—</div><div class="stat-label">Chapters</div></div>
+      <div class="stat" id="statChaptersDiv"><div class="stat-num" id="statChapters">—</div><div class="stat-label">Chapters</div></div>
     </div>
 
     <div style="margin-bottom: 20px;">
@@ -213,6 +213,12 @@
       <div class="section-label">Chapters</div>
       <div id="dashChapterList"></div>
       <button class="btn-primary" style="margin-top:12px;" onclick="m.showEdit()">Edit chapters →</button>
+    </div>
+
+    <div id="dashCompleteSection" style="display:none; margin-top:32px;">
+      <hr class="divider" />
+      <p class="sub" style="font-size:14px; margin-bottom:16px;">When you've shared everything you'd like to contribute, let the project coordinator know you're finished.</p>
+      <button class="btn-secondary" onclick="m.markComplete()" style="max-width:320px;">I'm done — mark my contribution complete →</button>
     </div>
   </div>
 </div>
@@ -372,7 +378,9 @@
       document.getElementById('statRecordings').textContent = recs.length;
       document.getElementById('statDeepened').textContent = deepened;
       document.getElementById('statChapters').textContent = mState.chapters.length;
-      document.getElementById('dashWelcome').textContent = `Welcome back${mState.firstName ? ', ' + mState.firstName : ''}. Your memoir is taking shape.`;
+      document.getElementById('dashWelcome').textContent = IS_STORY_MODE
+        ? `Welcome back${mState.firstName ? ', ' + mState.firstName : ''}. Your stories are being collected.`
+        : `Welcome back${mState.firstName ? ', ' + mState.firstName : ''}. Your memoir is taking shape.`;
 
       // Progress steps
       if (deepened > 0) document.getElementById('stepDeepen').classList.add('done');
@@ -406,8 +414,8 @@
         }).join('');
       }
 
-      // Chapters section
-      if (mState.chapters.length > 0) {
+      // Chapters section (memoir mode only)
+      if (!IS_STORY_MODE && mState.chapters.length > 0) {
         document.getElementById('dashChapterSection').style.display = '';
         document.getElementById('dashChapterList').innerHTML = mState.chapters.map(c =>
           `<div class="chapter-item" onclick="m.showEdit('${c.id}')">
@@ -665,6 +673,17 @@
       container.scrollTop = container.scrollHeight;
     },
 
+    markComplete() {
+      const page = document.querySelector('#screenDashboard .page');
+      page.innerHTML = `
+        <div style="text-align:center; padding:60px 0;">
+          <div style="font-size:56px; margin-bottom:16px;">✓</div>
+          <h2 style="margin-bottom:12px;">Thank you!</h2>
+          <p class="sub">Your stories have been saved. The project coordinator will take it from here and compile them into a book.</p>
+          <a href="/storyteller" class="btn-primary" style="margin-top:24px; display:inline-block; width:auto; padding:12px 28px; text-decoration:none;">← Return to storytelling</a>
+        </div>`;
+    },
+
     async editSend() {
       const input = document.getElementById('editInput');
       if (!input) return;
@@ -696,6 +715,8 @@
   };
 
   // ── Boot ──
+  const IS_STORY_MODE = (localStorage.getItem('st_signup_code') || '').startsWith('F-');
+
   window.addEventListener('load', async () => {
     const token = localStorage.getItem('st_token');
     if (!token) { window.location = '/storyteller'; return; }
@@ -703,6 +724,16 @@
     mState.authToken = token;
     mState.userEmail = localStorage.getItem('st_email') || '';
     mState.firstName = localStorage.getItem('st_first_name') || '';
+
+    if (IS_STORY_MODE) {
+      document.getElementById('dashTitle').textContent = 'My Stories';
+      document.getElementById('dashWordmark').textContent = 'MyCogna · My Stories';
+      document.getElementById('stepAssemble').style.display = 'none';
+      document.getElementById('stepEdit').style.display = 'none';
+      document.getElementById('statChaptersDiv').style.display = 'none';
+      document.getElementById('dashAssembleSection').style.display = 'none';
+      document.getElementById('dashCompleteSection').style.display = '';
+    }
 
     // Verify token is still valid
     try {
