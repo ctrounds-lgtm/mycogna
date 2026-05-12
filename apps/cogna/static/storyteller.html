@@ -1514,7 +1514,8 @@
         const hideUpgrade = stState.managed || (!!stState.signupCode && (stState.tier === 'A' || stState.tier === 'B'));
         if (hideUpgrade) return;
         if (stState.tier === 'C' || stState.tier === 'D') {
-          window.location = '/memoir';
+          const isBookBuilder = stState.signupCode.startsWith('F-');
+          window.location = isBookBuilder ? '/memoir?mode=stories' : '/memoir';
         } else {
           st.showUpgrade(
             'Unlock AI-assisted memoir',

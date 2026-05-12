@@ -715,7 +715,8 @@
   };
 
   // ── Boot ──
-  const IS_STORY_MODE = (localStorage.getItem('st_signup_code') || '').startsWith('F-');
+  const IS_STORY_MODE = new URLSearchParams(window.location.search).get('mode') === 'stories'
+    || (localStorage.getItem('st_signup_code') || '').startsWith('F-');
 
   window.addEventListener('load', async () => {
     const token = localStorage.getItem('st_token');
