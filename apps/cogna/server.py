@@ -1866,6 +1866,16 @@ async def memoir_deepen_finish(payload: MemoirDeepenFinishRequest, authorization
     return {"ok": True}
 
 
+@app.post("/api/memoir/transcribe")
+async def memoir_transcribe(audio: UploadFile = File(...), authorization: Optional[str] = Header(default=None)):
+    _auth_storyteller_user(authorization)
+    try:
+        transcript = _transcribe_audio(audio)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"transcript": transcript}
+
+
 @app.post("/api/memoir/assemble")
 async def memoir_assemble(authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)

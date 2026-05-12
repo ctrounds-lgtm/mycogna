@@ -97,22 +97,33 @@
       font-size: 14px; line-height: 1.65; color: var(--ink-muted);
     }
     .chat-transcript summary { font-weight: 600; color: var(--ink); cursor: pointer; margin-bottom: 8px; font-size: 13px; }
-    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
     .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; }
     .chat-bubble.ai { background: var(--gold-light); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
     .chat-bubble.user { background: var(--ink); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
-    .chat-input-row textarea {
-      flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-      font-size: 15px; font-family: 'Georgia', serif; color: var(--ink);
-      resize: none; height: 70px; line-height: 1.5;
+
+    /* ── Deepen voice button ── */
+    .deepen-record-wrap { text-align: center; padding: 8px 0 20px; }
+    .deepen-record-btn {
+      width: 88px; height: 88px; border-radius: 50%;
+      border: 3px solid var(--gold); background: var(--gold-light);
+      font-size: 36px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s;
     }
-    .chat-input-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
-    .chat-send-btn {
-      padding: 12px 18px; background: var(--gold); color: #fff; border: none;
-      border-radius: 10px; font-size: 15px; cursor: pointer; white-space: nowrap; font-family: 'Georgia', serif;
+    .deepen-record-btn:active:not(:disabled) { transform: scale(0.94); }
+    .deepen-record-btn.recording {
+      background: #fee2e2; border-color: #dc2626;
+      animation: deepen-pulse 1.5s ease-in-out infinite;
     }
-    .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
+    .deepen-record-btn:disabled { opacity: 0.45; cursor: default; }
+    @keyframes deepen-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.35); }
+      50% { box-shadow: 0 0 0 14px rgba(220,38,38,0); }
+    }
+    .deepen-record-label {
+      margin-top: 12px; font-size: 15px; color: var(--ink-muted); font-family: 'Georgia', serif;
+    }
 
     /* ── Assemble output ── */
     .assemble-output {
@@ -243,14 +254,13 @@
 
     <div class="chat-messages" id="deepenMessages"></div>
 
-    <div class="chat-input-row">
-      <textarea id="deepenInput" placeholder="Type your response…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();m.deepenSend();}"></textarea>
-      <button class="chat-send-btn" id="deepenSendBtn" onclick="m.deepenSend()">Send</button>
+    <div class="deepen-record-wrap">
+      <button id="deepenRecordBtn" class="deepen-record-btn" onclick="m.toggleDeepenRecord()">🎤</button>
+      <p id="deepenRecordLabel" class="deepen-record-label">Tap to speak</p>
+      <div id="deepenError" class="error-msg" style="display:none; margin-top:10px;"></div>
     </div>
 
-    <div id="deepenError" class="error-msg hidden" style="margin-top:8px;"></div>
-
-    <button class="btn-secondary" style="margin-top:20px;" onclick="m.deepenFinish()">I'm done with this story →</button>
+    <button class="btn-secondary" onclick="m.deepenFinish()">I'm done with this story →</button>
     <button class="btn-secondary" onclick="m.showDashboard()">Skip for now</button>
   </div>
 </div>
@@ -330,6 +340,9 @@
     currentRecording: null,
     deepenSessionId: null,
     currentChapterId: null,
+    deepenMediaRecorder: null,
+    deepenAudioChunks: [],
+    deepenRecording: false,
   };
 
   function showScreen(id) {
@@ -470,16 +483,71 @@
       container.scrollTop = container.scrollHeight;
     },
 
-    async deepenSend() {
-      const input = document.getElementById('deepenInput');
-      const text = input.value.trim();
-      if (!text || !mState.deepenSessionId) return;
-      input.value = '';
-      const btn = document.getElementById('deepenSendBtn');
+    async toggleDeepenRecord() {
+      if (mState.deepenRecording) {
+        if (mState.deepenMediaRecorder && mState.deepenMediaRecorder.state !== 'inactive') {
+          mState.deepenMediaRecorder.stop();
+        }
+        return;
+      }
+      const errEl = document.getElementById('deepenError');
+      errEl.style.display = 'none';
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        errEl.textContent = err.name === 'NotAllowedError'
+          ? 'Microphone access denied. Please allow microphone permission and try again.'
+          : `Microphone error: ${err.message}`;
+        errEl.style.display = '';
+        return;
+      }
+      mState.deepenAudioChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      mState.deepenMediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mState.deepenMediaRecorder.ondataavailable = e => { if (e.data.size > 0) mState.deepenAudioChunks.push(e.data); };
+      mState.deepenMediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); m._submitDeepenRecording(); };
+      mState.deepenMediaRecorder.start(250);
+      mState.deepenRecording = true;
+      const btn = document.getElementById('deepenRecordBtn');
+      btn.classList.add('recording');
+      btn.textContent = '⏹';
+      document.getElementById('deepenRecordLabel').textContent = 'Tap to stop';
+    },
+
+    async _submitDeepenRecording() {
+      mState.deepenRecording = false;
+      const btn = document.getElementById('deepenRecordBtn');
+      btn.classList.remove('recording');
       btn.disabled = true;
+      btn.textContent = '🎤';
+      document.getElementById('deepenRecordLabel').textContent = 'Transcribing…';
+      const mimeType = mState.deepenAudioChunks[0]?.type || 'audio/webm';
+      const ext = mimeType.includes('mp4') || mimeType.includes('m4a') ? 'm4a'
+        : mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const blob = new Blob(mState.deepenAudioChunks, { type: mimeType });
+      const fd = new FormData();
+      fd.append('audio', blob, `response.${ext}`);
+      try {
+        const data = await apiFetch(API + '/transcribe', { method: 'POST', body: fd });
+        const text = (data.transcript || '').trim();
+        if (text) await m.deepenSend(text);
+      } catch (err) {
+        document.getElementById('deepenError').textContent = err.message;
+        document.getElementById('deepenError').style.display = '';
+      } finally {
+        btn.disabled = false;
+        document.getElementById('deepenRecordLabel').textContent = 'Tap to speak';
+      }
+    },
+
+    async deepenSend(text) {
+      if (!text || !mState.deepenSessionId) return;
+      const btn = document.getElementById('deepenRecordBtn');
+      if (btn) btn.disabled = true;
       m._appendMessage('user', text);
       m._appendMessage('ai', '…');
-
       try {
         const data = await apiFetch(API + '/deepen/chat', {
           method: 'POST',
@@ -493,8 +561,7 @@
         document.getElementById('deepenError').textContent = err.message;
         document.getElementById('deepenError').style.display = '';
       } finally {
-        btn.disabled = false;
-        input.focus();
+        if (btn) btn.disabled = false;
       }
     },
 
