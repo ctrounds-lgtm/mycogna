@@ -196,6 +196,10 @@ class StoryPromptCreate(BaseModel):
     text: str
 
 
+class StoryPromptUpdate(BaseModel):
+    text: str
+
+
 class PromptsReorderRequest(BaseModel):
     ids: List[str]
 
@@ -1462,6 +1466,41 @@ def delete_story_prompt(
                 raise HTTPException(status_code=403, detail="You can only delete your own prompts")
             db["story_prompts"].pop(prompt_id, None)
             _save_db(db)
+    return {"ok": True}
+
+
+@app.put("/api/storyteller/prompts/{prompt_id}")
+def update_story_prompt(
+    prompt_id: str,
+    payload: StoryPromptUpdate,
+    authorization: Optional[str] = Header(default=None),
+):
+    user = _auth_user(authorization)
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Question text cannot be empty")
+    if supabase:
+        r = supabase.table("story_prompts").select("portal_user_email").eq("id", prompt_id).limit(1).execute()
+        if not r.data:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        owner = r.data[0].get("portal_user_email")
+        if owner is None:
+            raise HTTPException(status_code=403, detail="System prompts cannot be edited")
+        if owner != user["email"]:
+            raise HTTPException(status_code=403, detail="You can only edit your own prompts")
+        supabase.table("story_prompts").update({"text": text}).eq("id", prompt_id).execute()
+    else:
+        db = _load_db()
+        prompt = db["story_prompts"].get(prompt_id)
+        if not prompt:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        owner = prompt.get("portal_user_email")
+        if owner is None:
+            raise HTTPException(status_code=403, detail="System prompts cannot be edited")
+        if owner != user["email"]:
+            raise HTTPException(status_code=403, detail="You can only edit your own prompts")
+        db["story_prompts"][prompt_id]["text"] = text
+        _save_db(db)
     return {"ok": True}
 
 

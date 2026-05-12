@@ -698,6 +698,7 @@ const portal = {
           <button class="prompt-move-btn" data-id="${p.id}" data-dir="down" ${i === prompts.length - 1 ? 'disabled' : ''}>▼</button>
         </div>
         <span class="prompt-row-text">${p.text}</span>
+        <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-e">✏</button>
         <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete-e">✕</button>
       </div>`).join('') : null;
 
@@ -708,6 +709,11 @@ const portal = {
       el.querySelectorAll('.prompt-move-btn:not([disabled])').forEach(btn => {
         btn.addEventListener('click', function() {
           portal.moveEPrompt(this.dataset.id, this.dataset.dir);
+        });
+      });
+      el.querySelectorAll('.prompt-edit-btn[data-action="edit-e"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          portal.startEditPrompt(this.closest('.prompt-row'), this.dataset.id, this.dataset.text, 'E');
         });
       });
       el.querySelectorAll('.prompt-delete-btn[data-action="delete-e"]').forEach(btn => {
@@ -870,6 +876,7 @@ const portal = {
                       data-id="${p.id}" data-type="custom">
                 ${p.active ? 'Active' : 'Hidden'}
               </button>
+              <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-b">✏</button>
               <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete">✕</button>
             </div>`).join('')
           : '<p style="font-size:13px;color:var(--ink-faint);margin:4px 0 0">No custom questions yet — add one below.</p>'
@@ -887,6 +894,11 @@ const portal = {
         } else {
           portal.toggleCustomPrompt(this.dataset.id, this);
         }
+      });
+    });
+    el.querySelectorAll('.prompt-edit-btn[data-action="edit-b"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        portal.startEditPrompt(this.closest('.prompt-row'), this.dataset.id, this.dataset.text, 'B');
       });
     });
     el.querySelectorAll('.prompt-delete-btn[data-action="delete"]').forEach(btn => {
@@ -1104,6 +1116,46 @@ const portal = {
       await portal.loadStories();
     } catch (err) {
       alert('Error: ' + err.message);
+    }
+  },
+
+  startEditPrompt(rowEl, promptId, currentText, source) {
+    rowEl.innerHTML = `
+      <input class="prompt-edit-input" type="text" value="${currentText.replace(/"/g, '&quot;')}" />
+      <button class="prompt-save-edit-btn">Save</button>
+      <button class="prompt-cancel-edit-btn">Cancel</button>
+    `;
+    const input = rowEl.querySelector('.prompt-edit-input');
+    input.focus();
+    input.selectionStart = input.selectionEnd = input.value.length;
+    rowEl.querySelector('.prompt-save-edit-btn').addEventListener('click', async () => {
+      const newText = input.value.trim();
+      if (!newText) return;
+      await portal.savePromptEdit(promptId, newText, source);
+    });
+    rowEl.querySelector('.prompt-cancel-edit-btn').addEventListener('click', () => {
+      if (source === 'E') portal._renderEPrompts([...(portal._ePromptsOrder || [])]);
+      else portal.loadStories();
+    });
+  },
+
+  async savePromptEdit(promptId, newText, source) {
+    try {
+      await req(`${api}/storyteller/prompts/${promptId}`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newText }),
+      });
+      if (source === 'E') {
+        const prompts = portal._ePromptsOrder || [];
+        const p = prompts.find(q => q.id === promptId);
+        if (p) p.text = newText;
+        portal._renderEPrompts([...prompts]);
+      } else {
+        await portal.loadStories();
+      }
+    } catch (err) {
+      alert('Error saving: ' + err.message);
     }
   },
 

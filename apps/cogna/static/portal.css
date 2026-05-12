@@ -1153,6 +1153,52 @@ input[type=range]:focus { outline: none; }
 
 .prompt-delete-btn:hover { color: var(--coral, #C45E4A); }
 
+.prompt-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 12px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.prompt-edit-btn:hover { color: var(--gold, #B8860B); }
+
+.prompt-edit-input {
+  flex: 1;
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+}
+.prompt-edit-input:focus { border-color: var(--gold-light, #D4A017); }
+
+.prompt-save-edit-btn,
+.prompt-cancel-edit-btn {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.prompt-save-edit-btn {
+  background: var(--gold-pale, #FDF6E3);
+  color: var(--gold, #B8860B);
+  border-color: var(--gold-light, #D4A017);
+}
+.prompt-cancel-edit-btn {
+  background: none;
+  color: var(--ink-faint);
+  border-color: var(--border);
+}
+.prompt-save-edit-btn:hover,
+.prompt-cancel-edit-btn:hover { opacity: 0.75; }
+
 .prompt-move-btns {
   display: flex;
   flex-direction: column;
