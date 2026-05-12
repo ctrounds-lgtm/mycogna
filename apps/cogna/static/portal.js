@@ -119,13 +119,21 @@ async function loadDashboard() {
   const tier = tierOrder.includes(rawTier) ? rawTier : 'B';
   const userTierIdx = tierOrder.indexOf(tier);
 
-  tierOrder.forEach((t, idx) => {
-    const btn = document.getElementById('dashTab' + t);
-    if (btn && idx > userTierIdx) {
-      btn.classList.add('locked');
-      btn.title = 'Upgrade to unlock';
-    }
-  });
+  // E/F tier users are institutional-only — hide individual product tabs entirely
+  if (tier === 'E' || tier === 'F') {
+    const indGroup = document.getElementById('tabGroupIndividual');
+    const indDivider = document.getElementById('tabGroupDivider');
+    if (indGroup) indGroup.style.display = 'none';
+    if (indDivider) indDivider.style.display = 'none';
+  } else {
+    tierOrder.forEach((t, idx) => {
+      const btn = document.getElementById('dashTab' + t);
+      if (btn && idx > userTierIdx) {
+        btn.classList.add('locked');
+        btn.title = 'Upgrade to unlock';
+      }
+    });
+  }
 
   const startTab = tier === 'A' ? 'B' : tier;
   portal.switchDashTab(startTab);

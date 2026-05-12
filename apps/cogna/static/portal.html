@@ -128,7 +128,7 @@
 
     <!-- Dashboard tabs: one per tier -->
     <div class="dash-tabs" id="dashTabs">
-      <div class="tab-group">
+      <div class="tab-group" id="tabGroupIndividual">
         <div class="tab-group-label">Individual</div>
         <div class="tab-group-tabs">
           <button class="dash-tab" id="dashTabB" onclick="portal.switchDashTab('B')">Storytelling Unlimited</button>
@@ -136,7 +136,7 @@
           <button class="dash-tab" id="dashTabD" onclick="portal.switchDashTab('D')">AI Companion</button>
         </div>
       </div>
-      <div class="tab-group-divider"></div>
+      <div class="tab-group-divider" id="tabGroupDivider"></div>
       <div class="tab-group">
         <div class="tab-group-label">Institutional</div>
         <div class="tab-group-tabs">
@@ -673,6 +673,6 @@
   </div>
 </div>
 
-<script src="/static/portal.js?v=20260512"></script>
+<script src="/static/portal.js?v=20260512b"></script>
 </body>
 </html>
