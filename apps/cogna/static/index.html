@@ -369,6 +369,52 @@
       padding-top: 16px;
     }
 
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+      padding-top: 16px;
+      align-items: start;
+    }
+
+    .audience-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .audience-card-tagline {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 18px;
+    }
+
+    .audience-card p {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+      margin-bottom: 14px;
+    }
+
+    .audience-card-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold-light);
+      padding-bottom: 1px;
+      transition: border-color 0.15s;
+    }
+    .audience-card-link:hover { border-color: var(--gold); }
+
     .product-card {
       background: var(--cream);
       border-radius: 10px;
@@ -835,6 +881,7 @@
     @media (max-width: 900px) {
       .use-cases-grid { grid-template-columns: 1fr; }
       .products-grid { grid-template-columns: 1fr; }
+      .audience-grid { grid-template-columns: 1fr; gap: 40px; }
       #companion-explainer .callout-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
       .pricing-grid { grid-template-columns: repeat(2, 1fr); }
       .portal-layout { grid-template-columns: 1fr; gap: 40px; }
@@ -946,64 +993,39 @@
     </div>
   </section>
 
-  <!-- SECTION 3 — THREE TIERS -->
-  <section id="products">
+  <!-- SECTION 3 — THREE AUDIENCES -->
+  <section id="audiences">
     <div class="section-inner">
       <div class="products-header">
-        <div class="section-label">Products</div>
+        <div class="section-label">Who It's For</div>
         <h2 class="section-title">Three ways to<br><em>capture what matters most</em></h2>
         <p class="section-body" style="max-width:540px;margin:0 auto">
           Whether you're telling your own story or preserving someone else's — MyCogna meets you where you are.
         </p>
       </div>
-      <div class="products-grid">
+      <div class="audience-grid">
 
-        <div class="product-card">
-          <div class="product-badge">Available now</div>
-          <h3>Storyteller</h3>
-          <div class="product-tagline">Capture &amp; Preserve</div>
-          <p class="product-desc">
-            A simple, guided recording experience. Answer thoughtful prompts, record your voice, and create a lasting archive for the people who love you. No app download required — works in any browser.
-          </p>
-          <ul class="product-features">
-            <li>Set up your own prompts or use ours</li>
-            <li>Voice recording with automatic transcription</li>
-            <li>Stories accessible for easy download</li>
-            <li>No app download — works in any browser</li>
-          </ul>
-          <a href="#pricing" class="product-link">Start recording</a>
+        <div class="audience-card">
+          <h3>Tell your own story</h3>
+          <div class="audience-card-tagline">For individuals</div>
+          <p>You've always known there was a book inside you. Maybe your life's adventures would make a best seller, but you never knew where to start. Maybe you want to leave something behind for your children and grandchildren. Maybe you're processing a major life challenge and need more than a journal. Whatever brought you here, MyCogna gives you a guided, unhurried way to tell your stories in your own voice.</p>
+          <a href="/individual" class="audience-card-link">See how it works →</a>
         </div>
 
-        <div class="product-card featured">
-          <div class="product-badge">Available now</div>
-          <h3>Storyteller +<br>Memoir Builder</h3>
-          <div class="product-tagline">Guided by Intelligence</div>
-          <p class="product-desc">
-            Everything in Storyteller, plus an AI memoir assistant that helps you go deeper. Like having a skilled interviewer and editor in the room.
-          </p>
-          <ul class="product-features">
-            <li>AI asks thoughtful follow-up questions as you record</li>
-            <li>Organizes your stories into a structured outline</li>
-            <li>Editing tool helps shape your stories into a memoir</li>
-            <li>Everything in Storyteller</li>
-          </ul>
-          <a href="/signup" class="product-link">Start recording</a>
+        <div class="audience-card">
+          <h3>Help a loved one tell theirs</h3>
+          <div class="audience-card-tagline">For families</div>
+          <p>Your parent has dementia and you want to capture their memories before they fade. Your grandparent has stories no one has ever thought to ask about. A family member is in declining health and you want to preserve their voice. You're caring for someone from a distance and want a way to stay connected. Or you simply want to give the most meaningful gift imaginable — a recorded life story.</p>
+          <p>You design the questions. They just speak. Together, you build their legacy.</p>
+          <a href="/family" class="audience-card-link">See how it works →</a>
         </div>
 
-        <div class="product-card">
-          <div class="product-badge">Available now</div>
-          <h3>AI Companion</h3>
-          <div class="product-tagline">Always Present</div>
-          <p class="product-desc">
-            A relational tool with memory. Captures your ideas, dreams, and goals in real time — creating a digital imprint of your inner life that grows over time.
-          </p>
-          <ul class="product-features">
-            <li>Custom voice per Cogna — sounds like someone you love</li>
-            <li>Relational personality tuning</li>
-            <li>Multi-voice conversations</li>
-            <li>Full transcript journal saved</li>
-          </ul>
-          <a href="#pricing" class="product-link">Create a Cogna</a>
+        <div class="audience-card">
+          <h3>Gather stories from many voices</h3>
+          <div class="audience-card-tagline">For organizations</div>
+          <p>A nonprofit marking a milestone wants to document what its founders built. A historical society is collecting oral histories from community elders. A hospice or memory care facility wants to offer guided reminiscence to residents. A faith community wants to preserve testimonies from longtime members.</p>
+          <p>MyCogna's Legacy Collection gives multiple storytellers one shared archive — and the tools to shape it into something meaningful.</p>
+          <a href="/legacy" class="audience-card-link">See how it works →</a>
         </div>
 
       </div>
