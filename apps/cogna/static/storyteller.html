@@ -1253,6 +1253,18 @@
       },
 
       async recordAnother() {
+        // Re-fetch from server so upgrades take effect without requiring a full re-login
+        if (stState.authToken) {
+          try {
+            const res = await fetch(API + '/me', { headers: { 'Authorization': 'Bearer ' + stState.authToken } });
+            if (res.ok) {
+              const data = await res.json();
+              stState.tier = data.user.tier || 'A';
+              stState.monthlyCount = data.user.this_month_count || 0;
+              localStorage.setItem('st_tier', stState.tier);
+            }
+          } catch {}
+        }
         if (stState.tier === 'A' && !stState.managed && stState.monthlyCount >= 1) {
           st.showUpgrade(
             "You've shared your story for this month",
