@@ -2503,23 +2503,32 @@ def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
 
 def _persist_session(token: str, email: str) -> None:
     if supabase:
-        supabase.table("user_sessions").upsert({"token": token, "email": email}).execute()
+        try:
+            supabase.table("user_sessions").upsert({"token": token, "email": email}).execute()
+        except Exception:
+            pass  # table may not exist yet; in-memory SESSIONS still covers this request
 
 
 def _delete_session(token: str) -> None:
     if supabase:
-        supabase.table("user_sessions").delete().eq("token", token).execute()
+        try:
+            supabase.table("user_sessions").delete().eq("token", token).execute()
+        except Exception:
+            pass
 
 
 def _lookup_session(token: str) -> Optional[str]:
     """Look up a session token in Supabase (fallback after Railway restart)."""
     if not supabase:
         return None
-    r = supabase.table("user_sessions").select("email").eq("token", token).limit(1).execute()
-    if r.data:
-        email = r.data[0]["email"]
-        SESSIONS[token] = email  # re-warm in-memory cache
-        return email
+    try:
+        r = supabase.table("user_sessions").select("email").eq("token", token).limit(1).execute()
+        if r.data:
+            email = r.data[0]["email"]
+            SESSIONS[token] = email  # re-warm in-memory cache
+            return email
+    except Exception:
+        pass
     return None
 
 
