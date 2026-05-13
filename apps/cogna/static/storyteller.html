@@ -1210,6 +1210,17 @@
             showScreen('screenDone');
           }
         } catch (err) {
+          if (err.message && err.message.includes("used your free story")) {
+            stState.monthlyCount = 1;
+            st.showUpgrade(
+              "You've shared your story for this month",
+              "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
+              'See plans',
+              '/individual#pricing'
+            );
+            showScreen('screenDone');
+            return;
+          }
           showScreen('screenRecord');
           const errEl = document.getElementById('recordError');
           errEl.textContent = `Submission failed: ${err.message}. Please try again.`;

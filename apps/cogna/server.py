@@ -1254,6 +1254,10 @@ async def storyteller_record(
 ):
     st_user = _auth_storyteller_user(authorization)
 
+    if st_user.get("tier", "A") == "A" and not st_user.get("managed"):
+        if _this_month_recording_count(st_user["id"]) >= 1:
+            raise HTTPException(status_code=403, detail="You've used your free story for this month. Upgrade to record more.")
+
     transcript = _transcribe_audio(audio)
 
     audio.file.seek(0)
