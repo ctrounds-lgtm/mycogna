@@ -324,50 +324,14 @@
       flex-shrink: 0;
     }
 
-    /* ── USE CASES ── */
+    /* ── USE CASES / ABOUT ── */
     #about { background: var(--cream); }
 
     .about-header { text-align: center; margin-bottom: 56px; }
     .about-header .section-body { max-width: 640px; margin: 0 auto; }
 
-    .use-cases-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-    }
-
-    .use-case-card {
-      padding: 36px 32px;
-      background: var(--gold-pale);
-      border-radius: 10px;
-      border: 1px solid rgba(201,150,58,0.12);
-    }
-
-    .use-case-card h3 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 24px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 12px;
-    }
-
-    .use-case-card p {
-      font-size: 14px;
-      line-height: 1.75;
-      color: var(--ink-muted);
-    }
-
-    /* ── THREE TIERS ── */
-    #products { background: #F2EDE5; }
-
-    .products-header { text-align: center; margin-bottom: 56px; }
-
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      padding-top: 16px;
-    }
+    /* ── THREE AUDIENCES ── */
+    .audience-header { text-align: center; margin-bottom: 56px; }
 
     .audience-grid {
       display: grid;
@@ -414,319 +378,6 @@
       transition: border-color 0.15s;
     }
     .audience-card-link:hover { border-color: var(--gold); }
-
-    .product-card {
-      background: var(--cream);
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      padding: 36px 28px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .product-card.featured {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 1px var(--gold);
-      overflow: visible;
-    }
-    .product-card.featured::before {
-      content: 'Most Popular';
-      position: absolute;
-      top: -12px; left: 50%;
-      transform: translateX(-50%);
-      background: var(--gold);
-      color: white;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 14px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .product-badge {
-      position: absolute;
-      top: 16px; right: 16px;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: var(--ink);
-      color: var(--cream);
-    }
-
-    .product-badge.soon { background: var(--gold-light); color: var(--ink); }
-
-    .product-card h3 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 28px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 8px;
-    }
-
-    .product-tagline {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 18px;
-    }
-
-    .product-desc {
-      font-size: 14px;
-      line-height: 1.75;
-      color: var(--ink-muted);
-      flex: 1;
-      margin-bottom: 24px;
-    }
-
-    .product-features {
-      list-style: none;
-      margin-bottom: 28px;
-    }
-
-    .product-features li {
-      font-size: 13px;
-      color: var(--ink-muted);
-      padding: 5px 0;
-      padding-left: 18px;
-      position: relative;
-    }
-
-    .product-features li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: var(--gold);
-      font-size: 12px;
-    }
-
-    .product-link {
-      display: inline-block;
-      padding: 11px 20px;
-      background: var(--ink);
-      color: white;
-      border-radius: 5px;
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      text-align: center;
-      transition: opacity 0.2s;
-    }
-
-    .product-link:hover { opacity: 0.82; }
-
-    .product-link.outline {
-      background: transparent;
-      color: var(--ink-muted);
-      border: 1px solid var(--border);
-    }
-
-    .product-link.outline:hover { border-color: var(--gold); background: var(--gold-pale); color: var(--ink); }
-
-    .product-link.disabled {
-      background: var(--gold-pale);
-      color: var(--ink-faint);
-      cursor: default;
-      pointer-events: none;
-    }
-
-    /* ── PORTAL (3B) ── */
-    #portal { background: var(--cream); }
-
-    .portal-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: start;
-    }
-
-    .portal-cta-area { margin-top: 32px; }
-
-    .portal-use-cases { display: flex; flex-direction: column; gap: 28px; }
-
-    .portal-use-case h4 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 20px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 6px;
-    }
-
-    .portal-use-case p {
-      font-size: 14px;
-      line-height: 1.75;
-      color: var(--ink-muted);
-    }
-
-    .portal-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 4px 0;
-    }
-
-    /* ── RESEARCH ── */
-    #research { background: #F2EDE5; text-align: center; }
-
-    .research-inner { max-width: 720px; margin: 0 auto; }
-
-    .research-body {
-      font-size: 16px;
-      line-height: 1.8;
-      color: var(--ink-muted);
-      margin-bottom: 48px;
-    }
-
-    .pull-quote {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(24px, 4vw, 36px);
-      font-weight: 300;
-      font-style: italic;
-      line-height: 1.4;
-      color: var(--ink);
-      padding: 40px 48px;
-      background: var(--gold-pale);
-      border-radius: 10px;
-      border-left: 3px solid var(--gold);
-      text-align: left;
-      margin-bottom: 24px;
-    }
-
-    .pull-quote cite {
-      display: block;
-      margin-top: 16px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-style: normal;
-      font-weight: 400;
-      color: var(--ink-faint);
-    }
-
-    .research-closing {
-      font-size: 15px;
-      font-style: italic;
-      color: var(--ink-muted);
-      line-height: 1.7;
-    }
-
-    /* ── PRICING ── */
-    #pricing { background: var(--cream); }
-
-    .pricing-header { text-align: center; margin-bottom: 56px; }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      align-items: start;
-    }
-
-    .pricing-card {
-      background: white;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      padding: 32px 24px;
-      position: relative;
-    }
-
-    .pricing-card.featured {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 1px var(--gold);
-    }
-
-    .pricing-card.featured::before {
-      content: 'Most Popular';
-      position: absolute;
-      top: -12px; left: 50%;
-      transform: translateX(-50%);
-      background: var(--gold);
-      color: white;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 14px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .pricing-tier {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 10px;
-    }
-
-    .pricing-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 26px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 8px;
-    }
-
-    .pricing-price {
-      font-size: 42px;
-      font-weight: 300;
-      color: var(--ink);
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-
-    .pricing-price sup { font-size: 22px; vertical-align: super; line-height: 0; }
-
-    .pricing-period {
-      font-size: 12px;
-      color: var(--ink-faint);
-      margin-bottom: 24px;
-    }
-
-    .pricing-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
-
-    .pricing-features {
-      list-style: none;
-      margin-bottom: 28px;
-    }
-
-    .pricing-features li {
-      font-size: 13px;
-      color: var(--ink-muted);
-      padding: 5px 0;
-      padding-left: 18px;
-      position: relative;
-    }
-
-    .pricing-features li::before { content: '✓'; position: absolute; left: 0; color: var(--gold); font-size: 12px; }
-    .pricing-features li.soon { color: var(--ink-faint); }
-    .pricing-features li.soon::before { color: var(--ink-faint); content: '○'; }
-
-    .pricing-btn {
-      display: block;
-      width: 100%;
-      padding: 12px 16px;
-      text-align: center;
-      border-radius: 5px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: opacity 0.2s, background 0.2s, border-color 0.2s;
-    }
-
-    .pricing-btn-fill { background: var(--ink); color: white; }
-    .pricing-btn-fill:hover { opacity: 0.84; }
-    .pricing-btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
-    .pricing-btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
-    .pricing-btn-disabled { background: var(--gold-pale); color: var(--ink-faint); cursor: default; pointer-events: none; }
 
     /* ── FOUNDER STORY ── */
     #my-story { background: #F2EDE5; }
@@ -879,12 +530,7 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      .use-cases-grid { grid-template-columns: 1fr; }
-      .products-grid { grid-template-columns: 1fr; }
       .audience-grid { grid-template-columns: 1fr; gap: 40px; }
-      #companion-explainer .callout-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
-      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-      .portal-layout { grid-template-columns: 1fr; gap: 40px; }
       .story-layout { grid-template-columns: 1fr; gap: 40px; }
       .story-sidebar { position: static; }
     }
@@ -904,11 +550,9 @@
         align-items: flex-start;
       }
       .nav-hamburger { display: flex; }
-      .pricing-grid { grid-template-columns: 1fr; }
       .footer-top { flex-direction: column; gap: 32px; }
       .footer-nav { flex-direction: column; gap: 28px; }
       .hero-photo { width: 200px; height: 230px; }
-      .pull-quote { padding: 28px 24px; }
     }
   </style>
 </head>
@@ -918,12 +562,12 @@
   <nav>
     <a href="/" class="nav-logo">MyCogna</a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="#about">What We Do</a></li>
-      <li><a href="#products">Products</a></li>
-      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="/individual">For Individuals</a></li>
+      <li><a href="/family">For Families</a></li>
+      <li><a href="/legacy">For Organizations</a></li>
       <li><a href="#my-story">My Story</a></li>
       <li><a href="/login" class="nav-btn-outline">Login</a></li>
-      <li><a href="#pricing" class="nav-cta">Sign up</a></li>
+      <li><a href="/individual#pricing" class="nav-cta">Sign up</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu"
             onclick="document.getElementById('navLinks').classList.toggle('open')">
@@ -944,8 +588,8 @@
         MyCogna makes sure those stories aren't lost.
       </p>
       <div class="hero-ctas">
-        <a href="#products" class="btn-primary">Record My Story</a>
-        <a href="#portal" class="btn-outline">Set Up Stories for Someone Else</a>
+        <a href="/individual" class="btn-primary">Tell My Story</a>
+        <a href="/family" class="btn-outline">Help Someone Else</a>
       </div>
       <p class="hero-invite">
         <a href="/storyteller">Have an invite code? Enter it here.</a>
@@ -964,7 +608,7 @@
     </div>
   </section>
 
-  <!-- SECTION 2 — USE CASES -->
+  <!-- SECTION 2 — SHARE STORIES -->
   <section id="about">
     <div class="section-inner">
       <div class="about-header">
@@ -972,31 +616,13 @@
         <h2 class="section-title">Share Stories —<br><em>Past, Present, and Future</em></h2>
         <p class="section-body">MyCogna is a platform for preserving and sharing the voices that matter most.</p>
       </div>
-      <div class="use-cases-grid">
-        <div class="use-case-card">
-          <h3>Memory Keeper</h3>
-          <p>Guided prompts draw out the stories your family will treasure. Perfect for parents, grandparents, and anyone with a life worth capturing.</p>
-        </div>
-        <div class="use-case-card">
-          <h3>Institutional Legacy</h3>
-          <p>Preserve the history of an organization before the people who built it are gone. For nonprofits, businesses, historical societies, and communities marking a milestone.</p>
-        </div>
-        <div class="use-case-card">
-          <h3>Journal That Talks Back</h3>
-          <p>Real-time support when you need it. A companion that listens, remembers, and grows with you — like a journal that responds.</p>
-        </div>
-        <div class="use-case-card">
-          <h3>Digital Imprint</h3>
-          <p>Create a legacy that outlasts a lifetime — a voice and presence that future generations can actually know.</p>
-        </div>
-      </div>
     </div>
   </section>
 
   <!-- SECTION 3 — THREE AUDIENCES -->
   <section id="audiences">
     <div class="section-inner">
-      <div class="products-header">
+      <div class="audience-header">
         <div class="section-label">Who It's For</div>
         <h2 class="section-title">Three ways to<br><em>capture what matters most</em></h2>
         <p class="section-body" style="max-width:540px;margin:0 auto">
@@ -1029,185 +655,6 @@
         </div>
 
       </div>
-    </div>
-  </section>
-
-  <!-- SECTION 3C — AI COMPANION EXPLAINER -->
-  <section id="companion-explainer" style="background:var(--cream)">
-    <div class="section-inner">
-      <div style="text-align:center;margin-bottom:56px">
-        <div class="section-label">The AI Companion — A Closer Look</div>
-        <h2 class="section-title">A companion that<br><em>grows with you</em></h2>
-        <p class="section-body" style="max-width:580px;margin:0 auto">
-          A Cogna learns and grows the more you interact with it. Using a simple setup tool, you choose your Cogna's voice and define how it thinks, speaks, and shows up — calibrating warmth, humor, directness, and emotional tone across five relational dimensions. Create a life coach, a confidant, a friend, or all three. MyCogna's AI Companion tier lets you create multiple Cognas.
-        </p>
-      </div>
-
-      <!-- Two-column: callouts left, screenshot right -->
-      <div class="callout-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center">
-
-        <!-- Left: three feature callouts stacked -->
-        <div style="display:flex;flex-direction:column;gap:36px">
-          <div>
-            <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--ink);margin-bottom:12px">Built around your relationships</h3>
-            <p style="font-size:14px;line-height:1.75;color:var(--ink-muted)">Give your Cogna a name, a relationship, and a term of endearment. Mom calls you Buddy. Your best friend teases you differently. Each Cogna is distinct.</p>
-          </div>
-          <div>
-            <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--ink);margin-bottom:12px">State-of-the-art voice technology</h3>
-            <p style="font-size:14px;line-height:1.75;color:var(--ink-muted)">MyCogna uses advanced voice recognition that responds to the emotional tone of your conversation — not just your words, but how you're feeling when you say them.</p>
-          </div>
-          <div>
-            <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--ink);margin-bottom:12px">A voice that feels like home</h3>
-            <p style="font-size:14px;line-height:1.75;color:var(--ink-muted)">Choose from a range of expressive voices, or clone a voice you love. Your Cogna sounds the way comfort sounds to you.</p>
-          </div>
-        </div>
-
-        <!-- Right: slider screenshot -->
-        <figure style="margin:0;text-align:center">
-          <img src="/static/images/relational-parameters.png"
-               alt="Five relational parameter sliders: Warmth, Validation, Tone, Structure, Stance"
-               style="width:100%;border-radius:10px;border:1px solid var(--border);box-shadow:0 4px 24px rgba(28,26,23,0.08);display:block">
-          <figcaption style="margin-top:12px;font-size:13px;font-style:italic;color:var(--ink-faint)">
-            Five sliders. Infinite nuance. Your Cogna, your way.
-          </figcaption>
-        </figure>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 3B — PORTAL -->
-  <section id="portal">
-    <div class="section-inner">
-      <div class="portal-layout">
-        <div>
-          <div class="section-label">For Organizers</div>
-          <h2 class="section-title">Setting up stories<br><em>for someone else?</em></h2>
-          <p class="section-body" style="margin-bottom:16px">MyCogna's portal lets you become the organizer.</p>
-          <p class="section-body" style="margin-bottom:36px">
-            Create thoughtful questions, generate a user code, and invite the people whose stories matter most. They receive a simple link, record their responses at their own pace, and you can access everything from your portal dashboard — ready to download, share, or preserve.
-          </p>
-          <div class="portal-cta-area">
-            <a href="/portal/signup" class="btn-primary">Set up a portal</a>
-          </div>
-        </div>
-        <div class="portal-use-cases">
-          <div class="portal-use-case">
-            <h4>For families</h4>
-            <p>Support a parent or grandparent in recording their stories — even if technology isn't their strength. You set up the questions. They just press record.</p>
-          </div>
-          <div class="portal-divider"></div>
-          <div class="portal-use-case">
-            <h4>For organizations</h4>
-            <p>Collect institutional knowledge from the people who built something meaningful. Perfect for nonprofits, businesses, historical societies, and communities marking a milestone.</p>
-          </div>
-          <div class="portal-divider"></div>
-          <div class="portal-use-case">
-            <h4>For caregivers</h4>
-            <p>Guided reminiscence has been shown to strengthen bonds and ease grief for families navigating dementia. MyCogna makes it simple to facilitate those conversations from a distance.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 4 — RESEARCH -->
-  <section id="research">
-    <div class="section-inner">
-      <div class="research-inner">
-        <div class="section-label">What the Science Says</div>
-        <h2 class="section-title" style="margin-bottom:28px">Story-telling isn't just meaningful.<br><em>It's medicine.</em></h2>
-        <p class="research-body">
-          A clinical trial published in <em>JAMA Network Open</em> in April 2026 found that guided digital reminiscence reduced grief in dementia caregivers and strengthened the bond between patients and the people who love them. Researchers at Weill Cornell Medicine and USC demonstrated that revisiting memories together through a simple digital tool can ease grief and improve relationship quality.
-        </p>
-        <div class="pull-quote">
-          "Many of the questions awakened responses and memories that I had never heard."
-          <cite>— Participant, Living Memory Home clinical trial<br>Weill Cornell Medicine &amp; USC, <em>JAMA Network Open</em>, April 2026</cite>
-        </div>
-        <p class="research-closing">
-          MyCogna was built on the same principle: the right question, asked at the right moment, can unlock a story that would otherwise disappear.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 5 — PRICING -->
-  <section id="pricing">
-    <div class="section-inner">
-      <div class="pricing-header">
-        <div class="section-label">Pricing</div>
-        <h2 class="section-title">Simple, honest<br><em>pricing</em></h2>
-        <p class="section-body">Start free. Upgrade when you're ready. No tricks, no annual lock-in.</p>
-      </div>
-      <div class="pricing-grid">
-
-        <div class="pricing-card">
-          <div class="pricing-tier">Free</div>
-          <div class="pricing-name">Try it out</div>
-          <div class="pricing-price">$0</div>
-          <div class="pricing-period">forever</div>
-          <div class="pricing-divider"></div>
-          <ul class="pricing-features">
-            <li>1 story recording per month</li>
-            <li>Guided story prompts</li>
-            <li>Voice recording &amp; transcription</li>
-          </ul>
-          <a href="/storyteller" class="pricing-btn pricing-btn-outline">Get started free</a>
-        </div>
-
-        <div class="pricing-card">
-          <div class="pricing-tier">Storyteller</div>
-          <div class="pricing-name">Unlimited</div>
-          <div class="pricing-price"><sup>$</sup>5</div>
-          <div class="pricing-period">per month</div>
-          <div class="pricing-divider"></div>
-          <ul class="pricing-features">
-            <li>Unlimited story recordings</li>
-            <li>All story prompts</li>
-            <li>Voice recording &amp; transcription</li>
-            <li>Shareable story archive</li>
-          </ul>
-          <a href="/signup" class="pricing-btn pricing-btn-fill">Start recording</a>
-        </div>
-
-        <div class="pricing-card featured">
-          <div class="pricing-tier">AI Assisted</div>
-          <div class="pricing-name">Storyteller + Memoir Builder</div>
-          <div class="pricing-price"><sup>$</sup>10</div>
-          <div class="pricing-period">per month</div>
-          <div class="pricing-divider"></div>
-          <ul class="pricing-features">
-            <li>Everything in Unlimited</li>
-            <li>AI follow-up questions</li>
-            <li>Intelligent story editing</li>
-            <li>Extended story sessions</li>
-          </ul>
-          <a href="/signup" class="pricing-btn pricing-btn-fill">Start recording</a>
-        </div>
-
-        <div class="pricing-card">
-          <div class="pricing-tier">Full Access</div>
-          <div class="pricing-name">AI Companion</div>
-          <div class="pricing-price"><sup>$</sup>15</div>
-          <div class="pricing-period">per month</div>
-          <div class="pricing-divider"></div>
-          <ul class="pricing-features">
-            <li>Everything in Storyteller + Memoir Builder</li>
-            <li>Unlimited Cogna companions</li>
-            <li>Custom voice per Cogna</li>
-            <li>Multi-voice conversations</li>
-            <li>Session transcripts saved</li>
-          </ul>
-          <a href="/portal" class="pricing-btn pricing-btn-outline">Create a Cogna</a>
-        </div>
-
-      </div>
-
-      <p style="text-align:center;margin-top:36px;font-size:14px;color:var(--ink-muted)">
-        Setting this up for a family member, patient, or group?
-        <a href="/portal/signup" style="color:var(--ink);font-weight:500;text-decoration:none;border-bottom:1px solid var(--gold-light)">Access the administrator portal →</a>
-      </p>
-
     </div>
   </section>
 
@@ -1265,18 +712,18 @@
         </div>
         <nav class="footer-nav">
           <div class="footer-col">
-            <h4>Product</h4>
+            <h4>Who It's For</h4>
             <ul>
-              <li><a href="/storyteller">Storyteller</a></li>
-              <li><a href="/companion">AI Companion</a></li>
-              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="/individual">For Individuals</a></li>
+              <li><a href="/family">For Families</a></li>
+              <li><a href="/legacy">For Organizations</a></li>
             </ul>
           </div>
           <div class="footer-col">
             <h4>Account</h4>
             <ul>
               <li><a href="/portal">Guardian Portal</a></li>
-              <li><a href="/companion">Enter access code</a></li>
+              <li><a href="/storyteller">Storyteller login</a></li>
             </ul>
           </div>
           <div class="footer-col">

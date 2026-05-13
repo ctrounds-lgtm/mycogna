@@ -163,6 +163,12 @@ MyCogna is a voice companion app. A **Cogna** is one voice/persona — Mom is on
 **Guardian portal (production):** `https://mycogna.org/portal`
 **Local dev:** `http://127.0.0.1:8000/` and `http://127.0.0.1:8000/portal`
 
+**Audience landing pages:**
+- `/individual` → `individual.html` — For individual storytellers; product cards, $0–$15 pricing, AI Companion explainer
+- `/family` → `family.html` — For families/caregivers; portal organizer section, JAMA research, AI Companion explainer, B/C/D pricing ($5/$10/$15)
+- `/legacy` → `legacy.html` — For organizations; Legacy Collection description, E/F pricing ($25/$50)
+- `index.html` is now top-of-funnel only: hero, "Share Stories" header, three-audience section, founder story
+
 **Child flow:**
 1. Enter access code (format: `COGNA-XXXX`) on the main app
 2. See a grid of all Cognas the guardian built

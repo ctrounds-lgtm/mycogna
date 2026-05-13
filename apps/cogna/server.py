@@ -311,6 +311,21 @@ def login_page():
     return FileResponse(ROOT / "static" / "login.html")
 
 
+@app.get("/individual")
+def individual_page():
+    return FileResponse(ROOT / "static" / "individual.html")
+
+
+@app.get("/family")
+def family_page():
+    return FileResponse(ROOT / "static" / "family.html")
+
+
+@app.get("/legacy")
+def legacy_page():
+    return FileResponse(ROOT / "static" / "legacy.html")
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}

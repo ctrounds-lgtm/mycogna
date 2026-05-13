@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>MyCogna — For Organizations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #F9F5EF;
+      --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.60);
+      --ink-faint: rgba(28,26,23,0.35);
+      --gold: #C9963A;
+      --gold-pale: #F7F0E3;
+      --gold-light: #EDD9A8;
+      --border: rgba(28,26,23,0.12);
+      --nav-h: 64px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    body > nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: #FFFFFF;
+      border-bottom: 1px solid rgba(28,26,23,0.18);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+    }
+
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: #1C1A17;
+      text-decoration: none;
+      margin-right: auto;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a:not(.nav-cta):not(.nav-btn-outline) {
+      font-size: 13px;
+      color: #1C1A17;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:not(.nav-cta):not(.nav-btn-outline):hover { color: #1C1A17; }
+
+    .nav-cta {
+      margin-left: 8px;
+      padding: 8px 18px;
+      background: var(--ink);
+      color: white !important;
+      border-radius: 5px;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover { opacity: 0.82; }
+
+    .nav-btn-outline {
+      margin-left: 8px;
+      padding: 7px 18px;
+      background: transparent;
+      color: #1C1A17 !important;
+      border: 1px solid rgba(28,26,23,0.25);
+      border-radius: 5px;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      transition: border-color 0.2s, color 0.2s !important;
+    }
+
+    .nav-btn-outline:hover { border-color: var(--ink); }
+
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-hamburger span { display: block; width: 22px; height: 1.5px; background: #1C1A17; }
+
+    /* ── SHARED SECTION STYLES ── */
+    section { padding: 96px 24px; }
+
+    .section-inner { max-width: 1040px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+
+    .section-title em { font-style: italic; color: var(--gold); }
+
+    .section-body {
+      font-size: 16px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 15px 28px;
+      background: var(--ink);
+      color: white;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
+
+    .btn-outline {
+      display: inline-block;
+      padding: 14px 28px;
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: calc(var(--nav-h) + 64px) 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.20;
+      pointer-events: none;
+    }
+
+    .blob-1 { width: 500px; height: 500px; background: #C9963A; top: -120px; right: -80px; }
+    .blob-2 { width: 400px; height: 400px; background: #3A7B72; bottom: -80px; left: -80px; }
+
+    .hero-inner { position: relative; z-index: 1; max-width: 700px; }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(44px, 8vw, 76px);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 em { font-style: italic; color: var(--gold); }
+
+    .hero-subhead {
+      font-size: clamp(17px, 2.5vw, 21px);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .hero-body {
+      font-size: clamp(14px, 2vw, 16px);
+      line-height: 1.7;
+      color: var(--ink-muted);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    /* ── HOW IT WORKS (Legacy description) ── */
+    #how-it-works { background: #F2EDE5; }
+
+    .legacy-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+      margin-bottom: 56px;
+    }
+
+    .legacy-body p {
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--ink-muted);
+      margin-bottom: 20px;
+    }
+
+    .legacy-body p:last-child { margin-bottom: 0; }
+
+    .legacy-callouts { display: flex; flex-direction: column; gap: 32px; }
+
+    .legacy-callout h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .legacy-callout p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+    }
+
+    .book-builder-card {
+      background: var(--gold-pale);
+      border: 1px solid rgba(201,150,58,0.18);
+      border-radius: 10px;
+      padding: 36px 40px;
+    }
+
+    .book-builder-card .card-eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .book-builder-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    .book-builder-card p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+    }
+
+    /* ── PRICING ── */
+    #pricing { background: var(--cream); }
+
+    .pricing-header { text-align: center; margin-bottom: 56px; }
+
+    .pricing-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      max-width: 720px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    .pricing-card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 32px 24px;
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold);
+    }
+
+    .pricing-card.featured::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: white;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pricing-tier {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .pricing-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .pricing-price {
+      font-size: 42px;
+      font-weight: 300;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price sup { font-size: 22px; vertical-align: super; line-height: 0; }
+
+    .pricing-period {
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-bottom: 24px;
+    }
+
+    .pricing-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .pricing-features li {
+      font-size: 13px;
+      color: var(--ink-muted);
+      padding: 5px 0;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .pricing-features li::before { content: '✓'; position: absolute; left: 0; color: var(--gold); font-size: 12px; }
+
+    .pricing-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      text-align: center;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    .pricing-btn-fill { background: var(--ink); color: white; }
+    .pricing-btn-fill:hover { opacity: 0.84; }
+    .pricing-btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+    .pricing-btn-outline:hover { border-color: var(--gold); background: var(--gold-pale); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      color: rgba(249,245,239,0.55);
+      padding: 56px 24px 40px;
+    }
+
+    .footer-inner { max-width: 1040px; margin: 0 auto; }
+
+    .footer-top {
+      display: flex;
+      gap: 48px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand { flex: 1; min-width: 200px; }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(249,245,239,0.4);
+    }
+
+    .footer-nav { display: flex; gap: 48px; }
+
+    .footer-col h4 {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(249,245,239,0.3);
+      margin-bottom: 14px;
+    }
+
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 9px; }
+
+    .footer-col a {
+      font-size: 13px;
+      color: rgba(249,245,239,0.55);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-col a:hover { color: var(--gold); }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(249,245,239,0.08);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-copy { font-size: 12px; color: rgba(249,245,239,0.28); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .legacy-layout { grid-template-columns: 1fr; gap: 40px; }
+      .pricing-grid-2 { grid-template-columns: 1fr; max-width: 400px; }
+    }
+
+    @media (max-width: 640px) {
+      body > nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: var(--nav-h); left: 0; right: 0;
+        background: var(--cream);
+        border-bottom: 1px solid var(--border);
+        padding: 20px 24px;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .nav-hamburger { display: flex; }
+      .footer-top { flex-direction: column; gap: 32px; }
+      .footer-nav { flex-direction: column; gap: 28px; }
+      .book-builder-card { padding: 28px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">MyCogna</a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/individual">For Individuals</a></li>
+      <li><a href="/family">For Families</a></li>
+      <li><a href="/legacy">For Organizations</a></li>
+      <li><a href="/login" class="nav-btn-outline">Login</a></li>
+      <li><a href="/portal/signup" class="nav-cta">Start your collection</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu"
+            onclick="document.getElementById('navLinks').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="hero-inner">
+      <div class="eyebrow">For Organizations</div>
+      <h1>Preserve the voices<br><em>that built something.</em></h1>
+      <p class="hero-subhead">One archive. Many storytellers. Stories that last.</p>
+      <p class="hero-body">
+        A nonprofit marking a milestone. A historical society collecting oral histories. A hospice offering guided reminiscence. A faith community preserving testimonies. MyCogna's Legacy Collection gives every storyteller their own recording space — and gives you the tools to shape it all into something lasting.
+      </p>
+      <div class="hero-ctas">
+        <a href="/portal/signup" class="btn-primary">Start your collection</a>
+        <a href="#how-it-works" class="btn-outline">See how it works</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works">
+    <div class="section-inner">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title" style="margin-bottom:56px">One archive,<br><em>many voices.</em></h2>
+
+      <div class="legacy-layout">
+        <div class="legacy-body">
+          <p>MyCogna's Legacy Collection is built for organizations that need to gather stories from multiple contributors — not a single memoir, but a living archive that grows over time.</p>
+          <p>You set up the project: write the questions, generate storyteller codes, and invite participants. Each storyteller receives a private link, records their responses at their own pace, and signs in without needing your help. Everything accumulates in your portal dashboard — ready to download, organize, or publish.</p>
+        </div>
+        <div class="legacy-callouts">
+          <div class="legacy-callout">
+            <h4>Your questions, their voices</h4>
+            <p>Write the prompts that matter for your project. Each storyteller sees only your curated questions, not generic life-story prompts.</p>
+          </div>
+          <div class="legacy-callout">
+            <h4>Stories that accumulate over time</h4>
+            <p>Codes remain active permanently. Storytellers can return and add more whenever they're ready.</p>
+          </div>
+          <div class="legacy-callout">
+            <h4>A dashboard built for organizers</h4>
+            <p>View recordings by storyteller, download transcripts, and manage your entire collection from one place.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="book-builder-card">
+        <div class="card-eyebrow">Upgrade available</div>
+        <h3>Add the Book Builder</h3>
+        <p>The Book Builder upgrade adds two things: an AI "Go Deeper" tool that prompts storytellers to explore their stories in more depth, and a book assembly tool that compiles all responses into a structured Legacy Archive — complete with thematic overview, chapter groupings, and an editing workspace.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING — E/F TIERS -->
+  <section id="pricing">
+    <div class="section-inner">
+      <div class="pricing-header">
+        <div class="section-label">Pricing</div>
+        <h2 class="section-title">Built for<br><em>organizations</em></h2>
+        <p class="section-body">Start with Legacy Collection. Upgrade to Book Builder when you're ready.</p>
+      </div>
+      <div class="pricing-grid-2">
+
+        <div class="pricing-card">
+          <div class="pricing-tier">Story Collection</div>
+          <div class="pricing-name">Legacy Collection</div>
+          <div class="pricing-price"><sup>$</sup>25</div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>5 new storyteller codes per month</li>
+            <li>All codes remain active permanently</li>
+            <li>Stories accumulate over time</li>
+            <li>Curated question sets per project</li>
+            <li>Portal dashboard &amp; transcripts</li>
+          </ul>
+          <a href="/portal/signup" class="pricing-btn pricing-btn-outline">Start your collection</a>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-tier">AI-Assisted Book Builder</div>
+          <div class="pricing-name">Legacy Collection + Book Builder</div>
+          <div class="pricing-price"><sup>$</sup>50</div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>Everything in Legacy Collection</li>
+            <li>AI deepening sessions for storytellers</li>
+            <li>Portal book assembly &amp; editing</li>
+            <li>Structured Legacy Archive output</li>
+            <li>Ideal for oral history projects</li>
+          </ul>
+          <a href="/portal/signup" class="pricing-btn pricing-btn-fill">Start your collection</a>
+        </div>
+
+      </div>
+
+      <p style="text-align:center;margin-top:36px;font-size:14px;color:var(--ink-muted)">
+        Collecting for a single loved one instead of a group?
+        <a href="/family" style="color:var(--ink);font-weight:500;text-decoration:none;border-bottom:1px solid var(--gold-light)">See plans for families →</a>
+      </p>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="/" class="footer-logo">MyCogna</a>
+          <p class="footer-tagline">Preserve the voices you love.<br>Every voice deserves to be heard.</p>
+        </div>
+        <nav class="footer-nav">
+          <div class="footer-col">
+            <h4>Who It's For</h4>
+            <ul>
+              <li><a href="/individual">For Individuals</a></li>
+              <li><a href="/family">For Families</a></li>
+              <li><a href="/legacy">For Organizations</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Account</h4>
+            <ul>
+              <li><a href="/portal">Guardian Portal</a></li>
+              <li><a href="/storyteller">Storyteller login</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Company</h4>
+            <ul>
+              <li><a href="/#my-story">My Story</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms">Terms of Service</a></li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">&copy; 2026 MyCogna. All rights reserved.</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
