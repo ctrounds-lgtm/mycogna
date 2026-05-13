@@ -330,6 +330,33 @@
     .about-header { text-align: center; margin-bottom: 56px; }
     .about-header .section-body { max-width: 640px; margin: 0 auto; }
 
+    .use-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .use-case-card {
+      padding: 36px 32px;
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border: 1px solid rgba(201,150,58,0.12);
+    }
+
+    .use-case-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .use-case-card p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--ink-muted);
+    }
+
     /* ── THREE AUDIENCES ── */
     .audience-header { text-align: center; margin-bottom: 56px; }
 
@@ -530,6 +557,7 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
+      .use-cases-grid { grid-template-columns: 1fr; }
       .audience-grid { grid-template-columns: 1fr; gap: 40px; }
       .story-layout { grid-template-columns: 1fr; gap: 40px; }
       .story-sidebar { position: static; }
@@ -615,6 +643,24 @@
         <div class="section-label">What We Do</div>
         <h2 class="section-title">Share Stories —<br><em>Past, Present, and Future</em></h2>
         <p class="section-body">MyCogna is a platform for preserving and sharing the voices that matter most.</p>
+      </div>
+      <div class="use-cases-grid">
+        <div class="use-case-card">
+          <h3>Memory Keeper</h3>
+          <p>Guided prompts draw out the stories your family will treasure. Perfect for parents, grandparents, and anyone with a life worth capturing.</p>
+        </div>
+        <div class="use-case-card">
+          <h3>Institutional Legacy</h3>
+          <p>Preserve the history of an organization before the people who built it are gone. For nonprofits, businesses, historical societies, and communities marking a milestone.</p>
+        </div>
+        <div class="use-case-card">
+          <h3>Journal That Talks Back</h3>
+          <p>Real-time support when you need it. A companion that listens, remembers, and grows with you — like a journal that responds.</p>
+        </div>
+        <div class="use-case-card">
+          <h3>Digital Imprint</h3>
+          <p>Create a legacy that outlasts a lifetime — a voice and presence that future generations can actually know.</p>
+        </div>
       </div>
     </div>
   </section>
