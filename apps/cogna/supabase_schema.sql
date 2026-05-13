@@ -8,6 +8,14 @@
 --                       for story_recordings / memoir_sessions / chapters / book_bibles)
 --                       auth columns on this table are DEPRECATED — auth is handled by users table
 
+-- User sessions (persisted so sessions survive Railway restarts)
+CREATE TABLE IF NOT EXISTS user_sessions (
+  token      TEXT PRIMARY KEY,
+  email      TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS user_sessions_email_idx ON user_sessions(email);
+
 -- Users
 CREATE TABLE IF NOT EXISTS users (
   email             TEXT PRIMARY KEY,

@@ -1136,6 +1136,7 @@ def storyteller_logout(authorization: Optional[str] = Header(default=None)):
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ", 1)[1]
         SESSIONS.pop(token, None)
+        _delete_session(token)
     return {"ok": True}
 
 
@@ -2491,7 +2492,7 @@ def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
     token = authorization.split(" ", 1)[1].strip()
-    email = SESSIONS.get(token)
+    email = SESSIONS.get(token) or _lookup_session(token)
     if not email:
         raise HTTPException(status_code=401, detail="Session expired. Please sign in again.")
     user = _get_storyteller_user(email)
@@ -2500,9 +2501,32 @@ def _auth_storyteller_user(authorization: Optional[str]) -> Dict[str, Any]:
     return user
 
 
+def _persist_session(token: str, email: str) -> None:
+    if supabase:
+        supabase.table("user_sessions").upsert({"token": token, "email": email}).execute()
+
+
+def _delete_session(token: str) -> None:
+    if supabase:
+        supabase.table("user_sessions").delete().eq("token", token).execute()
+
+
+def _lookup_session(token: str) -> Optional[str]:
+    """Look up a session token in Supabase (fallback after Railway restart)."""
+    if not supabase:
+        return None
+    r = supabase.table("user_sessions").select("email").eq("token", token).limit(1).execute()
+    if r.data:
+        email = r.data[0]["email"]
+        SESSIONS[token] = email  # re-warm in-memory cache
+        return email
+    return None
+
+
 def _create_story_session(email: str) -> str:
     token = secrets.token_urlsafe(32)
     SESSIONS[token] = email
+    _persist_session(token, email)
     return token
 
 
@@ -2625,7 +2649,7 @@ def _auth_user(authorization: Optional[str]) -> Dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.split(" ", 1)[1].strip()
-    email = SESSIONS.get(token)
+    email = SESSIONS.get(token) or _lookup_session(token)
     if not email:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     user = _get_user(email)
@@ -2637,6 +2661,7 @@ def _auth_user(authorization: Optional[str]) -> Dict[str, Any]:
 def _create_session(email: str) -> str:
     token = secrets.token_urlsafe(32)
     SESSIONS[token] = email
+    _persist_session(token, email)
     return token
 
 
