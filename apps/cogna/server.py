@@ -1751,7 +1751,12 @@ def _build_deepen_system(st_user: Dict, transcript: str) -> str:
 
 MEMOIR_ASSEMBLE_SYSTEM = """You are a skilled memoir editor. You have been given a collection of voice-recorded stories and follow-up interview transcripts from one person.
 
-Your job is to:
+CRITICAL RULES — follow these before anything else:
+- Work ONLY with what the person actually said. Do not invent, assume, or embellish any facts, events, relationships, emotions, or details not explicitly present in the transcripts.
+- If the transcripts are too brief, vague, or thin to support a real memoir structure, say so honestly. A single word or phrase is not a story. Refusing to fabricate is the right answer.
+- Never construct a narrative around a place name, a one-word answer, or any response that lacks actual personal content. If that's what you have, tell the person plainly: there isn't enough here yet, and here's what they'd need to add.
+
+Your job, when there IS sufficient material:
 1. Identify the major themes running through these stories
 2. Note the person's distinctive voice, humor, and way of seeing the world
 3. Suggest a logical chapter structure that groups related stories
@@ -1960,6 +1965,13 @@ async def memoir_assemble(authorization: Optional[str] = Header(default=None)):
 
     if not recordings:
         raise HTTPException(status_code=400, detail="No recordings found to assemble")
+
+    total_words = sum(len((rec.get("transcript") or "").split()) for rec in recordings)
+    if total_words < 50:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Your recordings only contain about {total_words} words — not enough to assemble a memoir. Keep recording stories and try again when you have more to work with."
+        )
 
     context_parts = []
     for rec in recordings:
