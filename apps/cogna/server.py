@@ -1257,6 +1257,12 @@ async def storyteller_record(
 ):
     st_user = _auth_storyteller_user(authorization)
 
+    signup_code = st_user.get("signup_code") or None
+    if signup_code:
+        pc = _get_promo_code(signup_code)
+        if pc and not pc.get("active", True):
+            raise HTTPException(status_code=403, detail="Your access has been deactivated. Contact your administrator to continue recording.")
+
     if st_user.get("tier", "A") == "A" and not st_user.get("managed"):
         if _this_month_recording_count(st_user["id"]) >= 1:
             raise HTTPException(status_code=403, detail="You've used your free story for this month. Upgrade to record more.")
