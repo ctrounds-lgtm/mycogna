@@ -291,6 +291,7 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const codeParam = params.get('code') || '';
+    const planParam = (params.get('plan') || '').toUpperCase();
 
     if (codeParam) {
       document.getElementById('userCode').value = codeParam.toUpperCase();
@@ -332,6 +333,7 @@
       try {
         const body = { first_name: firstName, last_name: lastName, email, password };
         if (userCode) body.user_code = userCode;
+        if (planParam && !userCode) body.plan = planParam;
 
         const res = await fetch('/api/storyteller/signup', {
           method: 'POST',

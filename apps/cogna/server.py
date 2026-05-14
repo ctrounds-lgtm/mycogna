@@ -211,6 +211,7 @@ class PromoCodeCreate(BaseModel):
 
 class StorySignupRequest(BaseModel):
     user_code: Optional[str] = None
+    plan: Optional[str] = None   # pre-Stripe tier hint: 'B', 'C', 'D'
     email: str
     password: str
     first_name: str = ""
@@ -1050,7 +1051,8 @@ def storyteller_signup(payload: StorySignupRequest):
             user_tier = "A"
             user_managed = False
     else:
-        user_tier = "A"
+        plan_hint = (payload.plan or "").strip().upper()
+        user_tier = plan_hint if plan_hint in {"B", "C", "D"} else "A"
         user_managed = False
 
     user_id = "stuser_" + secrets.token_hex(8)
