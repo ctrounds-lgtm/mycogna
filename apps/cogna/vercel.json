@@ -1,14 +1,18 @@
 {
   "version": 2,
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://mycogna-production.up.railway.app/api/$1"
-    }
-  ],
-  "routes": [
-    { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/portal", "dest": "/static/portal.html" },
-    { "src": "/", "dest": "/static/index.html" }
+    { "source": "/api/(.*)", "destination": "https://mycogna-production.up.railway.app/api/$1" },
+    { "source": "/",             "destination": "https://mycogna-production.up.railway.app/" },
+    { "source": "/individual",   "destination": "https://mycogna-production.up.railway.app/individual" },
+    { "source": "/family",       "destination": "https://mycogna-production.up.railway.app/family" },
+    { "source": "/legacy",       "destination": "https://mycogna-production.up.railway.app/legacy" },
+    { "source": "/signup",       "destination": "https://mycogna-production.up.railway.app/signup" },
+    { "source": "/login",        "destination": "https://mycogna-production.up.railway.app/login" },
+    { "source": "/storyteller",  "destination": "https://mycogna-production.up.railway.app/storyteller" },
+    { "source": "/memoir",       "destination": "https://mycogna-production.up.railway.app/memoir" },
+    { "source": "/companion",    "destination": "https://mycogna-production.up.railway.app/companion" },
+    { "source": "/portal",       "destination": "https://mycogna-production.up.railway.app/portal" },
+    { "source": "/portal/signup","destination": "https://mycogna-production.up.railway.app/portal/signup" },
+    { "source": "/portal/memoir","destination": "https://mycogna-production.up.railway.app/portal/memoir" }
   ]
 }
