@@ -1786,9 +1786,15 @@ WHAT'S MISSING: a short, encouraging paragraph noting gaps
 
 Tone: warm, encouraging, professional. This person's stories matter."""
 
-MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given the raw transcripts assigned to this chapter.
+MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given the raw transcripts for the chapter being edited, along with the memoir's Book Bible (overall plan and structure) and the content of any other chapters that have already been drafted.
 
-Your job is to:
+Use the full memoir context to:
+- Maintain consistency in voice, tone, and facts across chapters
+- Catch contradictions or repetitions between chapters
+- Ensure this chapter fits the arc established in the Book Bible
+- Suggest connections or callbacks to other chapters where appropriate
+
+Your editorial job on the current chapter:
 1. Summarize what this chapter currently contains
 2. Note its strengths — what's working, what's vivid, what's true
 3. Suggest structural improvements — pacing, order, transitions
@@ -1796,6 +1802,53 @@ Your job is to:
 5. Offer to help rewrite any section the author requests
 
 Important: This is their story, their voice. You are not rewriting it in your own voice — you are helping them find the best version of theirs. Never change the facts. Never add events that didn't happen. Always ask before making significant changes."""
+
+
+def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: str) -> str:
+    """Build the full system prompt including book bible and sibling chapters."""
+    book_bible_content = ""
+    sibling_chapters = []
+
+    if supabase:
+        try:
+            bb = supabase.table("book_bibles").select("content").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
+            if bb.data:
+                book_bible_content = bb.data[0].get("content", "")
+        except Exception:
+            pass
+        try:
+            chaps = supabase.table("chapters").select("id, title, content, sort_order").eq("storyteller_user_id", user_id).order("sort_order").execute()
+            sibling_chapters = [c for c in (chaps.data or []) if c["id"] != chapter_id and c.get("content")]
+        except Exception:
+            pass
+    else:
+        try:
+            db = _load_db(); _memoir_db_defaults(db)
+            bbs = sorted([b for b in db["book_bibles"].values() if b.get("storyteller_user_id") == user_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+            if bbs:
+                book_bible_content = bbs[0].get("content", "")
+            sibling_chapters = sorted(
+                [c for c in db["chapters"].values() if c.get("storyteller_user_id") == user_id and c["id"] != chapter_id and c.get("content")],
+                key=lambda x: x.get("sort_order", 0)
+            )
+        except Exception:
+            pass
+
+    context_parts = [MEMOIR_EDIT_SYSTEM]
+
+    if book_bible_content:
+        context_parts.append(f"\n\n---\nBOOK BIBLE (memoir plan and structure):\n\n{book_bible_content}")
+
+    if sibling_chapters:
+        other = "\n\n---\n".join(
+            f"Chapter: {c['title']}\n\n{c.get('content', '').strip()}"
+            for c in sibling_chapters
+        )
+        context_parts.append(f"\n\n---\nOTHER CHAPTERS (for context and consistency):\n\n{other}")
+
+    context_parts.append(f"\n\n---\nCHAPTER BEING EDITED — raw transcripts:\n\n{chapter_content}")
+
+    return "".join(context_parts)
 
 
 def _memoir_db_defaults(db: Dict[str, Any]):
@@ -2104,16 +2157,16 @@ async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest
     if payload.focus and payload.focus in EDITORIAL_FOCUSES:
         focus_instruction = f"\n\nEDITORIAL FOCUS FOR THIS MESSAGE: {EDITORIAL_FOCUSES[payload.focus]}"
 
+    base_system = _build_memoir_edit_system(user_id, chapter_id, chapter.get("content", ""))
+
     messages = chapter.get("edit_messages") or []
     if not messages:
-        system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
         messages.append({"role": "user", "content": "Please give me your initial editorial feedback on this chapter."})
-        opening = _generate_memoir_response(system, messages)
+        opening = _generate_memoir_response(base_system, messages)
         messages.append({"role": "assistant", "content": opening})
 
     messages.append({"role": "user", "content": payload.message})
-    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}" + focus_instruction
-    reply = _generate_memoir_response(system, messages)
+    reply = _generate_memoir_response(base_system + focus_instruction, messages)
     messages.append({"role": "assistant", "content": reply})
 
     if supabase:
@@ -2292,15 +2345,15 @@ async def portal_invitee_chapter_edit(storyteller_id: str, chapter_id: str, payl
     if payload.focus and payload.focus in EDITORIAL_FOCUSES:
         focus_instruction = f"\n\nEDITORIAL FOCUS FOR THIS MESSAGE: {EDITORIAL_FOCUSES[payload.focus]}"
 
+    base_system = _build_memoir_edit_system(user_id, chapter_id, chapter.get("content", ""))
+
     messages = chapter.get("edit_messages") or []
     if not messages:
-        system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
         messages.append({"role": "user", "content": "Please give me your initial editorial feedback on this chapter."})
-        opening = _generate_memoir_response(system, messages)
+        opening = _generate_memoir_response(base_system, messages)
         messages.append({"role": "assistant", "content": opening})
     messages.append({"role": "user", "content": payload.message})
-    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}" + focus_instruction
-    reply = _generate_memoir_response(system, messages)
+    reply = _generate_memoir_response(base_system + focus_instruction, messages)
     messages.append({"role": "assistant", "content": reply})
     if supabase:
         supabase.table("chapters").update({"edit_messages": messages, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
