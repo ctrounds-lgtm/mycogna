@@ -26,7 +26,7 @@ MyCogna cannot operate commercially without a payment layer. This plan makes eve
 - `apps/cogna/static/individual.html` — Pricing buttons use `/signup?plan=X` hrefs
 - `apps/cogna/static/storyteller.html` — Upgrade modal with customizable CTA (`showUpgrade(title, body, ctaText, ctaHref)`)
 - `apps/cogna/static/portal.html` — Portal UI; no billing section exists yet
-- `apps/cogna/static/portal-signup.html` — Portal admin (E/F/D) signup entry point
+- `apps/cogna/static/portal-signup.html` — Portal admin (E/F) signup entry point
 - `apps/cogna/supabase_schema.sql` — Schema; `storyteller_users` and `users` both have `tier` columns; no billing columns yet
 - `apps/cogna/requirements.txt` — No `stripe` package yet
 
@@ -36,7 +36,7 @@ MyCogna cannot operate commercially without a payment layer. This plan makes eve
 |------|----------|--------------|-------------|
 | B ($5/mo) | Individual storyteller | `storyteller_users` | `/signup?plan=B` |
 | C ($10/mo) | Individual storyteller | `storyteller_users` | `/signup?plan=C` |
-| D ($15/mo) | Portal admin | `users` | `/portal` or `/individual#pricing` |
+| D ($15/mo) | Individual storyteller | `storyteller_users` | `/signup?plan=D` or `/individual#pricing` |
 | E ($5/code/mo) | Portal admin | `users` | `/legacy#pricing` |
 | F ($25/mo + $5/code/mo) | Portal admin | `users` | `/legacy#pricing` |
 
@@ -121,9 +121,8 @@ MyCogna cannot operate commercially without a payment layer. This plan makes eve
 
 ### Open Questions
 
-1. **Does D ($15 AI Companion) bill on `storyteller_users` or `users`?** D is listed on `/individual#pricing` but the feature (Cogna builder) lives in the portal. Recommendation: D is a portal admin tier → `users` table. Confirm before implementation.
-2. **Should B/C also have portal access?** Currently B/C are individual storyteller tiers. If a B/C user also wants portal features, they'd need a separate portal account. Clarify whether B/C users ever need portal access.
-3. **Stripe test mode vs. live mode**: Implementation will use test mode. Before going live, Railway env vars need to be swapped to live mode keys and real price IDs. Plan notes where this swap happens.
+1. **Should B/C also have portal access?** Currently B/C are individual storyteller tiers. If a B/C user also wants portal features, they'd need a separate portal account. Clarify whether B/C users ever need portal access.
+2. **Stripe test mode vs. live mode**: Implementation will use test mode. Before going live, Railway env vars need to be swapped to live mode keys and real price IDs. Plan notes where this swap happens.
 
 ---
 
@@ -350,7 +349,7 @@ async def create_checkout_session(
         description = "Unlimited recordings plus AI-assisted memoir assembly and editing."
     elif tier == "D":
         line_items = [{"price": STRIPE_PRICES["D"], "quantity": 1}]
-        success_path = "/portal"
+        success_path = "/storyteller"
         description = "Build a Cogna voice companion for a loved one."
     elif tier == "E":
         line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
@@ -1128,8 +1127,8 @@ The implementation is complete when:
 ## Notes
 
 - **Test mode first**: Implement against Stripe test mode. All price IDs and keys swap to live equivalents when ready to go live — no code changes required.
-- **Open question**: Confirm whether D (AI Companion) bills on `storyteller_users` or `users`. The plan currently routes D through `user_type: 'portal'` since the Cogna builder lives in the portal. Verify before implementing Step 9.
-- **`portal-signup.html`**: This file was not fully researched. During implementation, check whether it needs the same Stripe redirect treatment as `signup.html` for D/E/F tier signups. The pattern is identical — return `checkout_url` from the signup endpoint and redirect if present.
+- **D tier on `storyteller_users`**: D (AI Companion) is an individual tool, so billing runs through `storyteller_users` alongside B and C. `user_type: 'storyteller'` for D in all checkout sessions and webhook handlers. Easy to move post-launch if needed — just update the webhook lookup and migrate `stripe_customer_id` values for existing D subscribers with a single SQL statement.
+- **`portal-signup.html`**: This file was not fully researched. During implementation, check whether it needs the same Stripe redirect treatment as `signup.html` for E/F tier signups. The pattern is identical — return `checkout_url` from the signup endpoint and redirect if present.
 - **Proration on plan changes**: This plan only covers initial signups and cancellations. If a user wants to upgrade from B → C mid-cycle, that's a separate feature (Stripe subscription update with optional proration). Not in scope here.
 - **Stripe Customer Portal**: Must be configured in the Stripe dashboard (Billing > Customer Portal) to allow customers to view invoices and update payment methods. The portal link uses `return_url = /portal`.
 - **Webhook reliability**: Stripe will retry failed webhook deliveries for up to 72 hours. The webhook handler is idempotent (upserts, not inserts), so duplicate events are safe.
