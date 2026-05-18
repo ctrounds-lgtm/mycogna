@@ -1786,28 +1786,37 @@ WHAT'S MISSING: a short, encouraging paragraph noting gaps
 
 Tone: warm, encouraging, professional. This person's stories matter."""
 
-MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given the raw transcripts for the chapter being edited, along with the memoir's Book Bible (overall plan and structure) and the content of any other chapters that have already been drafted.
+MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given:
 
-Use the full memoir context to:
-- Maintain consistency in voice, tone, and facts across chapters
-- Catch contradictions or repetitions between chapters
+- All interview questions and the storyteller's recorded answers (the complete source material)
+- The memoir's Book Bible (overall plan and structure), if one exists
+- Any other chapters already drafted, for consistency
+- The raw transcripts assigned to the chapter currently being edited
+
+Use this full context to:
+- Understand the intent behind each recording — the question reveals what the storyteller was trying to capture
+- Identify recorded stories or moments that belong in this chapter but haven't been incorporated yet
+- Notice material that might fit better in a different chapter
+- Maintain consistency in voice, tone, and facts across the whole memoir
+- Catch contradictions or repeated stories between chapters
 - Ensure this chapter fits the arc established in the Book Bible
-- Suggest connections or callbacks to other chapters where appropriate
+- Suggest connections and callbacks to other chapters where meaningful
 
 Your editorial job on the current chapter:
 1. Summarize what this chapter currently contains
 2. Note its strengths — what's working, what's vivid, what's true
-3. Suggest structural improvements — pacing, order, transitions
-4. Identify any gaps where more detail would strengthen the story
+3. Identify any recorded material not yet in this chapter that could strengthen it
+4. Suggest structural improvements — pacing, order, transitions
 5. Offer to help rewrite any section the author requests
 
 Important: This is their story, their voice. You are not rewriting it in your own voice — you are helping them find the best version of theirs. Never change the facts. Never add events that didn't happen. Always ask before making significant changes."""
 
 
 def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: str) -> str:
-    """Build the full system prompt including book bible and sibling chapters."""
+    """Build the full system prompt including book bible, sibling chapters, and all interview Q&A."""
     book_bible_content = ""
     sibling_chapters = []
+    recordings_with_prompts = []
 
     if supabase:
         try:
@@ -1821,6 +1830,21 @@ def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: st
             sibling_chapters = [c for c in (chaps.data or []) if c["id"] != chapter_id and c.get("content")]
         except Exception:
             pass
+        try:
+            recs_r = supabase.table("story_recordings").select("prompt_id, transcript, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+            recs = recs_r.data or []
+            prompt_ids = list({r["prompt_id"] for r in recs if r.get("prompt_id")})
+            prompt_map = {}
+            if prompt_ids:
+                pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+                prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+            for rec in recs:
+                recordings_with_prompts.append({
+                    "question": prompt_map.get(rec.get("prompt_id") or "", ""),
+                    "transcript": rec.get("transcript") or "",
+                })
+        except Exception:
+            pass
     else:
         try:
             db = _load_db(); _memoir_db_defaults(db)
@@ -1831,6 +1855,13 @@ def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: st
                 [c for c in db["chapters"].values() if c.get("storyteller_user_id") == user_id and c["id"] != chapter_id and c.get("content")],
                 key=lambda x: x.get("sort_order", 0)
             )
+            prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+            recs = sorted([r for r in db.get("story_recordings", {}).values() if r.get("storyteller_user_id") == user_id], key=lambda x: x.get("created_at", ""))
+            for rec in recs:
+                recordings_with_prompts.append({
+                    "question": prompt_map.get(rec.get("prompt_id") or "", ""),
+                    "transcript": rec.get("transcript") or "",
+                })
         except Exception:
             pass
 
@@ -1838,6 +1869,18 @@ def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: st
 
     if book_bible_content:
         context_parts.append(f"\n\n---\nBOOK BIBLE (memoir plan and structure):\n\n{book_bible_content}")
+
+    if recordings_with_prompts:
+        qa_blocks = []
+        for rec in recordings_with_prompts:
+            q = rec["question"].strip()
+            t = rec["transcript"].strip()
+            if not t:
+                continue
+            block = f"Q: {q}\nA: {t}" if q else f"A: {t}"
+            qa_blocks.append(block)
+        if qa_blocks:
+            context_parts.append(f"\n\n---\nALL INTERVIEW QUESTIONS & RECORDINGS (complete source material):\n\n" + "\n\n".join(qa_blocks))
 
     if sibling_chapters:
         other = "\n\n---\n".join(
