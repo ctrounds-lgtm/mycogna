@@ -253,6 +253,16 @@ class MemoirChapterRequest(BaseModel):
 
 class MemoirChapterEditRequest(BaseModel):
     message: str
+    focus: Optional[str] = None  # general | structural | voice | emotional | transition
+
+
+EDITORIAL_FOCUSES = {
+    "general":    "General edit — fix typos, punctuation, and flow. Improve sentence rhythm without changing the author's voice.",
+    "structural": "Structural — evaluate whether this chapter builds toward something. Does it have a clear arc? Where does it drag or rush?",
+    "voice":      "Voice check — does this sound authentic and consistent? Flag anything that sounds generic, flat, or unlike the author's natural way of speaking.",
+    "emotional":  "Emotional integrity — what emotions are present, suppressed, or hiding just beneath the surface? Help the author find what they haven't yet said.",
+    "transition": "Transition work — focus on how this chapter begins and ends. Does it earn its opening? Does it earn its exit? How does it connect to what comes before and after?",
+}
 
 
 # ----------------------------------------------------
@@ -2060,6 +2070,10 @@ async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
+    focus_instruction = ""
+    if payload.focus and payload.focus in EDITORIAL_FOCUSES:
+        focus_instruction = f"\n\nEDITORIAL FOCUS FOR THIS MESSAGE: {EDITORIAL_FOCUSES[payload.focus]}"
+
     messages = chapter.get("edit_messages") or []
     if not messages:
         system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
@@ -2068,7 +2082,7 @@ async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest
         messages.append({"role": "assistant", "content": opening})
 
     messages.append({"role": "user", "content": payload.message})
-    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
+    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}" + focus_instruction
     reply = _generate_memoir_response(system, messages)
     messages.append({"role": "assistant", "content": reply})
 
@@ -2244,6 +2258,10 @@ async def portal_invitee_chapter_edit(storyteller_id: str, chapter_id: str, payl
         chapter = c if c and c.get("storyteller_user_id") == user_id else None
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
+    focus_instruction = ""
+    if payload.focus and payload.focus in EDITORIAL_FOCUSES:
+        focus_instruction = f"\n\nEDITORIAL FOCUS FOR THIS MESSAGE: {EDITORIAL_FOCUSES[payload.focus]}"
+
     messages = chapter.get("edit_messages") or []
     if not messages:
         system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
@@ -2251,7 +2269,7 @@ async def portal_invitee_chapter_edit(storyteller_id: str, chapter_id: str, payl
         opening = _generate_memoir_response(system, messages)
         messages.append({"role": "assistant", "content": opening})
     messages.append({"role": "user", "content": payload.message})
-    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}"
+    system = MEMOIR_EDIT_SYSTEM + f"\n\nHere are the raw transcripts for this chapter:\n\n{chapter.get('content', '')}" + focus_instruction
     reply = _generate_memoir_response(system, messages)
     messages.append({"role": "assistant", "content": reply})
     if supabase:
