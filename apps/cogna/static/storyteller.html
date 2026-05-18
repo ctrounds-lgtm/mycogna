@@ -1210,10 +1210,10 @@
             showScreen('screenDone');
           }
         } catch (err) {
-          if (err.message && err.message.includes("used your free story")) {
-            stState.monthlyCount = 1;
+          if (err.message && err.message.includes("free stories for this month")) {
+            stState.monthlyCount = 3;
             st.showUpgrade(
-              "You've shared your story for this month",
+              "You've shared your 3 free stories for this month",
               "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
               'See plans',
               '/individual#pricing'
@@ -1265,9 +1265,9 @@
             }
           } catch {}
         }
-        if (stState.tier === 'A' && !stState.managed && stState.monthlyCount >= 1) {
+        if (stState.tier === 'A' && !stState.managed && stState.monthlyCount >= 3) {
           st.showUpgrade(
-            "You've shared your story for this month",
+            "You've shared your 3 free stories for this month",
             "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
             'See plans',
             '/individual#pricing'

@@ -1264,8 +1264,8 @@ async def storyteller_record(
             raise HTTPException(status_code=403, detail="Your access has been deactivated. Contact your administrator to continue recording.")
 
     if st_user.get("tier", "A") == "A" and not st_user.get("managed"):
-        if _this_month_recording_count(st_user["id"]) >= 1:
-            raise HTTPException(status_code=403, detail="You've used your free story for this month. Upgrade to record more.")
+        if _this_month_recording_count(st_user["id"]) >= 3:
+            raise HTTPException(status_code=403, detail="You've used your 3 free stories for this month. Upgrade to record more.")
 
     transcript = _transcribe_audio(audio)
 
