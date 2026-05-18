@@ -2054,6 +2054,36 @@ async def memoir_save_chapter(chapter_id: str, payload: MemoirChapterRequest, au
     return {"ok": True}
 
 
+@app.post("/api/memoir/chapters/reorder")
+async def memoir_reorder_chapters(payload: PromptsReorderRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+    if supabase:
+        for i, chapter_id in enumerate(payload.ids):
+            supabase.table("chapters").update({"sort_order": i}).eq("id", chapter_id).eq("storyteller_user_id", user_id).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        for i, chapter_id in enumerate(payload.ids):
+            if chapter_id in db["chapters"] and db["chapters"][chapter_id].get("storyteller_user_id") == user_id:
+                db["chapters"][chapter_id]["sort_order"] = i
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.delete("/api/memoir/chapters/{chapter_id}")
+async def memoir_delete_chapter(chapter_id: str, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+    if supabase:
+        supabase.table("chapters").delete().eq("id", chapter_id).eq("storyteller_user_id", user_id).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        if chapter_id in db["chapters"] and db["chapters"][chapter_id].get("storyteller_user_id") == user_id:
+            del db["chapters"][chapter_id]
+        _save_db(db)
+    return {"ok": True}
+
+
 @app.post("/api/memoir/chapters/{chapter_id}/edit")
 async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)

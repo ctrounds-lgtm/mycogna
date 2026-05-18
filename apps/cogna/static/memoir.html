@@ -134,18 +134,40 @@
 
     /* ── Chapter list ── */
     .chapter-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; background: #fff; border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 8px; gap: 12px; cursor: pointer;
+      display: flex; align-items: center;
+      padding: 10px 10px; background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px; gap: 8px; cursor: default;
+      user-select: none;
     }
     .chapter-item:hover { border-color: var(--gold); }
     .chapter-item.active { border-color: var(--gold); background: var(--gold-light); }
-    .chapter-title-text { font-size: 15px; font-weight: 600; }
-    .chapter-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .chapter-item.drag-over { border: 2px dashed var(--gold); background: var(--gold-light); }
+    .chapter-handle {
+      color: #bbb; font-size: 16px; cursor: grab; flex-shrink: 0; line-height: 1;
+      padding: 2px 2px;
+    }
+    .chapter-handle:active { cursor: grabbing; }
+    .chapter-title-text {
+      flex: 1; font-size: 13px; font-weight: 600; cursor: pointer; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .chapter-title-text:hover { color: var(--gold-dark, #9a7a2a); }
+    .chapter-rename-input {
+      flex: 1; font-size: 13px; font-weight: 600; border: 1.5px solid var(--gold);
+      border-radius: 6px; padding: 2px 6px; font-family: inherit; min-width: 0;
+    }
+    .chapter-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+    .chapter-btn {
+      font-size: 11px; font-weight: 600; color: var(--ink-muted, #888);
+      background: none; border: none; cursor: pointer; padding: 2px 4px;
+      border-radius: 4px; line-height: 1.2;
+    }
+    .chapter-btn:hover { color: var(--ink); background: var(--border); }
+    .chapter-btn.delete-btn:hover { color: #c00; }
 
     /* ── Edit layout ── */
     .edit-layout { display: flex; gap: 20px; align-items: flex-start; }
-    .edit-sidebar { width: 220px; flex-shrink: 0; }
+    .edit-sidebar { width: 260px; flex-shrink: 0; }
     .edit-main { flex: 1; min-width: 0; }
     @media (max-width: 600px) {
       .edit-layout { flex-direction: column; }
@@ -360,6 +382,7 @@
     deepenMediaRecorder: null,
     deepenAudioChunks: [],
     deepenRecording: false,
+    _dragSrcId: null,
   };
 
   function showScreen(id) {
@@ -661,11 +684,119 @@
         list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Click below to add one.</p>';
         return;
       }
-      list.innerHTML = mState.chapters.map(c =>
-        `<div class="chapter-item ${c.id === activeId ? 'active' : ''}" onclick="m.loadChapter('${c.id}')" id="chap-item-${c.id}">
-          <span class="chapter-title-text" style="font-size:14px;">${c.title}</span>
-        </div>`
-      ).join('');
+      list.innerHTML = mState.chapters.map(c => {
+        const isActive = c.id === activeId || c.id === mState.currentChapterId;
+        return `<div class="chapter-item ${isActive ? 'active' : ''}" id="chap-item-${c.id}"
+            draggable="true"
+            ondragstart="m._dragStart(event,'${c.id}')"
+            ondragover="m._dragOver(event,'${c.id}')"
+            ondragleave="m._dragLeave(event,'${c.id}')"
+            ondrop="m._dragDrop(event,'${c.id}')">
+          <span class="chapter-handle" title="Drag to reorder">⠿</span>
+          <span class="chapter-title-text" onclick="m.loadChapter('${c.id}')" title="${c.title}">${c.title}</span>
+          <div class="chapter-actions">
+            <button class="chapter-btn" onclick="m.renameChapter('${c.id}')" title="Rename">Edit</button>
+            <button class="chapter-btn delete-btn" onclick="m.deleteChapter('${c.id}')" title="Delete">×</button>
+          </div>
+        </div>`;
+      }).join('');
+    },
+
+    _dragStart(event, chapterId) {
+      mState._dragSrcId = chapterId;
+      event.dataTransfer.effectAllowed = 'move';
+    },
+
+    _dragOver(event, chapterId) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (chapterId !== mState._dragSrcId) {
+        document.getElementById('chap-item-' + chapterId)?.classList.add('drag-over');
+      }
+    },
+
+    _dragLeave(event, chapterId) {
+      document.getElementById('chap-item-' + chapterId)?.classList.remove('drag-over');
+    },
+
+    async _dragDrop(event, targetId) {
+      event.preventDefault();
+      document.getElementById('chap-item-' + targetId)?.classList.remove('drag-over');
+      const srcId = mState._dragSrcId;
+      mState._dragSrcId = null;
+      if (!srcId || srcId === targetId) return;
+
+      const srcIdx = mState.chapters.findIndex(c => c.id === srcId);
+      const tgtIdx = mState.chapters.findIndex(c => c.id === targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+
+      const [moved] = mState.chapters.splice(srcIdx, 1);
+      mState.chapters.splice(tgtIdx, 0, moved);
+      mState.chapters.forEach((c, i) => c.sort_order = i);
+      m._renderEditSidebar(mState.currentChapterId);
+
+      try {
+        await apiFetch(API + '/chapters/reorder', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ids: mState.chapters.map(c => c.id)}),
+        });
+      } catch (err) {
+        console.error('Reorder failed:', err.message);
+      }
+    },
+
+    renameChapter(chapterId) {
+      const item = document.getElementById('chap-item-' + chapterId);
+      if (!item) return;
+      const chapter = mState.chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      const titleSpan = item.querySelector('.chapter-title-text');
+      const actionsDiv = item.querySelector('.chapter-actions');
+      titleSpan.outerHTML = `<input class="chapter-rename-input" id="rename-input-${chapterId}" value="${chapter.title}" onkeydown="if(event.key==='Enter')m.saveRename('${chapterId}');if(event.key==='Escape')m._renderEditSidebar(mState.currentChapterId);">`;
+      actionsDiv.innerHTML = `<button class="chapter-btn" onclick="m.saveRename('${chapterId}')">Save</button>`;
+      document.getElementById('rename-input-' + chapterId)?.focus();
+    },
+
+    async saveRename(chapterId) {
+      const input = document.getElementById('rename-input-' + chapterId);
+      if (!input) return;
+      const newTitle = input.value.trim();
+      if (!newTitle) return;
+      const chapter = mState.chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      chapter.title = newTitle;
+      try {
+        await apiFetch(API + '/chapters/' + chapterId, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title: newTitle, content: chapter.content || '', sort_order: chapter.sort_order}),
+        });
+      } catch (err) {
+        console.error('Rename failed:', err.message);
+      }
+      m._renderEditSidebar(mState.currentChapterId);
+      if (mState.currentChapterId === chapterId) {
+        const label = document.querySelector('#editMain .section-label');
+        if (label) label.textContent = newTitle;
+      }
+    },
+
+    async deleteChapter(chapterId) {
+      const chapter = mState.chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+      if (!confirm(`Delete chapter "${chapter.title}"? This cannot be undone.`)) return;
+      try {
+        await apiFetch(API + '/chapters/' + chapterId, {method: 'DELETE'});
+        mState.chapters = mState.chapters.filter(c => c.id !== chapterId);
+        if (mState.currentChapterId === chapterId) {
+          mState.currentChapterId = null;
+          document.getElementById('editMain').innerHTML = '<p class="empty-state">Select a chapter to begin editing.</p>';
+        }
+        m._renderEditSidebar(mState.currentChapterId);
+      } catch (err) {
+        alert('Could not delete chapter: ' + err.message);
+      }
     },
 
     async loadChapter(chapterId) {
