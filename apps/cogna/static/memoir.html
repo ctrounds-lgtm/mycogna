@@ -177,6 +177,24 @@
     /* ── Full-width layout for chapter editing ── */
     #screenEdit .page { max-width: 1200px; }
 
+    /* ── Draft chapter button ── */
+    .draft-chapter-btn {
+      width: 100%; padding: 13px 20px; background: var(--gold-light, #fdf6e3);
+      border: 1.5px solid var(--gold, #c9a84c); border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+      color: var(--ink, #1a1a1a); cursor: pointer; text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .draft-chapter-btn:hover { background: #faeec8; border-color: #a07828; }
+    .draft-chapter-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .use-draft-btn {
+      display: inline-block; margin-top: 12px; padding: 7px 14px;
+      background: var(--gold, #c9a84c); border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+      color: #fff; cursor: pointer;
+    }
+    .use-draft-btn:hover { background: #a07828; }
+
     /* ── Editorial focus dropdown ── */
     .focus-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .focus-row .section-label { margin-bottom: 0; white-space: nowrap; }
@@ -811,6 +829,9 @@
       document.getElementById('editMain').innerHTML = `
         <div>
           <div class="section-label">${chapter.title}</div>
+          <div style="margin-bottom:16px;">
+            <button class="draft-chapter-btn" onclick="m.requestDraft()">Ask Claude to create this chapter based on the stories you've provided</button>
+          </div>
           <textarea class="chapter-editor" id="chapterEditor" placeholder="Paste or write chapter content here…">${chapter.content || ''}</textarea>
           <div style="display:flex;gap:10px;margin-bottom:20px;">
             <button class="btn-sm" onclick="m.saveChapter()">Save chapter</button>
@@ -907,6 +928,36 @@
           <p class="sub">Your stories have been saved. The project coordinator will take it from here and compile them into a book.</p>
           <a href="/storyteller" class="btn-primary" style="margin-top:24px; display:inline-block; width:auto; padding:12px 28px; text-decoration:none;">← Return to storytelling</a>
         </div>`;
+    },
+
+    async requestDraft() {
+      const draftBtn = document.querySelector('.draft-chapter-btn');
+      const input = document.getElementById('editInput');
+      if (!input || !mState.currentChapterId) return;
+      if (draftBtn) draftBtn.disabled = true;
+      input.value = 'Please write a complete first draft of this chapter. Draw from the interview questions and recorded answers in the source material. Shape the storyteller\'s raw answers into a flowing narrative in their own voice. Write the full chapter — not a summary or outline.';
+      await m.editSend();
+      if (draftBtn) draftBtn.disabled = false;
+      // Add "Use as chapter content" button to Claude's last response
+      const bubbles = document.querySelectorAll('#editMessages .chat-bubble.ai');
+      const last = bubbles[bubbles.length - 1];
+      if (last && last.textContent !== '…' && !last.querySelector('.use-draft-btn')) {
+        const useBtn = document.createElement('button');
+        useBtn.className = 'use-draft-btn';
+        useBtn.textContent = '→ Use as chapter content';
+        useBtn.onclick = () => {
+          const draftText = last.childNodes[0]?.textContent || last.textContent;
+          const editor = document.getElementById('chapterEditor');
+          if (editor) {
+            editor.value = draftText;
+            const chapter = mState.chapters.find(c => c.id === mState.currentChapterId);
+            if (chapter) chapter.content = draftText;
+          }
+          useBtn.textContent = '✓ Copied to editor';
+          useBtn.disabled = true;
+        };
+        last.appendChild(useBtn);
+      }
     },
 
     async editSend() {
