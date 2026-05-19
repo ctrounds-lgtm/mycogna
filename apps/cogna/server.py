@@ -149,7 +149,8 @@ def _update_seat_quantity(portal_email: str, delta: int) -> None:
             return
         item = stripe_sdk.SubscriptionItem.retrieve(item_id)
         new_qty = max(0, (item.get("quantity") or 0) + delta)
-        stripe_sdk.SubscriptionItem.modify(item_id, quantity=new_qty, proration_behavior="none")
+        behavior = "always_invoice" if delta > 0 else "none"
+        stripe_sdk.SubscriptionItem.modify(item_id, quantity=new_qty, proration_behavior=behavior)
     except Exception as e:
         print(f"[Stripe] seat quantity update failed for {portal_email}: {e}")
 
