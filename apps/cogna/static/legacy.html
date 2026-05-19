@@ -610,7 +610,7 @@
             <li>Curated question sets per project</li>
             <li>Portal dashboard &amp; transcripts</li>
           </ul>
-          <a href="/portal/signup" class="pricing-btn pricing-btn-outline">Start your collection</a>
+          <a href="/portal/signup?plan=E" class="pricing-btn pricing-btn-outline" onclick="return handlePricingClick(event,'E','portal')">Start your collection</a>
         </div>
 
         <div class="pricing-card featured">
@@ -626,7 +626,7 @@
             <li>Structured Legacy Archive output</li>
             <li>Ideal for oral history projects</li>
           </ul>
-          <a href="/portal/signup" class="pricing-btn pricing-btn-fill">Start your collection</a>
+          <a href="/portal/signup?plan=F" class="pricing-btn pricing-btn-fill" onclick="return handlePricingClick(event,'F','portal')">Start your collection</a>
         </div>
 
       </div>
@@ -679,5 +679,21 @@
     </div>
   </footer>
 
+<script>
+  async function handlePricingClick(e, tier, userType) {
+    const token = localStorage.getItem('portalToken');
+    if (!token) return true; // not logged in — follow href to signup
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ tier, user_type: userType }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (_) {}
+  }
+</script>
 </body>
 </html>

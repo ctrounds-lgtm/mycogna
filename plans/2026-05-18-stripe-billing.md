@@ -1,7 +1,7 @@
 # Plan: Stripe Subscription Billing
 
 **Created:** 2026-05-18
-**Status:** Draft
+**Status:** Implemented
 **Request:** Add Stripe subscription billing to automate tier upgrades, handle per-seat Legacy pricing, and provide self-service cancellation.
 
 ---
@@ -1132,3 +1132,35 @@ The implementation is complete when:
 - **Proration on plan changes**: This plan only covers initial signups and cancellations. If a user wants to upgrade from B → C mid-cycle, that's a separate feature (Stripe subscription update with optional proration). Not in scope here.
 - **Stripe Customer Portal**: Must be configured in the Stripe dashboard (Billing > Customer Portal) to allow customers to view invoices and update payment methods. The portal link uses `return_url = /portal`.
 - **Webhook reliability**: Stripe will retry failed webhook deliveries for up to 72 hours. The webhook handler is idempotent (upserts, not inserts), so duplicate events are safe.
+
+---
+
+## Implementation Notes
+
+**Implemented:** 2026-05-18
+
+### Summary
+
+- Added `stripe` to `requirements.txt`
+- Added Stripe schema migration columns to `supabase_schema.sql` (both `storyteller_users` and `users` tables)
+- Added full Stripe backend to `server.py`: config block, `_update_seat_quantity` helper, `_send_billing_confirmation_email` helper, all 6 endpoints (`create-checkout-session`, `webhook`, `cancel`, `reactivate`, `billing-status`, `customer-portal`), webhook event handlers
+- Updated `create_promo_code` to call `_update_seat_quantity(+1)` after insert
+- Updated `deactivate_promo_code` to call `_update_seat_quantity(-1)` after deactivation
+- Updated `storyteller_signup` to start tier A + return `checkout_url` when Stripe is configured and a paid plan was requested
+- Updated `auth_register` to start tier A + return `checkout_url` for E/F tiers when Stripe is configured
+- Updated `signup.html` to redirect to `checkout_url` if present in signup response
+- Updated `portal-signup.html` to redirect to `checkout_url` if present in register response
+- Added `handlePricingClick` JS + onclick handlers to pricing buttons in `individual.html`, `legacy.html`, `family.html`
+- Added `goToCheckout(tier)` and updated `showUpgrade` calls in `storyteller.html` to pass tier; added `?checkout=success` handling
+- Added Billing tab + `panelBilling` HTML to `portal.html`
+- Added `loadBillingSection`, `_renderBillingSection`, `cancelSubscription`, `reactivateSubscription`, `openCustomerPortal` to `portal.js`; updated `switchDashTab` to handle Billing tab; added `?checkout=success` handling to `init()`
+- Updated `CLAUDE.md` with Stripe env vars and setup steps
+
+### Deviations from Plan
+
+- `family.html` buttons send `user_type: 'portal'` (B/C/D through portal) since family plan users manage via the portal, matching existing portal-signup flow. The plan listed B/C as 'storyteller' for individual.html but 'portal' for family.html — implemented as designed.
+- D tier on `individual.html` routes to portal checkout (user_type: portal) since AI Companion is a portal feature, even though billing runs through storyteller_users. Logged-in storyteller users won't have a portalToken, so they'll fall through to the `/portal` href — acceptable edge case.
+
+### Issues Encountered
+
+- None

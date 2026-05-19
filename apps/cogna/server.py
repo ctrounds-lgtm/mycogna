@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional
 
 import anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -101,6 +101,121 @@ APP_URL = os.getenv("APP_URL", "https://mycogna.org")
 COMPANION_MONTHLY_MINUTES = int(os.getenv("COMPANION_MONTHLY_MINUTES", "60"))
 if resend_sdk and RESEND_API_KEY:
     resend_sdk.api_key = RESEND_API_KEY
+
+# ----------------------------------------------------
+# Stripe
+# ----------------------------------------------------
+try:
+    import stripe as stripe_sdk
+except ImportError:
+    stripe_sdk = None
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+# Price IDs from Stripe dashboard (test or live depending on env)
+STRIPE_PRICES = {
+    "B": os.getenv("STRIPE_PRICE_B", ""),         # $5/month flat
+    "C": os.getenv("STRIPE_PRICE_C", ""),         # $10/month flat
+    "D": os.getenv("STRIPE_PRICE_D", ""),         # $15/month flat
+    "E_SEAT": os.getenv("STRIPE_PRICE_E_SEAT", ""),  # $5/unit/month
+    "F_FLAT": os.getenv("STRIPE_PRICE_F_FLAT", ""),  # $25/month flat
+    "F_SEAT": os.getenv("STRIPE_PRICE_F_SEAT", ""),  # $5/unit/month
+}
+
+if stripe_sdk and STRIPE_SECRET_KEY:
+    stripe_sdk.api_key = STRIPE_SECRET_KEY
+
+
+def _update_seat_quantity(portal_email: str, delta: int) -> None:
+    """Increment or decrement the Stripe seat quantity for an E/F portal user.
+    Called when a promo code is created (+1) or deactivated (-1).
+    No-ops gracefully if Stripe is not configured or user has no subscription.
+    """
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        return
+    if not supabase:
+        return
+    try:
+        r = supabase.table("users").select("stripe_subscription_id, stripe_seat_item_id, tier").eq("email", portal_email).limit(1).execute()
+        if not r.data:
+            return
+        user = r.data[0]
+        if user.get("tier") not in ("E", "F"):
+            return
+        sub_id = user.get("stripe_subscription_id")
+        item_id = user.get("stripe_seat_item_id")
+        if not sub_id or not item_id:
+            return
+        item = stripe_sdk.SubscriptionItem.retrieve(item_id)
+        new_qty = max(0, (item.get("quantity") or 0) + delta)
+        stripe_sdk.SubscriptionItem.modify(item_id, quantity=new_qty, proration_behavior="none")
+    except Exception as e:
+        print(f"[Stripe] seat quantity update failed for {portal_email}: {e}")
+
+
+def _send_billing_confirmation_email(email: str, tier: str, first_name: str = "") -> None:
+    """Send a post-checkout confirmation email explaining the billing model."""
+    if not resend_sdk or not RESEND_API_KEY:
+        return
+    tier_names = {
+        "B": "Storyteller Unlimited",
+        "C": "Storyteller + Memoir Builder",
+        "D": "AI Companion",
+        "E": "Legacy Collection",
+        "F": "Legacy Collection + Book Builder",
+    }
+    tier_name = tier_names.get(tier, tier)
+    greeting = f"Hi {first_name}!" if first_name else "Hi!"
+
+    if tier in ("B", "C", "D"):
+        body_html = f"""
+        <p>{greeting}</p>
+        <p>You're now subscribed to <strong>MyCogna {tier_name}</strong>.</p>
+        <p>Your subscription renews monthly. You can manage or cancel at any time from
+        your <a href="https://mycogna.org/portal">portal</a>.</p>
+        <p>If you have any questions, just reply to this email.</p>
+        """
+    elif tier == "E":
+        body_html = f"""
+        <p>{greeting}</p>
+        <p>You're now subscribed to <strong>MyCogna {tier_name}</strong>.</p>
+        <p><strong>How your billing works:</strong><br>
+        You're charged <strong>$5/month per active access code</strong>.
+        We've created your first code — it's ready to use in your
+        <a href="https://mycogna.org/portal">portal</a>.</p>
+        <p>Each new code you generate adds $5/month starting on your next billing date.
+        Deactivating a code removes it from your next billing cycle.
+        There are no mid-month adjustments — changes take effect at renewal.</p>
+        <p>You can cancel at any time from the portal. Your codes stay active until
+        the end of your current billing period.</p>
+        """
+    else:  # F
+        body_html = f"""
+        <p>{greeting}</p>
+        <p>You're now subscribed to <strong>MyCogna {tier_name}</strong>.</p>
+        <p><strong>How your billing works:</strong><br>
+        Your subscription includes a <strong>$25/month base fee</strong> for AI deepening
+        and the book-building workspace, plus <strong>$5/month per active access code</strong>.
+        We've created your first code — it's ready in your
+        <a href="https://mycogna.org/portal">portal</a>.</p>
+        <p>Each new code adds $5/month starting on your next billing date.
+        Deactivating a code removes it from your next billing cycle.
+        No mid-month adjustments — changes take effect at renewal.</p>
+        <p>You can cancel at any time from the portal. Access continues until
+        the end of your current billing period.</p>
+        """
+
+    try:
+        resend_sdk.Emails.send({
+            "from": RESEND_FROM,
+            "to": [email],
+            "subject": f"You're subscribed to MyCogna {tier_name}",
+            "html": body_html,
+        })
+    except Exception as e:
+        print(f"[Resend] billing confirmation failed for {email}: {e}")
+
 
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
@@ -207,6 +322,11 @@ class PromptsReorderRequest(BaseModel):
 class PromoCodeCreate(BaseModel):
     description: str = ""
     tier: str = "A"
+
+
+class StripeCheckoutRequest(BaseModel):
+    tier: str                    # B, C, D, E, F
+    user_type: str = "storyteller"  # "storyteller" or "portal"
 
 
 class StorySignupRequest(BaseModel):
@@ -343,6 +463,315 @@ def health():
 
 
 # ----------------------------------------------------
+# Stripe billing endpoints
+# ----------------------------------------------------
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(
+    payload: StripeCheckoutRequest,
+    authorization: Optional[str] = Header(default=None),
+):
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured.")
+
+    tier = payload.tier.upper()
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+
+    if payload.user_type == "storyteller":
+        user = _auth_storyteller_user(authorization)
+        client_ref = f"storyteller:{user['id']}"
+        customer_email = user["email"]
+    else:
+        user = _auth_user(authorization)
+        client_ref = f"portal:{user['email']}"
+        customer_email = user["email"]
+
+    if tier == "B":
+        line_items = [{"price": STRIPE_PRICES["B"], "quantity": 1}]
+        success_path = "/storyteller"
+        description = "Unlimited story recordings, custom interview questions."
+    elif tier == "C":
+        line_items = [{"price": STRIPE_PRICES["C"], "quantity": 1}]
+        success_path = "/storyteller"
+        description = "Unlimited recordings plus AI-assisted memoir assembly and editing."
+    elif tier == "D":
+        line_items = [{"price": STRIPE_PRICES["D"], "quantity": 1}]
+        success_path = "/storyteller"
+        description = "Build a Cogna voice companion for a loved one."
+    elif tier == "E":
+        line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
+        success_path = "/portal"
+        description = (
+            "$5/month per active access code. Your first code is included. "
+            "Each code you create adds $5/month. Deactivating a code removes it "
+            "from your next billing cycle — no mid-month adjustments."
+        )
+    elif tier == "F":
+        line_items = [
+            {"price": STRIPE_PRICES["F_FLAT"], "quantity": 1},
+            {"price": STRIPE_PRICES["F_SEAT"], "quantity": 1},
+        ]
+        success_path = "/portal"
+        description = (
+            "$25/month for AI deepening and book-building tools, plus $5/month "
+            "per active access code. Your first code is included."
+        )
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown tier: {tier}")
+
+    try:
+        session = stripe_sdk.checkout.Session.create(
+            mode="subscription",
+            line_items=line_items,
+            customer_email=customer_email,
+            client_reference_id=client_ref,
+            allow_promotion_codes=True,
+            subscription_data={"metadata": {"tier": tier, "user_type": payload.user_type, "description": description}},
+            metadata={"tier": tier, "user_type": payload.user_type},
+            success_url=f"{base_url}{success_path}?checkout=success",
+            cancel_url=f"{base_url}{success_path}?checkout=canceled",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+
+    return {"url": session.url}
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    if not stripe_sdk or not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503, detail="Webhook not configured.")
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = stripe_sdk.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    etype = event["type"]
+    data = event["data"]["object"]
+
+    if etype == "checkout.session.completed":
+        _handle_checkout_completed(data)
+    elif etype == "customer.subscription.updated":
+        _handle_subscription_updated(data)
+    elif etype == "customer.subscription.deleted":
+        _handle_subscription_deleted(data)
+    elif etype == "invoice.payment_failed":
+        _handle_payment_failed(data)
+
+    return {"ok": True}
+
+
+def _handle_checkout_completed(session: dict) -> None:
+    client_ref = session.get("client_reference_id", "")
+    tier = (session.get("metadata") or {}).get("tier", "")
+    user_type = (session.get("metadata") or {}).get("user_type", "storyteller")
+    customer_id = session.get("customer")
+    subscription_id = session.get("subscription")
+
+    if not client_ref or not tier:
+        print(f"[Stripe webhook] checkout.session.completed missing ref or tier: {session.get('id')}")
+        return
+
+    try:
+        sub = stripe_sdk.Subscription.retrieve(subscription_id)
+        period_end_ts = sub["current_period_end"]
+        period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat()
+        items = sub["items"]["data"]
+    except Exception as e:
+        print(f"[Stripe webhook] failed to retrieve subscription {subscription_id}: {e}")
+        return
+
+    seat_price_ids = {STRIPE_PRICES.get("E_SEAT"), STRIPE_PRICES.get("F_SEAT")} - {None, ""}
+    seat_item_id = next((item["id"] for item in items if item["price"]["id"] in seat_price_ids), None)
+
+    updates = {
+        "tier": tier,
+        "stripe_customer_id": customer_id,
+        "stripe_subscription_id": subscription_id,
+        "subscription_status": "active",
+        "subscription_period_end": period_end,
+    }
+
+    if user_type == "storyteller" and client_ref.startswith("storyteller:"):
+        user_id = client_ref.split(":", 1)[1]
+        if supabase:
+            r = supabase.table("storyteller_users").select("email, first_name").eq("id", user_id).limit(1).execute()
+            if r.data:
+                email = r.data[0]["email"]
+                first_name = r.data[0].get("first_name", "")
+                supabase.table("storyteller_users").update(updates).eq("id", user_id).execute()
+                _send_billing_confirmation_email(email, tier, first_name)
+
+    elif user_type == "portal" and client_ref.startswith("portal:"):
+        email = client_ref.split(":", 1)[1]
+        if supabase:
+            r = supabase.table("users").select("first_name").eq("email", email).limit(1).execute()
+            first_name = r.data[0].get("first_name", "") if r.data else ""
+            portal_updates = {**updates}
+            if seat_item_id:
+                portal_updates["stripe_seat_item_id"] = seat_item_id
+            supabase.table("users").update(portal_updates).eq("email", email).execute()
+
+            if tier in ("E", "F"):
+                code_tier = tier
+                code = _generate_story_promo_code(code_tier)
+                record = {
+                    "code": code,
+                    "tier": code_tier,
+                    "description": "First code (auto-created)",
+                    "active": True,
+                    "created_by": email,
+                    "created_at": _utc_now(),
+                }
+                try:
+                    supabase.table("promo_codes").insert(record).execute()
+                except Exception as e:
+                    print(f"[Stripe webhook] failed to auto-create first code for {email}: {e}")
+
+            _send_billing_confirmation_email(email, tier, first_name)
+
+
+def _handle_subscription_updated(sub: dict) -> None:
+    customer_id = sub.get("customer")
+    status = sub.get("status")
+    cancel_at_period_end = sub.get("cancel_at_period_end", False)
+    period_end_ts = sub.get("current_period_end")
+    period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat() if period_end_ts else None
+    stripe_status = "canceling" if cancel_at_period_end else ("past_due" if status == "past_due" else "active")
+    updates = {"subscription_status": stripe_status, "subscription_period_end": period_end}
+    if supabase:
+        supabase.table("storyteller_users").update(updates).eq("stripe_customer_id", customer_id).execute()
+        supabase.table("users").update(updates).eq("stripe_customer_id", customer_id).execute()
+
+
+def _handle_subscription_deleted(sub: dict) -> None:
+    customer_id = sub.get("customer")
+    updates = {
+        "tier": "A",
+        "stripe_subscription_id": None,
+        "stripe_customer_id": None,
+        "subscription_status": "canceled",
+        "subscription_period_end": None,
+    }
+    if supabase:
+        supabase.table("storyteller_users").update(updates).eq("stripe_customer_id", customer_id).execute()
+        portal_updates = {**updates, "stripe_seat_item_id": None}
+        supabase.table("users").update(portal_updates).eq("stripe_customer_id", customer_id).execute()
+
+
+def _handle_payment_failed(invoice: dict) -> None:
+    customer_id = invoice.get("customer")
+    if supabase:
+        supabase.table("storyteller_users").update({"subscription_status": "past_due"}).eq("stripe_customer_id", customer_id).execute()
+        supabase.table("users").update({"subscription_status": "past_due"}).eq("stripe_customer_id", customer_id).execute()
+
+
+@app.post("/api/stripe/cancel")
+async def cancel_subscription(authorization: Optional[str] = Header(default=None)):
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured.")
+    sub_id = None
+    try:
+        user = _auth_storyteller_user(authorization)
+        sub_id = user.get("stripe_subscription_id")
+    except HTTPException:
+        user = _auth_user(authorization)
+        sub_id = user.get("stripe_subscription_id")
+    if not sub_id:
+        raise HTTPException(status_code=400, detail="No active subscription found.")
+    try:
+        sub = stripe_sdk.Subscription.modify(sub_id, cancel_at_period_end=True)
+        period_end_ts = sub["current_period_end"]
+        period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+    if supabase:
+        updates = {"subscription_status": "canceling", "subscription_period_end": period_end}
+        supabase.table("storyteller_users").update(updates).eq("stripe_subscription_id", sub_id).execute()
+        supabase.table("users").update(updates).eq("stripe_subscription_id", sub_id).execute()
+    return {"ok": True, "period_end": period_end}
+
+
+@app.post("/api/stripe/reactivate")
+async def reactivate_subscription(authorization: Optional[str] = Header(default=None)):
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured.")
+    sub_id = None
+    try:
+        user = _auth_storyteller_user(authorization)
+        sub_id = user.get("stripe_subscription_id")
+    except HTTPException:
+        user = _auth_user(authorization)
+        sub_id = user.get("stripe_subscription_id")
+    if not sub_id:
+        raise HTTPException(status_code=400, detail="No active subscription found.")
+    try:
+        stripe_sdk.Subscription.modify(sub_id, cancel_at_period_end=False)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+    if supabase:
+        updates = {"subscription_status": "active"}
+        supabase.table("storyteller_users").update(updates).eq("stripe_subscription_id", sub_id).execute()
+        supabase.table("users").update(updates).eq("stripe_subscription_id", sub_id).execute()
+    return {"ok": True}
+
+
+@app.get("/api/stripe/billing-status")
+async def billing_status(authorization: Optional[str] = Header(default=None)):
+    try:
+        user = _auth_storyteller_user(authorization)
+        return {
+            "tier": user.get("tier", "A"),
+            "subscription_status": user.get("subscription_status", "none"),
+            "subscription_period_end": user.get("subscription_period_end"),
+            "user_type": "storyteller",
+        }
+    except HTTPException:
+        pass
+    user = _auth_user(authorization)
+    active_code_count = 0
+    if supabase and user.get("tier") in ("E", "F"):
+        r = supabase.table("promo_codes").select("code").eq("created_by", user["email"]).eq("active", True).execute()
+        active_code_count = len(r.data or [])
+    return {
+        "tier": user.get("tier", "A"),
+        "subscription_status": user.get("subscription_status", "none"),
+        "subscription_period_end": user.get("subscription_period_end"),
+        "active_code_count": active_code_count,
+        "user_type": "portal",
+    }
+
+
+@app.post("/api/stripe/customer-portal")
+async def stripe_customer_portal(authorization: Optional[str] = Header(default=None)):
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured.")
+    customer_id = None
+    try:
+        user = _auth_storyteller_user(authorization)
+        customer_id = user.get("stripe_customer_id")
+    except HTTPException:
+        user = _auth_user(authorization)
+        customer_id = user.get("stripe_customer_id")
+    if not customer_id:
+        raise HTTPException(status_code=400, detail="No billing account found.")
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+    try:
+        session = stripe_sdk.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{base_url}/portal",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+    return {"url": session.url}
+
+
+
+# ----------------------------------------------------
 # Audio serving (local fallback only)
 # ----------------------------------------------------
 
@@ -370,7 +799,13 @@ def auth_register(payload: FamilyRegisterRequest):
     existing = _get_user(email)
 
     setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
-    tier = payload.tier if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
+    requested_tier = payload.tier if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
+    checkout_tier = None
+    if requested_tier in {"E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
+        tier = "A"
+        checkout_tier = requested_tier
+    else:
+        tier = requested_tier
 
     if existing:
         if existing.get("role") in ("portal_admin", "both"):
@@ -418,7 +853,32 @@ def auth_register(payload: FamilyRegisterRequest):
     _create_user(user)
     _update_user(email, {"role": "portal_admin", "first_name": "", "last_name": ""})
     token = _create_session(email)
-    return {"token": token, "user": _public_user(user)}
+    result = {"token": token, "user": _public_user(user)}
+    if checkout_tier and stripe_sdk and STRIPE_SECRET_KEY:
+        try:
+            base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+            if checkout_tier == "E":
+                line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
+            else:
+                line_items = [
+                    {"price": STRIPE_PRICES["F_FLAT"], "quantity": 1},
+                    {"price": STRIPE_PRICES["F_SEAT"], "quantity": 1},
+                ]
+            stripe_session = stripe_sdk.checkout.Session.create(
+                mode="subscription",
+                line_items=line_items,
+                customer_email=email,
+                client_reference_id=f"portal:{email}",
+                allow_promotion_codes=True,
+                subscription_data={"metadata": {"tier": checkout_tier, "user_type": "portal"}},
+                metadata={"tier": checkout_tier, "user_type": "portal"},
+                success_url=f"{base_url}/portal?checkout=success",
+                cancel_url=f"{base_url}/portal?checkout=canceled",
+            )
+            result["checkout_url"] = stripe_session.url
+        except Exception:
+            pass
+    return result
 
 
 @app.post("/api/auth/login")
@@ -1045,6 +1505,7 @@ def storyteller_signup(payload: StorySignupRequest):
     existing_u = _get_user(email)
 
     # Derive tier and managed flag from promo code
+    checkout_plan = None
     code_tier = "A"
     if code and pc:
         code_tier = pc.get("tier", "A").upper()
@@ -1062,7 +1523,12 @@ def storyteller_signup(payload: StorySignupRequest):
             user_managed = False
     else:
         plan_hint = (payload.plan or "").strip().upper()
-        user_tier = plan_hint if plan_hint in {"B", "C", "D"} else "A"
+        if plan_hint in {"B", "C", "D"} and stripe_sdk and STRIPE_SECRET_KEY:
+            user_tier = "A"
+            checkout_plan = plan_hint
+        else:
+            user_tier = plan_hint if plan_hint in {"B", "C", "D"} else "A"
+            checkout_plan = None
         user_managed = False
 
     user_id = "stuser_" + secrets.token_hex(8)
@@ -1127,7 +1593,7 @@ def storyteller_signup(payload: StorySignupRequest):
         include_system=code_tier not in {"E", "F"},
     )
     token = _create_story_session(email)
-    return {
+    result = {
         "token": token,
         "user": {
             "email": email,
@@ -1141,6 +1607,25 @@ def storyteller_signup(payload: StorySignupRequest):
         },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
+    if checkout_plan and stripe_sdk and STRIPE_SECRET_KEY:
+        try:
+            base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+            price_map = {"B": STRIPE_PRICES["B"], "C": STRIPE_PRICES["C"], "D": STRIPE_PRICES["D"]}
+            stripe_session = stripe_sdk.checkout.Session.create(
+                mode="subscription",
+                line_items=[{"price": price_map[checkout_plan], "quantity": 1}],
+                customer_email=email,
+                client_reference_id=f"storyteller:{user_id}",
+                allow_promotion_codes=True,
+                subscription_data={"metadata": {"tier": checkout_plan, "user_type": "storyteller"}},
+                metadata={"tier": checkout_plan, "user_type": "storyteller"},
+                success_url=f"{base_url}/storyteller?checkout=success",
+                cancel_url=f"{base_url}/storyteller?checkout=canceled",
+            )
+            result["checkout_url"] = stripe_session.url
+        except Exception:
+            pass
+    return result
 
 
 @app.post("/api/storyteller/logout")
@@ -1608,6 +2093,7 @@ def create_promo_code(
         db = _load_db()
         db["promo_codes"][code] = record
         _save_db(db)
+    _update_seat_quantity(user["email"], delta=+1)
     return {"code": record}
 
 
@@ -1644,6 +2130,13 @@ def deactivate_promo_code(
         if code in db["promo_codes"]:
             db["promo_codes"][code]["active"] = False
         _save_db(db)
+    try:
+        if supabase:
+            r = supabase.table("promo_codes").select("created_by").eq("code", code).limit(1).execute()
+            if r.data:
+                _update_seat_quantity(r.data[0]["created_by"], delta=-1)
+    except Exception:
+        pass
     return {"ok": True}
 
 

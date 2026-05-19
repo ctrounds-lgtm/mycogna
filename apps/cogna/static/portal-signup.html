@@ -312,7 +312,11 @@
         }
 
         localStorage.setItem('portalToken', data.token);
-        window.location.href = '/portal';
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          window.location.href = '/portal';
+        }
       } catch (err) {
         errEl.textContent = 'Network error. Please check your connection and try again.';
         errEl.className = 'error-msg visible';

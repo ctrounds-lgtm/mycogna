@@ -206,6 +206,24 @@ MyCogna is a voice companion app. A **Cogna** is one voice/persona — Mom is on
 - Database: Supabase (always live — no deploy step)
 - Domain: `mycogna.org` → Vercel (A record + CNAME in GoDaddy DNS)
 
+**Required Railway environment variables (Stripe billing):**
+- `STRIPE_SECRET_KEY` — from Stripe dashboard → API keys (starts `sk_live_` or `sk_test_`)
+- `STRIPE_WEBHOOK_SECRET` — from Stripe dashboard → Webhooks (starts `whsec_`)
+- `STRIPE_PRICE_B` — Price ID for $5/month flat (Storytelling Unlimited)
+- `STRIPE_PRICE_C` — Price ID for $10/month flat (Storytelling + Memoir Builder)
+- `STRIPE_PRICE_D` — Price ID for $15/month flat (AI Companion)
+- `STRIPE_PRICE_E_SEAT` — Price ID for $5/month per seat (Legacy Collection)
+- `STRIPE_PRICE_F_FLAT` — Price ID for $25/month flat (Legacy Collection + Book Builder base)
+- `STRIPE_PRICE_F_SEAT` — Price ID for $5/month per seat (Legacy Collection + Book Builder)
+- `APP_BASE_URL` — set to `https://mycogna.org` in production
+
+**Stripe setup steps (one-time, before first live transaction):**
+1. Create products + prices in Stripe dashboard (one per tier above)
+2. Set all env vars in Railway
+3. Register webhook endpoint: `https://mycogna.org/api/stripe/webhook` for events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+4. Run schema migration in Supabase SQL editor (see `apps/cogna/supabase_schema.sql` bottom)
+5. Create a 100% off coupon in Stripe dashboard for internal testing (no credit card required)
+
 **One-time data migration:**
 ```bash
 cd apps/cogna

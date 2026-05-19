@@ -799,7 +799,7 @@
       <div class="upgrade-icon">✦</div>
       <h2 class="upgrade-title" id="upgradeTitle">Unlock this feature</h2>
       <p class="upgrade-body" id="upgradeBody">Upgrade your plan to access this.</p>
-      <a href="/individual#pricing" class="btn-primary upgrade-cta" id="upgradeCta">See plans</a>
+      <a href="/individual#pricing" class="btn-primary upgrade-cta" id="upgradeCta" onclick="const t=this.dataset.tier;if(t&&window.st){event.preventDefault();st.goToCheckout(t);}">See plans</a>
       <button class="btn-secondary" style="margin-top:10px" onclick="st.dismissUpgrade()">Maybe later</button>
     </div>
   </div>
@@ -1216,7 +1216,8 @@
               "You've shared your 3 free stories for this month",
               "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
               'See plans',
-              '/individual#pricing'
+              '/individual#pricing',
+              'B'
             );
             showScreen('screenDone');
             return;
@@ -1270,7 +1271,8 @@
             "You've shared your 3 free stories for this month",
             "The Storyteller plan gives you unlimited recordings. Upgrade to keep sharing whenever inspiration strikes.",
             'See plans',
-            '/individual#pricing'
+            '/individual#pricing',
+            'B'
           );
           return;
         }
@@ -1519,17 +1521,36 @@
       },
 
       // ── Upgrade modal ──
-      showUpgrade(title, body, ctaText, ctaHref) {
+      showUpgrade(title, body, ctaText, ctaHref, tier) {
         document.getElementById('upgradeTitle').textContent = title;
         document.getElementById('upgradeBody').textContent = body;
         const cta = document.getElementById('upgradeCta');
         cta.textContent = ctaText || 'See plans';
-        if (ctaHref) cta.href = ctaHref;
+        cta.href = ctaHref || '/individual#pricing';
+        cta.dataset.tier = tier || '';
         document.getElementById('upgradeModal').classList.remove('hidden');
       },
 
       dismissUpgrade() {
         document.getElementById('upgradeModal').classList.add('hidden');
+      },
+
+      async goToCheckout(tier) {
+        if (!stState.authToken) {
+          window.location.href = '/signup?plan=' + tier;
+          return;
+        }
+        try {
+          const res = await fetch('/api/stripe/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + stState.authToken },
+            body: JSON.stringify({ tier, user_type: 'storyteller' }),
+          });
+          const data = await res.json();
+          if (data.url) window.location.href = data.url;
+        } catch (_) {
+          window.location.href = '/individual#pricing';
+        }
       },
 
       // ── Tier-gated feature clicks ──
@@ -1544,7 +1565,8 @@
             'Unlock AI-assisted memoir',
             'The Storyteller + Memoir Builder plan lets you go deeper with Claude — follow-up questions, memoir assembly, and chapter editing.',
             'See plans',
-            '/individual#pricing'
+            '/individual#pricing',
+            'C'
           );
         }
       },
@@ -1558,7 +1580,8 @@
             'Unlock AI memoir writing',
             'The Storyteller + Memoir Builder plan lets you build a memoir from your recordings — with Claude helping you deepen, assemble, and edit your chapters.',
             'See plans',
-            '/individual#pricing'
+            '/individual#pricing',
+            'C'
           );
         }
       },
@@ -1608,6 +1631,8 @@
         return;
       }
 
+      const checkoutResult = params.get('checkout');
+
       // Fast-path: pre-populate tier/managed from localStorage before /me responds
       stState.tier = localStorage.getItem('st_tier') || 'A';
       stState.managed = localStorage.getItem('st_managed') === '1';
@@ -1634,6 +1659,16 @@
             st._mergeCustomPrompts(data.user && data.user.email, data.user && data.user.custom_prompts);
             stState.currentPromptIndex = 0;
             stState.transcripts = [];
+            if (checkoutResult === 'success') {
+              history.replaceState({}, '', '/storyteller');
+              setTimeout(() => {
+                const notice = document.createElement('div');
+                notice.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#2c4a2e;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+                notice.textContent = '✓ Your subscription is active. Welcome!';
+                document.body.appendChild(notice);
+                setTimeout(() => notice.remove(), 4000);
+              }, 500);
+            }
             if (stState.prompts.length > 0) {
               st._showPromptSelect();
               return;

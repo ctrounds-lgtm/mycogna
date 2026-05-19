@@ -355,7 +355,11 @@
         localStorage.setItem('st_first_name', data.user.first_name || '');
         localStorage.setItem('st_last_name', data.user.last_name || '');
 
-        window.location.href = '/storyteller';
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          window.location.href = '/storyteller';
+        }
       } catch (err) {
         errEl.textContent = 'Network error. Please check your connection and try again.';
         errEl.className = 'error-msg visible';

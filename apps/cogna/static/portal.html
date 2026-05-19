@@ -144,6 +144,13 @@
           <button class="dash-tab" id="dashTabF" onclick="portal.switchDashTab('F')">Legacy Collection + Book Builder</button>
         </div>
       </div>
+      <div class="tab-group-divider"></div>
+      <div class="tab-group">
+        <div class="tab-group-label">Account</div>
+        <div class="tab-group-tabs">
+          <button class="dash-tab" id="dashTabBilling" onclick="portal.switchDashTab('Billing')">Billing</button>
+        </div>
+      </div>
     </div>
 
     <!-- ── PANEL A — Free Storyteller ── -->
@@ -334,7 +341,8 @@
     <div id="panelE" class="hidden">
       <div class="onboarding-card" style="margin-top:8px">
         <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:12px">Welcome to MyCogna's Legacy Collection tool, which helps your family or organization compile and preserve institutional knowledge from multiple storytellers. Simply generate a code below, then email it to your storyteller with instructions to enter the code at <a href="https://mycogna.org/storyteller" target="_blank" style="color:var(--gold)">mycogna.org/storyteller</a>. Once your storyteller enters the code, they will create an account with their email address and password. In the future, they can sign in without the storyteller code.</p>
-        <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:0">The Book Builder upgrade adds two things: an AI 'Go Deeper' tool that prompts storytellers to explore their stories in more depth, and a book assembly tool that compiles all responses into a structured Legacy Archive — complete with thematic overview, chapter groupings, and editing support. <a href="https://mycogna.org" target="_blank" style="color:var(--gold);font-weight:500">Upgrade to Legacy Collection + Book Builder →</a></p>
+        <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:12px">The Book Builder upgrade adds two things: an AI 'Go Deeper' tool that prompts storytellers to explore their stories in more depth, and a book assembly tool that compiles all responses into a structured Legacy Archive — complete with thematic overview, chapter groupings, and editing support. <a href="https://mycogna.org" target="_blank" style="color:var(--gold);font-weight:500">Upgrade to Legacy Collection + Book Builder →</a></p>
+        <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;margin-bottom:0;padding:10px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border-left:3px solid var(--gold-light)">If you upgrade to Legacy Collection + Book Builder, your existing codes remain active — storytellers keep their recording access. To give a storyteller Go Deeper and book access, generate a new Book Builder code for them.</p>
       </div>
       <div class="section-header-row" style="margin-top:24px">
         <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection)</span></h2>
@@ -410,6 +418,37 @@
         <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:12px" id="lockedTitle">Upgrade to unlock</h2>
         <p style="color:var(--ink-muted);max-width:400px;margin:0 auto 24px" id="lockedBody">This tier requires a higher plan.</p>
         <a href="/portal/signup" style="display:inline-block;padding:10px 24px;background:var(--ink);color:white;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">View plans</a>
+      </div>
+    </div>
+
+    <!-- ── PANEL Billing ── -->
+    <div id="panelBilling" class="hidden">
+      <div id="billingLoading" style="padding:40px;text-align:center;color:var(--ink-muted);font-size:14px">Loading billing info…</div>
+      <div id="billingDetails" style="display:none">
+
+        <div class="panel" style="margin-top:16px">
+          <h3 class="panel-title">Current plan</h3>
+          <div id="billingPlanName" style="font-size:20px;font-weight:500;margin-bottom:6px"></div>
+          <div id="billingPlanPrice" style="font-size:14px;color:var(--ink-muted);margin-bottom:4px"></div>
+          <div id="billingPeriodEnd" style="font-size:13px;color:var(--ink-muted)"></div>
+        </div>
+
+        <div id="billingCancelingNotice" class="panel" style="display:none;margin-top:12px;border-color:#C45E4A">
+          <p style="color:#C45E4A;margin:0 0 12px;font-size:14px" id="billingCancelingMsg"></p>
+          <button class="save-btn" onclick="portal.reactivateSubscription()">Reactivate subscription</button>
+        </div>
+
+        <div id="billingActiveActions" class="panel" style="margin-top:12px">
+          <h3 class="panel-title" style="margin-bottom:12px">Manage subscription</h3>
+          <button class="save-btn" style="margin-bottom:10px;width:100%" onclick="portal.openCustomerPortal()">Update payment method / view invoices</button>
+          <button class="ghost-btn" style="width:100%;color:#c0392b;opacity:0.8" onclick="portal.cancelSubscription()">Cancel subscription</button>
+          <p style="font-size:12px;color:var(--ink-muted);margin-top:8px">Canceling keeps your access until the end of the current billing period. No refunds.</p>
+        </div>
+
+      </div>
+      <div id="billingNoSub" style="display:none;padding:32px 0;text-align:center">
+        <p style="color:var(--ink-muted);font-size:14px;margin-bottom:16px">You're on the free plan.</p>
+        <a href="/legacy" class="save-btn" style="display:inline-block;text-decoration:none">View plans →</a>
       </div>
     </div>
 

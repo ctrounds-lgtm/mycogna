@@ -521,7 +521,7 @@ const portal = {
     const userTierIdx = tierOrder.indexOf(tier);
     const tabIdx = tierOrder.indexOf(tab);
 
-    ['B', 'C', 'D', 'E', 'F'].forEach(t => {
+    ['B', 'C', 'D', 'E', 'F', 'Billing'].forEach(t => {
       const btn = document.getElementById('dashTab' + t);
       if (btn) btn.classList.toggle('active', t === tab);
       const panel = document.getElementById('panel' + t);
@@ -529,6 +529,13 @@ const portal = {
     });
     const panelLockedEl = document.getElementById('panelLocked');
     if (panelLockedEl) panelLockedEl.classList.add('hidden');
+
+    if (tab === 'Billing') {
+      const billingPanel = document.getElementById('panelBilling');
+      if (billingPanel) billingPanel.classList.remove('hidden');
+      portal.loadBillingSection();
+      return;
+    }
 
     // Check if this tab is above the user's tier
     if (tabIdx > userTierIdx) {
@@ -1199,6 +1206,89 @@ const portal = {
       alert('Error: ' + err.message);
     }
   },
+
+  async loadBillingSection() {
+    const loading = document.getElementById('billingLoading');
+    const details = document.getElementById('billingDetails');
+    const noSub = document.getElementById('billingNoSub');
+    if (loading) loading.style.display = 'block';
+    if (details) details.style.display = 'none';
+    if (noSub) noSub.style.display = 'none';
+    try {
+      const data = await req(`${api}/stripe/billing-status`, { headers: authHeaders() });
+      portal._renderBillingSection(data);
+    } catch (err) {
+      if (loading) loading.textContent = 'Could not load billing info.';
+    }
+  },
+
+  _renderBillingSection(data) {
+    const loading = document.getElementById('billingLoading');
+    const details = document.getElementById('billingDetails');
+    const noSub = document.getElementById('billingNoSub');
+    if (loading) loading.style.display = 'none';
+
+    if (!data.has_subscription) {
+      if (noSub) noSub.style.display = 'block';
+      return;
+    }
+
+    const tierNames = { A: 'Free', B: 'Storytelling Unlimited', C: 'Storytelling Unlimited + Memoir Builder', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
+    const el = id => document.getElementById(id);
+    if (el('billingPlanName')) el('billingPlanName').textContent = tierNames[data.tier] || data.tier;
+    if (el('billingPlanPrice')) el('billingPlanPrice').textContent = data.monthly_total ? `$${data.monthly_total}/month` : '';
+    if (el('billingPeriodEnd') && data.period_end) {
+      const d = new Date(data.period_end);
+      el('billingPeriodEnd').textContent = `Next billing date: ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+    }
+
+    const cancelNotice = el('billingCancelingNotice');
+    const activeActions = el('billingActiveActions');
+    if (data.subscription_status === 'canceling') {
+      if (cancelNotice) {
+        cancelNotice.style.display = 'block';
+        const d = data.period_end ? new Date(data.period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+        const msg = el('billingCancelingMsg');
+        if (msg) msg.textContent = `Your subscription is set to cancel${d ? ` on ${d}` : ''}. You'll keep access until then.`;
+      }
+      if (activeActions) activeActions.style.display = 'none';
+    } else {
+      if (cancelNotice) cancelNotice.style.display = 'none';
+      if (activeActions) activeActions.style.display = 'block';
+    }
+
+    if (details) details.style.display = 'block';
+  },
+
+  async cancelSubscription() {
+    if (!confirm('Cancel your subscription? You\'ll keep access until the end of the billing period.')) return;
+    try {
+      const data = await req(`${api}/stripe/cancel`, { method: 'POST', headers: authHeaders() });
+      alert('Your subscription will end on ' + (data.period_end ? new Date(data.period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'the end of your billing period') + '. You\'ll keep access until then.');
+      portal.loadBillingSection();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async reactivateSubscription() {
+    try {
+      await req(`${api}/stripe/reactivate`, { method: 'POST', headers: authHeaders() });
+      alert('Your subscription has been reactivated.');
+      portal.loadBillingSection();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async openCustomerPortal() {
+    try {
+      const data = await req(`${api}/stripe/customer-portal`, { method: 'POST', headers: authHeaders() });
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
 };
 
 window.portal = portal;
@@ -1398,15 +1488,26 @@ if (_addQuestionBtnF) _addQuestionBtnF.addEventListener('click', () => portal.cr
 
 // ── Init ──
 async function init() {
-  // Check for password reset token in URL
-  const resetToken = new URLSearchParams(window.location.search).get('reset_token');
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = params.get('reset_token');
   if (resetToken) {
     showScreen('resetScreen');
     return;
   }
   if (!state.token) { showScreen('authScreen'); return; }
+  const checkoutResult = params.get('checkout');
   try {
     await loadDashboard();
+    if (checkoutResult === 'success') {
+      history.replaceState({}, '', '/portal');
+      setTimeout(() => {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#2c4a2e;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+        notice.textContent = '✓ Your subscription is active. Welcome!';
+        document.body.appendChild(notice);
+        setTimeout(() => notice.remove(), 4000);
+      }, 500);
+    }
   } catch {
     localStorage.removeItem('portalToken');
     state.token = '';

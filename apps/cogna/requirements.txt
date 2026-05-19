@@ -10,3 +10,4 @@ hume
 httpx
 supabase
 resend
+stripe

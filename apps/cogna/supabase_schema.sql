@@ -325,3 +325,21 @@ ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS portal_user_email TEXT REFERE
 
 -- Array of system prompt IDs the portal user has hidden from their storytellers
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hidden_prompt_ids JSONB NOT NULL DEFAULT '[]';
+
+-- ─────────────────────────────────────────────
+-- Migration: Stripe billing columns (2026-05-18)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- Stripe billing columns for individual storyteller subscriptions (B/C/D tiers)
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'none';
+ALTER TABLE storyteller_users ADD COLUMN IF NOT EXISTS subscription_period_end TIMESTAMPTZ;
+
+-- Stripe billing columns for portal admin subscriptions (D/E/F tiers)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_seat_item_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'none';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_period_end TIMESTAMPTZ;

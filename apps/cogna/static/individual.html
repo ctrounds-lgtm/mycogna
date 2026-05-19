@@ -671,7 +671,7 @@
             <li>Extended story sessions</li>
             <li>Memoir assembly workspace</li>
           </ul>
-          <a href="/signup?plan=C" class="product-link">Start writing</a>
+          <a href="/signup?plan=C" class="product-link" onclick="return handlePricingClick(event,'C','storyteller')">Start writing</a>
         </div>
 
         <div class="product-card">
@@ -728,7 +728,7 @@
             <li>Voice recording &amp; transcription</li>
             <li>Shareable story archive</li>
           </ul>
-          <a href="/signup?plan=B" class="pricing-btn pricing-btn-fill">Start recording</a>
+          <a href="/signup?plan=B" class="pricing-btn pricing-btn-fill" onclick="return handlePricingClick(event,'B','storyteller')">Start recording</a>
         </div>
 
         <div class="pricing-card featured">
@@ -743,7 +743,7 @@
             <li>Intelligent story editing</li>
             <li>Extended story sessions</li>
           </ul>
-          <a href="/signup?plan=C" class="pricing-btn pricing-btn-fill">Start recording</a>
+          <a href="/signup?plan=C" class="pricing-btn pricing-btn-fill" onclick="return handlePricingClick(event,'C','storyteller')">Start recording</a>
         </div>
 
         <div class="pricing-card">
@@ -759,7 +759,7 @@
             <li>Multi-voice conversations</li>
             <li>Session transcripts saved</li>
           </ul>
-          <a href="/portal" class="pricing-btn pricing-btn-outline">Create a Cogna</a>
+          <a href="/portal" class="pricing-btn pricing-btn-outline" onclick="return handlePricingClick(event,'D','portal')">Create a Cogna</a>
         </div>
 
       </div>
@@ -853,5 +853,23 @@
     </div>
   </footer>
 
+<script>
+  async function handlePricingClick(e, tier, userType) {
+    const token = userType === 'storyteller'
+      ? localStorage.getItem('st_token')
+      : localStorage.getItem('portalToken');
+    if (!token) return true; // not logged in — follow href to signup
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ tier, user_type: userType }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (_) {}
+  }
+</script>
 </body>
 </html>
