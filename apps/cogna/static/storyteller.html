@@ -1623,6 +1623,8 @@
       },
     };
 
+    window.st = st; // expose for inline onclick handlers
+
     // On load: check for reset token, then check stored auth
     window.addEventListener('load', async () => {
       const params = new URLSearchParams(window.location.search);
