@@ -1535,22 +1535,9 @@
         document.getElementById('upgradeModal').classList.add('hidden');
       },
 
-      async goToCheckout(tier) {
-        if (!stState.authToken) {
-          window.location.href = '/signup?plan=' + tier;
-          return;
-        }
-        try {
-          const res = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + stState.authToken },
-            body: JSON.stringify({ tier, user_type: 'storyteller' }),
-          });
-          const data = await res.json();
-          if (data.url) window.location.href = data.url;
-        } catch (_) {
-          window.location.href = '/individual#pricing';
-        }
+      goToCheckout(tier) {
+        // Send to pricing page first so user sees plan details before Stripe
+        window.location.href = '/individual#pricing';
       },
 
       // ── Tier-gated feature clicks ──
