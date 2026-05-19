@@ -582,14 +582,16 @@ def _handle_checkout_completed(session: dict) -> None:
         print(f"[Stripe webhook] checkout.session.completed missing ref or tier: {session.get('id')}")
         return
 
+    period_end = None
+    items = []
     try:
         sub = stripe_sdk.Subscription.retrieve(subscription_id)
-        period_end_ts = sub["current_period_end"]
-        period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat()
-        items = sub["items"]["data"]
+        period_end_ts = sub.get("current_period_end") if hasattr(sub, "get") else sub["current_period_end"]
+        if period_end_ts:
+            period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc).isoformat()
+        items = (sub.get("items", {}) if hasattr(sub, "get") else sub["items"]).get("data", [])
     except Exception as e:
-        print(f"[Stripe webhook] failed to retrieve subscription {subscription_id}: {e}")
-        return
+        print(f"[Stripe webhook] subscription retrieval failed (non-critical, tier update will still run): {e}")
 
     seat_price_ids = {STRIPE_PRICES.get("E_SEAT"), STRIPE_PRICES.get("F_SEAT")} - {None, ""}
     seat_item_id = next((item["id"] for item in items if item["price"]["id"] in seat_price_ids), None)
