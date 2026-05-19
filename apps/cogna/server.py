@@ -554,14 +554,19 @@ async def stripe_webhook(request: Request):
     etype = event["type"]
     data = event["data"]["object"]
 
-    if etype == "checkout.session.completed":
-        _handle_checkout_completed(data)
-    elif etype == "customer.subscription.updated":
-        _handle_subscription_updated(data)
-    elif etype == "customer.subscription.deleted":
-        _handle_subscription_deleted(data)
-    elif etype == "invoice.payment_failed":
-        _handle_payment_failed(data)
+    try:
+        if etype == "checkout.session.completed":
+            _handle_checkout_completed(data)
+        elif etype == "customer.subscription.updated":
+            _handle_subscription_updated(data)
+        elif etype == "customer.subscription.deleted":
+            _handle_subscription_deleted(data)
+        elif etype == "invoice.payment_failed":
+            _handle_payment_failed(data)
+    except Exception as exc:
+        import traceback
+        print(f"[Stripe webhook] ERROR handling {etype}: {exc}")
+        traceback.print_exc()
 
     return {"ok": True}
 
@@ -604,18 +609,33 @@ def _handle_checkout_completed(session: dict) -> None:
             if r.data:
                 email = r.data[0]["email"]
                 first_name = r.data[0].get("first_name", "")
-                supabase.table("storyteller_users").update(updates).eq("id", user_id).execute()
+                # Critical: update tier first on its own so a missing Stripe column can't block it
+                supabase.table("storyteller_users").update({"tier": tier}).eq("id", user_id).execute()
+                print(f"[Stripe webhook] tier updated to {tier} for storyteller {user_id}")
+                try:
+                    stripe_meta = {k: v for k, v in updates.items() if k != "tier"}
+                    supabase.table("storyteller_users").update(stripe_meta).eq("id", user_id).execute()
+                except Exception as e:
+                    print(f"[Stripe webhook] Stripe metadata columns update failed (non-critical): {e}")
                 _send_billing_confirmation_email(email, tier, first_name)
+            else:
+                print(f"[Stripe webhook] storyteller user {user_id} not found in DB")
 
     elif user_type == "portal" and client_ref.startswith("portal:"):
         email = client_ref.split(":", 1)[1]
         if supabase:
             r = supabase.table("users").select("first_name").eq("email", email).limit(1).execute()
             first_name = r.data[0].get("first_name", "") if r.data else ""
-            portal_updates = {**updates}
-            if seat_item_id:
-                portal_updates["stripe_seat_item_id"] = seat_item_id
-            supabase.table("users").update(portal_updates).eq("email", email).execute()
+            # Critical: update tier first
+            supabase.table("users").update({"tier": tier}).eq("email", email).execute()
+            print(f"[Stripe webhook] tier updated to {tier} for portal user {email}")
+            try:
+                portal_meta = {k: v for k, v in updates.items() if k != "tier"}
+                if seat_item_id:
+                    portal_meta["stripe_seat_item_id"] = seat_item_id
+                supabase.table("users").update(portal_meta).eq("email", email).execute()
+            except Exception as e:
+                print(f"[Stripe webhook] Stripe metadata columns update failed (non-critical): {e}")
 
             if tier in ("E", "F"):
                 code_tier = tier
