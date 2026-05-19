@@ -604,14 +604,20 @@ def _handle_checkout_completed(session: dict) -> None:
 
     if user_type == "storyteller" and client_ref.startswith("storyteller:"):
         user_id = client_ref.split(":", 1)[1]
+        customer_email = (session.get("customer_details") or {}).get("email") or session.get("customer_email", "")
         if supabase:
-            r = supabase.table("storyteller_users").select("email, first_name").eq("id", user_id).limit(1).execute()
+            r = supabase.table("storyteller_users").select("id, email, first_name").eq("id", user_id).limit(1).execute()
+            if not r.data and customer_email:
+                # Fallback: look up by email if ID doesn't match (e.g. account recreated)
+                print(f"[Stripe webhook] ID {user_id} not found, trying email fallback {customer_email}")
+                r = supabase.table("storyteller_users").select("id, email, first_name").eq("email", customer_email).limit(1).execute()
+                if r.data:
+                    user_id = r.data[0]["id"]
             if r.data:
                 email = r.data[0]["email"]
                 first_name = r.data[0].get("first_name", "")
-                # Critical: update tier first on its own so a missing Stripe column can't block it
                 supabase.table("storyteller_users").update({"tier": tier}).eq("id", user_id).execute()
-                print(f"[Stripe webhook] tier updated to {tier} for storyteller {user_id}")
+                print(f"[Stripe webhook] tier updated to {tier} for storyteller {user_id} ({email})")
                 try:
                     stripe_meta = {k: v for k, v in updates.items() if k != "tier"}
                     supabase.table("storyteller_users").update(stripe_meta).eq("id", user_id).execute()
@@ -619,7 +625,7 @@ def _handle_checkout_completed(session: dict) -> None:
                     print(f"[Stripe webhook] Stripe metadata columns update failed (non-critical): {e}")
                 _send_billing_confirmation_email(email, tier, first_name)
             else:
-                print(f"[Stripe webhook] storyteller user {user_id} not found in DB")
+                print(f"[Stripe webhook] storyteller user not found by ID {user_id} or email {customer_email}")
 
     elif user_type == "portal" and client_ref.startswith("portal:"):
         email = client_ref.split(":", 1)[1]
