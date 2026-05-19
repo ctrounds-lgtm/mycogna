@@ -1630,11 +1630,25 @@
       const storedToken = localStorage.getItem('st_token');
       if (storedToken) {
         try {
-          const res = await fetch(API + '/me', {
-            headers: { 'Authorization': 'Bearer ' + storedToken },
-          });
+          const fetchMe = () => fetch(API + '/me', { headers: { 'Authorization': 'Bearer ' + storedToken } });
+          let res = await fetchMe();
+
+          // After a successful checkout, poll until the webhook has updated the tier (max ~10s)
+          if (checkoutResult === 'success' && res.ok) {
+            let poll = await res.json();
+            let attempts = 0;
+            while ((poll.user?.tier || 'A') === 'A' && attempts < 5) {
+              await new Promise(r => setTimeout(r, 2000));
+              const retry = await fetchMe();
+              if (retry.ok) poll = await retry.json();
+              attempts++;
+            }
+            res = { ok: true, _cached: poll };
+          }
+
+          const getData = async r => r._cached ? r._cached : (r.ok ? r.json() : null);
           if (res.ok) {
-            const data = await res.json();
+            const data = await getData(res);
             stState.authToken = storedToken;
             stState.tier = data.user.tier || 'A';
             stState.managed = !!data.user.managed;
@@ -1653,10 +1667,12 @@
               setTimeout(() => {
                 const notice = document.createElement('div');
                 notice.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#2c4a2e;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-                notice.textContent = '✓ Your subscription is active. Welcome!';
+                notice.textContent = stState.tier !== 'A'
+                  ? `✓ You're now on the ${stState.tier === 'B' ? 'Storyteller' : stState.tier === 'C' ? 'Memoir Builder' : 'AI Companion'} plan. Welcome!`
+                  : '✓ Payment received. Your plan will activate shortly — refresh if needed.';
                 document.body.appendChild(notice);
-                setTimeout(() => notice.remove(), 4000);
-              }, 500);
+                setTimeout(() => notice.remove(), 5000);
+              }, 300);
             }
             if (stState.prompts.length > 0) {
               st._showPromptSelect();

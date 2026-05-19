@@ -1499,14 +1499,25 @@ async function init() {
   try {
     await loadDashboard();
     if (checkoutResult === 'success') {
+      // Poll until webhook has updated the tier (max ~10s)
+      let attempts = 0;
+      while ((state.user?.tier || 'A') === 'A' && attempts < 5) {
+        await new Promise(r => setTimeout(r, 2000));
+        await loadDashboard();
+        attempts++;
+      }
       history.replaceState({}, '', '/portal');
       setTimeout(() => {
+        const tierNames = { B: 'Storyteller', C: 'Memoir Builder', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
         const notice = document.createElement('div');
         notice.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#2c4a2e;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-        notice.textContent = '✓ Your subscription is active. Welcome!';
+        const t = state.user?.tier;
+        notice.textContent = (t && t !== 'A')
+          ? `✓ You're now on the ${tierNames[t] || t} plan. Welcome!`
+          : '✓ Payment received. Your plan will activate shortly — refresh if needed.';
         document.body.appendChild(notice);
-        setTimeout(() => notice.remove(), 4000);
-      }, 500);
+        setTimeout(() => notice.remove(), 5000);
+      }, 300);
     }
   } catch {
     localStorage.removeItem('portalToken');
