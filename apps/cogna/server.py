@@ -547,12 +547,15 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("stripe-signature", "")
 
     try:
-        event = stripe_sdk.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        stripe_sdk.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    etype = event["type"]
-    data = event["data"]["object"]
+    # Parse raw JSON for event data — avoids stripe-python SDK object compatibility issues
+    import json as _json
+    event_dict = _json.loads(payload)
+    etype = event_dict.get("type", "")
+    data = event_dict.get("data", {}).get("object", {})
 
     try:
         if etype == "checkout.session.completed":
