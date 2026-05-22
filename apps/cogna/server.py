@@ -488,29 +488,41 @@ async def create_checkout_session(
         customer_email = user["email"]
 
     # --- Upgrade path: modify existing subscription instead of creating a new one ---
-    # Applies to storyteller B→C/D and C→D (flat-price upgrades only)
-    existing_sub_id = user.get("stripe_subscription_id")
+    # Applies to storyteller B→C/D and C→D (flat-price upgrades only).
+    # Billing switches at the next cycle — no prorated mid-cycle charge.
     flat_tiers = {"B": STRIPE_PRICES.get("B"), "C": STRIPE_PRICES.get("C"), "D": STRIPE_PRICES.get("D")}
-    if existing_sub_id and tier in flat_tiers and flat_tiers[tier]:
-        try:
-            sub = stripe_sdk.Subscription.retrieve(existing_sub_id)
-            items = sub["items"]["data"] if isinstance(sub, dict) else sub.get("items", {}).get("data", [])
-            if items:
-                stripe_sdk.Subscription.modify(
-                    existing_sub_id,
-                    items=[{"id": items[0]["id"], "price": flat_tiers[tier]}],
-                    proration_behavior="always_invoice",
-                    metadata={"tier": tier, "user_type": payload.user_type},
-                )
-                # Update tier in DB immediately — no webhook needed for this path
-                if payload.user_type == "storyteller" and supabase:
-                    supabase.table("storyteller_users").update({"tier": tier}).eq("id", user["id"]).execute()
-                elif supabase:
-                    supabase.table("users").update({"tier": tier}).eq("email", user["email"]).execute()
-                success_path = "/storyteller" if payload.user_type == "storyteller" else "/portal"
-                return {"url": f"{base_url}{success_path}?checkout=success", "upgraded": True}
-        except Exception as e:
-            print(f"[Stripe] subscription modify failed, falling through to checkout: {e}")
+    if tier in flat_tiers and flat_tiers[tier]:
+        existing_sub_id = user.get("stripe_subscription_id")
+        # Fallback: look up active subscription from Stripe by customer email
+        if not existing_sub_id and user.get("stripe_customer_id"):
+            try:
+                subs = stripe_sdk.Subscription.list(customer=user["stripe_customer_id"], status="active", limit=1)
+                subs_data = subs["data"] if isinstance(subs, dict) else subs.get("data", [])
+                if subs_data:
+                    existing_sub_id = subs_data[0]["id"]
+            except Exception:
+                pass
+        if existing_sub_id:
+            try:
+                sub = stripe_sdk.Subscription.retrieve(existing_sub_id)
+                items = sub["items"]["data"] if isinstance(sub, dict) else sub.get("items", {}).get("data", [])
+                if items:
+                    stripe_sdk.Subscription.modify(
+                        existing_sub_id,
+                        items=[{"id": items[0]["id"], "price": flat_tiers[tier]}],
+                        proration_behavior="none",  # switch at next billing date, no mid-cycle charge
+                        metadata={"tier": tier, "user_type": payload.user_type},
+                    )
+                    # Update tier in DB immediately — no webhook needed for this path
+                    if payload.user_type == "storyteller" and supabase:
+                        supabase.table("storyteller_users").update({"tier": tier}).eq("id", user["id"]).execute()
+                    elif supabase:
+                        supabase.table("users").update({"tier": tier}).eq("email", user["email"]).execute()
+                    print(f"[Stripe] upgraded {customer_email} to {tier} (next cycle billing)")
+                    success_path = "/storyteller" if payload.user_type == "storyteller" else "/portal"
+                    return {"url": f"{base_url}{success_path}?checkout=success", "upgraded": True}
+            except Exception as e:
+                print(f"[Stripe] subscription modify failed, falling through to checkout: {e}")
 
     if tier == "B":
         line_items = [{"price": STRIPE_PRICES["B"], "quantity": 1}]
