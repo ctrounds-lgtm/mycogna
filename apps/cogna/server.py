@@ -492,42 +492,61 @@ async def create_checkout_session(
     # Billing switches at the next cycle — no prorated mid-cycle charge.
     flat_tiers = {"B": STRIPE_PRICES.get("B"), "C": STRIPE_PRICES.get("C"), "D": STRIPE_PRICES.get("D")}
     if tier in flat_tiers and flat_tiers[tier]:
+        def _stripe_data(obj):
+            """Safely extract .data list from any Stripe SDK version's list object."""
+            if obj is None:
+                return []
+            if hasattr(obj, 'auto_paging_iter'):
+                return list(obj.auto_paging_iter())
+            if hasattr(obj, 'data'):
+                return list(obj.data)
+            if isinstance(obj, dict):
+                return obj.get('data', [])
+            return []
+
+        def _stripe_id(obj):
+            """Safely get .id from a Stripe object or dict."""
+            if hasattr(obj, 'id'):
+                return obj.id
+            if isinstance(obj, dict):
+                return obj.get('id')
+            return None
+
         existing_sub_id = user.get("stripe_subscription_id")
         # Fallback 1: look up via stored customer ID
         if not existing_sub_id and user.get("stripe_customer_id"):
             try:
-                subs = stripe_sdk.Subscription.list(customer=user["stripe_customer_id"], status="active", limit=1)
-                subs_data = subs["data"] if isinstance(subs, dict) else subs.get("data", [])
-                if subs_data:
-                    existing_sub_id = subs_data[0]["id"]
+                subs = _stripe_data(stripe_sdk.Subscription.list(customer=user["stripe_customer_id"], status="active", limit=1))
+                if subs:
+                    existing_sub_id = _stripe_id(subs[0])
             except Exception:
                 pass
         # Fallback 2: look up by email in Stripe — prevents duplicate customers when IDs aren't stored in DB
         if not existing_sub_id:
             try:
-                customers = stripe_sdk.Customer.list(email=customer_email, limit=5)
-                cust_data = customers["data"] if isinstance(customers, dict) else customers.get("data", [])
-                for cust in cust_data:
-                    cust_id = cust["id"] if isinstance(cust, dict) else cust.get("id")
-                    subs = stripe_sdk.Subscription.list(customer=cust_id, status="active", limit=1)
-                    subs_data = subs["data"] if isinstance(subs, dict) else subs.get("data", [])
-                    if subs_data:
-                        existing_sub_id = subs_data[0]["id"]
+                for cust in _stripe_data(stripe_sdk.Customer.list(email=customer_email, limit=5)):
+                    cust_id = _stripe_id(cust)
+                    if not cust_id:
+                        continue
+                    subs = _stripe_data(stripe_sdk.Subscription.list(customer=cust_id, status="active", limit=1))
+                    if subs:
+                        existing_sub_id = _stripe_id(subs[0])
+                        print(f"[Stripe] found existing sub {existing_sub_id} via email lookup for {customer_email}")
                         break
             except Exception as e:
                 print(f"[Stripe] email customer lookup failed: {e}")
         if existing_sub_id:
             try:
                 sub = stripe_sdk.Subscription.retrieve(existing_sub_id)
-                items = sub["items"]["data"] if isinstance(sub, dict) else sub.get("items", {}).get("data", [])
-                if items:
+                sub_items = _stripe_data(sub.items if hasattr(sub, 'items') else sub.get('items', {}).get('data') or [])
+                if sub_items:
+                    item_id = _stripe_id(sub_items[0])
                     stripe_sdk.Subscription.modify(
                         existing_sub_id,
-                        items=[{"id": items[0]["id"], "price": flat_tiers[tier]}],
-                        proration_behavior="none",  # switch at next billing date, no mid-cycle charge
+                        items=[{"id": item_id, "price": flat_tiers[tier]}],
+                        proration_behavior="none",
                         metadata={"tier": tier, "user_type": payload.user_type},
                     )
-                    # Update tier in DB immediately — no webhook needed for this path
                     if payload.user_type == "storyteller" and supabase:
                         supabase.table("storyteller_users").update({"tier": tier}).eq("id", user["id"]).execute()
                     elif supabase:
