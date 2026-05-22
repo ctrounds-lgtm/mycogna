@@ -493,7 +493,7 @@ async def create_checkout_session(
     flat_tiers = {"B": STRIPE_PRICES.get("B"), "C": STRIPE_PRICES.get("C"), "D": STRIPE_PRICES.get("D")}
     if tier in flat_tiers and flat_tiers[tier]:
         existing_sub_id = user.get("stripe_subscription_id")
-        # Fallback: look up active subscription from Stripe by customer email
+        # Fallback 1: look up via stored customer ID
         if not existing_sub_id and user.get("stripe_customer_id"):
             try:
                 subs = stripe_sdk.Subscription.list(customer=user["stripe_customer_id"], status="active", limit=1)
@@ -502,6 +502,20 @@ async def create_checkout_session(
                     existing_sub_id = subs_data[0]["id"]
             except Exception:
                 pass
+        # Fallback 2: look up by email in Stripe — prevents duplicate customers when IDs aren't stored in DB
+        if not existing_sub_id:
+            try:
+                customers = stripe_sdk.Customer.list(email=customer_email, limit=5)
+                cust_data = customers["data"] if isinstance(customers, dict) else customers.get("data", [])
+                for cust in cust_data:
+                    cust_id = cust["id"] if isinstance(cust, dict) else cust.get("id")
+                    subs = stripe_sdk.Subscription.list(customer=cust_id, status="active", limit=1)
+                    subs_data = subs["data"] if isinstance(subs, dict) else subs.get("data", [])
+                    if subs_data:
+                        existing_sub_id = subs_data[0]["id"]
+                        break
+            except Exception as e:
+                print(f"[Stripe] email customer lookup failed: {e}")
         if existing_sub_id:
             try:
                 sub = stripe_sdk.Subscription.retrieve(existing_sub_id)
