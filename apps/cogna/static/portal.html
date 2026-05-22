@@ -403,10 +403,14 @@
         <div class="empty-state"><p>No questions yet. Add your first question above.</p></div>
       </div>
       <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Book Workspaces</h2>
+        <h2 class="section-title">Combined Book</h2>
         <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Book Builder invitees can record, go deeper with AI, and have their stories compiled into a book. Click to open their workspace.</p>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">The book workspace assembles stories from all your storytellers into one combined Legacy Archive. Open it once you have recordings to work with.</p>
+      <div style="margin-bottom:20px">
+        <button class="btn-primary" style="font-size:14px;padding:10px 20px" onclick="window.location='/portal/memoir?type=collection'">Open Combined Book →</button>
+      </div>
+      <h3 style="font-size:14px;font-weight:600;color:var(--ink);margin:0 0 8px">Enrolled Storytellers</h3>
       <div id="inviteeListF" class="stories-list" style="margin-bottom:40px">
         <div class="empty-state"><p>No Book Builder invitees yet. Generate a Book Builder code and share it to get started.</p></div>
       </div>

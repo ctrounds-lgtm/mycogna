@@ -692,14 +692,12 @@ const portal = {
       }
       el.innerHTML = invitees.map(inv => {
         const name = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email;
+        const count = inv.recording_count || 0;
         return `
           <div class="story-item">
             <div class="story-item-main">
               <div class="story-item-text">${name}</div>
-              <div class="story-item-meta">${inv.email}</div>
-            </div>
-            <div class="story-item-actions">
-              <button class="story-action-btn" onclick="portal.openMemoirWorkspace('${inv.id}', 'book')">Open Book Workspace →</button>
+              <div class="story-item-meta">${inv.email} · ${count} recording${count !== 1 ? 's' : ''}</div>
             </div>
           </div>`;
       }).join('');
