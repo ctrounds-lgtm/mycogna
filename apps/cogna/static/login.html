@@ -338,13 +338,7 @@
     // Route user based on their role
     function routeByRole(user, token) {
       const role = user.role || 'storyteller';
-      if (role === 'both') {
-        localStorage.setItem('portalToken', token);
-        localStorage.setItem('st_token', token);
-        localStorage.setItem('st_email', user.email);
-        localStorage.setItem('st_first_name', user.first_name || '');
-        showPanel('panelChoice');
-      } else if (role === 'portal_admin') {
+      if (role === 'both' || role === 'portal_admin') {
         localStorage.setItem('portalToken', token);
         window.location.href = '/portal';
       } else {
