@@ -670,6 +670,7 @@ const portal = {
   },
 
   async loadBookBuilderPanel() {
+    portal.switchFTab('questions');
     try {
       const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
       portal._renderPromoCodes(codesData.codes || [], 'F');
@@ -677,6 +678,15 @@ const portal = {
       console.error('loadBookBuilderPanel error:', err.message);
     }
     portal.loadLegacyInvitees();
+    portal.loadEPrompts();
+  },
+
+  switchFTab(tab) {
+    const tabs = ['questions', 'codes', 'stories', 'book'];
+    tabs.forEach(t => {
+      document.getElementById(`fPanel-${t}`)?.classList.toggle('hidden', t !== tab);
+      document.getElementById(`fTab-${t}`)?.classList.toggle('active', t === tab);
+    });
   },
 
   async loadLegacyInvitees() {

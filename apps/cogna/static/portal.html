@@ -379,40 +379,70 @@
     <!-- ── PANEL F — Legacy Collection + Book Builder ── -->
     <div id="panelF" class="hidden">
       <div class="onboarding-card" style="margin-top:8px">
-        <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:12px">Welcome to MyCogna's Legacy Collection tool, which helps your family or organization compile and preserve institutional knowledge from multiple storytellers. Simply generate a code below, then email it to your storyteller with instructions to enter the code at <a href="https://mycogna.org/storyteller" target="_blank" style="color:var(--gold)">mycogna.org/storyteller</a>. Once your storyteller enters the code, they will create an account with their email address and password. In the future, they can sign in without the storyteller code.</p>
-        <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:0">The Book Builder upgrade adds two things: an AI 'Go Deeper' tool that prompts storytellers to explore their stories in more depth, and a book assembly tool that compiles all responses into a structured Legacy Archive — complete with thematic overview, chapter groupings, and editing support.</p>
+        <p style="font-size:14px;color:var(--ink-muted);line-height:1.6;margin-bottom:8px">Welcome to MyCogna's Legacy Collection tool, which helps your family or organization compile and preserve institutional knowledge from multiple storytellers.</p>
+        <ol style="font-size:14px;color:var(--ink-muted);line-height:1.8;margin:0 0 0 18px;padding:0">
+          <li>Create a list of questions you would like your storytellers to answer.</li>
+          <li>Generate invite codes for your storytellers.</li>
+          <li>Review recorded stories.</li>
+          <li>Compile stories into a book.</li>
+        </ol>
       </div>
-      <div class="section-header-row" style="margin-top:24px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection + Book Builder)</span></h2>
-        <button class="add-btn" onclick="portal.generatePromoCode('F')">+ Storyteller Code</button>
+
+      <!-- Inner tab bar -->
+      <div class="dash-tabs" style="margin-top:24px" id="fSubTabs">
+        <button class="dash-tab active" id="fTab-questions" onclick="portal.switchFTab('questions')">Questions</button>
+        <button class="dash-tab" id="fTab-codes" onclick="portal.switchFTab('codes')">Invite Codes</button>
+        <button class="dash-tab" id="fTab-stories" onclick="portal.switchFTab('stories')">Stories</button>
+        <button class="dash-tab" id="fTab-book" onclick="portal.switchFTab('book')">Compile into Book</button>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">The Legacy Collection gives you five storyteller codes per month. Your storytellers record responses to your questions at their own pace.</p>
-      <div id="promoCodesListF" class="stories-list">
-        <div class="empty-state"><p>No codes yet.</p></div>
+
+      <!-- Tab: Questions -->
+      <div id="fPanel-questions" style="margin-top:20px">
+        <div class="section-header-row">
+          <h2 class="section-title">Story Questions</h2>
+          <button class="add-btn" onclick="portal.loadEPrompts()">Refresh</button>
+        </div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Add questions for your specific project. These replace the general life-story questions for your storytellers.</p>
+        <div class="add-prompt-row">
+          <textarea id="newPromptTextF" class="text-input textarea" rows="2" placeholder="e.g. Describe how you became involved with this organization."></textarea>
+          <button id="addPromptBtnF" class="save-btn" style="margin-top:8px">+ Add Question</button>
+        </div>
+        <div id="promptsListF" class="stories-list" style="margin-top:16px;margin-bottom:32px">
+          <div class="empty-state"><p>No questions yet. Add your first question above.</p></div>
+        </div>
       </div>
-      <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Story Questions</h2>
-        <button class="add-btn" onclick="portal.loadEPrompts()">Refresh</button>
+
+      <!-- Tab: Invite Codes -->
+      <div id="fPanel-codes" class="hidden" style="margin-top:20px">
+        <div class="section-header-row">
+          <h2 class="section-title">Invite Codes</h2>
+          <button class="add-btn" onclick="portal.generatePromoCode('F')">+ New Code</button>
+        </div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Generate a code and share it with each storyteller. They enter it at <a href="https://mycogna.org/storyteller" target="_blank" style="color:var(--gold)">mycogna.org/storyteller</a> to create their account.</p>
+        <div id="promoCodesListF" class="stories-list">
+          <div class="empty-state"><p>No codes yet.</p></div>
+        </div>
       </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Add questions for your specific project. These replace the general life-story questions for your storytellers.</p>
-      <div class="add-prompt-row">
-        <textarea id="newPromptTextF" class="text-input textarea" rows="2" placeholder="e.g. Describe how you became involved with this organization."></textarea>
-        <button id="addPromptBtnF" class="save-btn" style="margin-top:8px">+ Add Question</button>
+
+      <!-- Tab: Stories -->
+      <div id="fPanel-stories" class="hidden" style="margin-top:20px">
+        <div class="section-header-row">
+          <h2 class="section-title">Enrolled Storytellers</h2>
+          <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
+        </div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Storytellers who have joined using a Book Builder code. Their recordings will be included in the combined book.</p>
+        <div id="inviteeListF" class="stories-list" style="margin-bottom:40px">
+          <div class="empty-state"><p>No storytellers yet. Generate an invite code and share it to get started.</p></div>
+        </div>
       </div>
-      <div id="promptsListF" class="stories-list" style="margin-top:16px;margin-bottom:32px">
-        <div class="empty-state"><p>No questions yet. Add your first question above.</p></div>
-      </div>
-      <div class="section-header-row" style="margin-top:32px">
-        <h2 class="section-title">Combined Book</h2>
-        <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
-      </div>
-      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">The book workspace assembles stories from all your storytellers into one combined Legacy Archive. Open it once you have recordings to work with.</p>
-      <div style="margin-bottom:20px">
+
+      <!-- Tab: Compile into Book -->
+      <div id="fPanel-book" class="hidden" style="margin-top:20px">
+        <div class="section-header-row">
+          <h2 class="section-title">Compile into Book</h2>
+        </div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:20px">The book workspace assembles stories from all your storytellers into one combined Legacy Archive — complete with thematic overview, chapter groupings, and editing support. Open it once you have recordings to work with.</p>
         <button class="btn-primary" style="font-size:14px;padding:10px 20px" onclick="window.location='/portal/memoir?type=collection'">Open Combined Book →</button>
-      </div>
-      <h3 style="font-size:14px;font-weight:600;color:var(--ink);margin:0 0 8px">Enrolled Storytellers</h3>
-      <div id="inviteeListF" class="stories-list" style="margin-bottom:40px">
-        <div class="empty-state"><p>No Book Builder invitees yet. Generate a Book Builder code and share it to get started.</p></div>
       </div>
     </div>
 
