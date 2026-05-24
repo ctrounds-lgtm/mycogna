@@ -506,6 +506,61 @@
       color: var(--ink-muted);
       margin-top: 6px;
     }
+    .story-edit-btn {
+      font-size: 12px;
+      color: var(--ink-muted);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      margin-top: 6px;
+      display: inline-block;
+      text-decoration: underline;
+    }
+    .story-edit-btn:hover { color: var(--ink); }
+    .story-edit-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px 12px;
+      border: 1px solid var(--gold);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink);
+      resize: vertical;
+      outline: none;
+      background: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .story-edit-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .story-save-btn {
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
+    .story-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .story-cancel-btn {
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      background: none;
+      color: var(--ink-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
     .stories-empty {
       text-align: center;
       color: var(--ink-muted);
@@ -1309,15 +1364,16 @@
             container.innerHTML = '<p class="stories-empty">No stories recorded yet.</p>';
             return;
           }
-          container.innerHTML = stState.myStories.map(rec => {
+          container.innerHTML = stState.myStories.map((rec, idx) => {
             const date = rec.created_at
               ? new Date(rec.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
               : '';
             return `
-              <div class="story-entry">
+              <div class="story-entry" data-idx="${idx}" data-id="${rec.id}">
                 <div class="story-question">${rec.question}</div>
                 <div class="story-answer">${rec.transcript || '(No transcript)'}</div>
                 ${date ? `<div class="story-date">${date}</div>` : ''}
+                <button class="story-edit-btn" onclick="st.startEditStory(this)">Edit transcript</button>
               </div>`;
           }).join('');
           dlBtn.style.display = '';
@@ -1354,6 +1410,75 @@
         a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-stories.txt`;
         a.click();
         URL.revokeObjectURL(url);
+      },
+
+      startEditStory(btn) {
+        const entry = btn.closest('.story-entry');
+        const answerEl = entry.querySelector('.story-answer');
+        const idx = parseInt(entry.dataset.idx);
+        const current = stState.myStories[idx]?.transcript || '';
+
+        answerEl.style.display = 'none';
+        btn.style.display = 'none';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'story-edit-textarea';
+        textarea.value = current;
+
+        const actions = document.createElement('div');
+        actions.className = 'story-edit-actions';
+        actions.innerHTML = `
+          <button class="story-save-btn" onclick="st.saveEditStory(this)">Save</button>
+          <button class="story-cancel-btn" onclick="st.cancelEditStory(this)">Cancel</button>`;
+
+        entry.insertBefore(textarea, btn);
+        entry.insertBefore(actions, btn);
+        textarea.focus();
+      },
+
+      cancelEditStory(btn) {
+        const entry = btn.closest('.story-entry');
+        entry.querySelector('.story-edit-textarea')?.remove();
+        entry.querySelector('.story-edit-actions')?.remove();
+        entry.querySelector('.story-answer').style.display = '';
+        entry.querySelector('.story-edit-btn').style.display = '';
+      },
+
+      async saveEditStory(btn) {
+        const entry = btn.closest('.story-entry');
+        const textarea = entry.querySelector('.story-edit-textarea');
+        const saveBtn = entry.querySelector('.story-save-btn');
+        const recordingId = entry.dataset.id;
+        const idx = parseInt(entry.dataset.idx);
+        const newText = textarea.value.trim();
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        try {
+          const res = await fetch(API + '/recordings/' + recordingId, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + stState.authToken,
+            },
+            body: JSON.stringify({ transcript: newText }),
+          });
+          if (!res.ok) throw new Error('Save failed');
+
+          // Update local state so download stays accurate
+          if (stState.myStories[idx]) stState.myStories[idx].transcript = newText;
+
+          entry.querySelector('.story-answer').textContent = newText || '(No transcript)';
+          entry.querySelector('.story-edit-textarea')?.remove();
+          entry.querySelector('.story-edit-actions')?.remove();
+          entry.querySelector('.story-answer').style.display = '';
+          entry.querySelector('.story-edit-btn').style.display = '';
+        } catch (err) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+          alert('Could not save. Please try again.');
+        }
       },
 
       _mergeCustomPrompts(email, serverCustomPrompts) {

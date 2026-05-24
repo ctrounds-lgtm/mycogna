@@ -356,6 +356,9 @@ class StoryCustomPromptRequest(BaseModel):
     text: str
     category: Optional[str] = None
 
+class RecordingTranscriptUpdate(BaseModel):
+    transcript: str
+
 class MemoirDeepenStartRequest(BaseModel):
     recording_id: str
 
@@ -1942,6 +1945,34 @@ def my_stories(authorization: Optional[str] = Header(default=None)):
         for rec in recordings:
             rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "")
     return {"recordings": recordings}
+
+
+@app.patch("/api/storyteller/recordings/{recording_id}")
+def update_recording_transcript(
+    recording_id: str,
+    payload: RecordingTranscriptUpdate,
+    authorization: Optional[str] = Header(default=None),
+):
+    st_user = _auth_storyteller_user(authorization)
+    transcript = (payload.transcript or "").strip()
+    if supabase:
+        # Verify ownership before updating
+        r = (supabase.table("story_recordings")
+             .select("id")
+             .eq("id", recording_id)
+             .eq("storyteller_user_id", st_user["id"])
+             .execute())
+        if not r.data:
+            raise HTTPException(status_code=404, detail="Recording not found.")
+        supabase.table("story_recordings").update({"transcript": transcript}).eq("id", recording_id).execute()
+    else:
+        db = _load_db()
+        rec = db["story_recordings"].get(recording_id)
+        if not rec or rec.get("storyteller_user_id") != st_user["id"]:
+            raise HTTPException(status_code=404, detail="Recording not found.")
+        rec["transcript"] = transcript
+        _save_db(db)
+    return {"ok": True}
 
 
 @app.post("/api/storyteller/custom-prompts")
