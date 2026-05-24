@@ -656,14 +656,10 @@
         pm.showRecordings();
       }
     } catch (err) {
-      if (err.message.includes('401') || err.message.includes('expired')) {
-        window.location = '/portal';
-      } else {
-        document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:Georgia,serif;color:#C0392B;">
-          <p>Error loading workspace: ${pm._esc(err.message)}</p>
-          <p style="margin-top:16px;"><a href="/portal" style="color:#B8860B;">← Back to portal</a></p>
-        </div>`;
-      }
+      document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:Georgia,serif;color:#C0392B;">
+        <p>Error loading workspace: ${pm._esc(err.message)}</p>
+        <p style="margin-top:16px;"><a href="/portal" style="color:#B8860B;">← Back to portal</a></p>
+      </div>`;
     }
   });
 </script>

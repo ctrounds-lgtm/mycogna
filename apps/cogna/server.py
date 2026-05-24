@@ -3078,7 +3078,7 @@ def _get_f_tier_storyteller_ids(portal_user: Dict[str, Any]) -> List[Dict[str, A
 @app.get("/api/portal/collection/data")
 def portal_collection_data(authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     storytellers = _get_f_tier_storyteller_ids(portal_user)
     st_ids = [s["id"] for s in storytellers]
     st_name_map = {s["id"]: ([s["first_name"], s["last_name"]] if (s.get("first_name") or s.get("last_name")) else [s["email"]]) for s in storytellers}
@@ -3125,7 +3125,7 @@ def portal_collection_data(authorization: Optional[str] = Header(default=None)):
 @app.post("/api/portal/collection/memoir/assemble")
 async def portal_collection_assemble(authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     storytellers = _get_f_tier_storyteller_ids(portal_user)
     st_ids = [s["id"] for s in storytellers]
     st_name_map = {s["id"]: " ".join(p for p in [s.get("first_name", ""), s.get("last_name", "")] if p) or s["email"] for s in storytellers}
@@ -3173,7 +3173,7 @@ async def portal_collection_assemble(authorization: Optional[str] = Header(defau
 @app.post("/api/portal/collection/memoir/chapters")
 async def portal_collection_create_chapter(payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     chapter_id = "cc_" + secrets.token_hex(8)
     now = _utc_now()
     chapter = {"id": chapter_id, "portal_user_id": portal_id, "title": payload.title or "New Chapter", "content": payload.content or "", "edit_messages": [], "sort_order": payload.sort_order or 0, "created_at": now, "updated_at": now}
@@ -3189,7 +3189,7 @@ async def portal_collection_create_chapter(payload: MemoirChapterRequest, author
 @app.get("/api/portal/collection/memoir/chapters")
 async def portal_collection_get_chapters(authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     if supabase:
         r = supabase.table("collection_chapters").select("*").eq("portal_user_id", portal_id).order("sort_order").execute()
         return {"chapters": r.data or []}
@@ -3201,7 +3201,7 @@ async def portal_collection_get_chapters(authorization: Optional[str] = Header(d
 @app.put("/api/portal/collection/memoir/chapters/{chapter_id}")
 async def portal_collection_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     updates = {"title": payload.title, "content": payload.content, "updated_at": _utc_now()}
     if supabase:
         supabase.table("collection_chapters").update(updates).eq("id", chapter_id).eq("portal_user_id", portal_id).execute()
@@ -3216,7 +3216,7 @@ async def portal_collection_save_chapter(chapter_id: str, payload: MemoirChapter
 @app.post("/api/portal/collection/memoir/chapters/{chapter_id}/edit")
 async def portal_collection_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
-    portal_id = portal_user["id"]
+    portal_id = portal_user["email"]
     if supabase:
         r = supabase.table("collection_chapters").select("*").eq("id", chapter_id).eq("portal_user_id", portal_id).limit(1).execute()
         chapter = r.data[0] if r.data else None
