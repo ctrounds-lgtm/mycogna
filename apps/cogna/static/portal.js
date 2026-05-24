@@ -656,6 +656,7 @@ const portal = {
   },
 
   async loadLegacyPanel() {
+    portal.loadEPrompts();
     try {
       const [codesData, recsData] = await Promise.all([
         req(`${api}/storyteller/user-codes?tier=E`, { headers: authHeaders() }),
@@ -666,19 +667,18 @@ const portal = {
     } catch (err) {
       console.error('loadLegacyPanel error:', err.message);
     }
-    portal.loadEPrompts();
   },
 
   async loadBookBuilderPanel() {
     portal.switchFTab('questions');
+    portal.loadEPrompts();
+    portal.loadLegacyInvitees();
     try {
       const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
       portal._renderPromoCodes(codesData.codes || [], 'F');
     } catch (err) {
       console.error('loadBookBuilderPanel error:', err.message);
     }
-    portal.loadLegacyInvitees();
-    portal.loadEPrompts();
   },
 
   switchFTab(tab) {
