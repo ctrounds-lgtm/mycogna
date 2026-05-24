@@ -3062,7 +3062,7 @@ def _get_f_tier_storyteller_ids(portal_user: Dict[str, Any]) -> List[Dict[str, A
     """Return list of {id, first_name, last_name, email} for all F-tier storytellers owned by this portal user."""
     portal_email = portal_user["email"]
     if supabase:
-        codes_r = supabase.table("promo_codes").select("code").eq("portal_user_email", portal_email).eq("tier", "F").execute()
+        codes_r = supabase.table("promo_codes").select("code").eq("created_by", portal_email).eq("tier", "F").execute()
         f_codes = [c["code"] for c in (codes_r.data or [])]
         if not f_codes:
             return []
@@ -3070,7 +3070,7 @@ def _get_f_tier_storyteller_ids(portal_user: Dict[str, Any]) -> List[Dict[str, A
         return st_r.data or []
     else:
         db = _load_db()
-        f_codes = [c["code"] for c in db.get("promo_codes", {}).values() if c.get("portal_user_email") == portal_email and c.get("tier") == "F"]
+        f_codes = [c["code"] for c in db.get("promo_codes", {}).values() if c.get("created_by") == portal_email and c.get("tier") == "F"]
         return [{"id": u["id"], "first_name": u.get("first_name", ""), "last_name": u.get("last_name", ""), "email": u["email"]}
                 for u in db.get("storyteller_users", {}).values() if u.get("signup_code") in f_codes]
 
@@ -3103,11 +3103,16 @@ def portal_collection_data(authorization: Optional[str] = Header(default=None)):
             rec["storyteller_name"] = " ".join(p for p in parts if p)
             all_recordings.append(rec)
 
+    book_bible = None
+    chapters = []
     if supabase:
-        bb_r = supabase.table("collection_book_bibles").select("id, content, assembled_at").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
-        book_bible = bb_r.data[0] if bb_r.data else None
-        ch_r = supabase.table("collection_chapters").select("id, title, sort_order, content, updated_at").eq("portal_user_id", portal_id).order("sort_order").execute()
-        chapters = ch_r.data or []
+        try:
+            bb_r = supabase.table("collection_book_bibles").select("id, content, assembled_at").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+            book_bible = bb_r.data[0] if bb_r.data else None
+            ch_r = supabase.table("collection_chapters").select("id, title, sort_order, content, updated_at").eq("portal_user_id", portal_id).order("sort_order").execute()
+            chapters = ch_r.data or []
+        except Exception:
+            pass  # tables not yet migrated — return empty, UI will still load
     else:
         db = _load_db(); _collection_db_defaults(db)
         bbs = sorted([b for b in db["collection_book_bibles"].values() if b.get("portal_user_id") == portal_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
