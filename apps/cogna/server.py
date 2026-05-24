@@ -2868,6 +2868,15 @@ def list_portal_invitees(tier: str = Query(default="C"), authorization: Optional
             return {"invitees": []}
         st_r = supabase.table("storyteller_users").select("id, email, first_name, last_name, created_at").in_("signup_code", codes).order("created_at").execute()
         invitees = st_r.data or []
+        if invitees:
+            ids = [inv["id"] for inv in invitees]
+            recs_r = supabase.table("story_recordings").select("storyteller_user_id").in_("storyteller_user_id", ids).execute()
+            counts: dict = {}
+            for rec in (recs_r.data or []):
+                uid = rec["storyteller_user_id"]
+                counts[uid] = counts.get(uid, 0) + 1
+            for inv in invitees:
+                inv["recording_count"] = counts.get(inv["id"], 0)
     else:
         db = _load_db()
         codes = {v.get("code") for v in db.get("promo_codes", {}).values() if v.get("created_by") == portal_user["email"] and v.get("tier") == tier_upper}
@@ -2876,6 +2885,13 @@ def list_portal_invitees(tier: str = Query(default="C"), authorization: Optional
              for u in db.get("storyteller_users", {}).values() if u.get("signup_code") in codes],
             key=lambda x: x.get("created_at", "")
         )
+        counts = {}
+        for rec in db.get("story_recordings", {}).values():
+            uid = rec.get("storyteller_user_id")
+            if uid:
+                counts[uid] = counts.get(uid, 0) + 1
+        for inv in invitees:
+            inv["recording_count"] = counts.get(inv["id"], 0)
     return {"invitees": invitees}
 
 
