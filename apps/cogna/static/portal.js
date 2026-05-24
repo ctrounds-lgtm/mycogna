@@ -674,6 +674,7 @@ const portal = {
   },
 
   switchFTab(tab) {
+    if (tab === 'book') { window.location = '/portal/memoir?type=collection'; return; }
     const tabs = ['questions', 'codes', 'stories', 'book'];
     tabs.forEach(t => {
       document.getElementById(`fPanel-${t}`)?.classList.toggle('hidden', t !== tab);
