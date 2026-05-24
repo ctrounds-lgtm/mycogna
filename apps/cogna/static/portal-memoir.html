@@ -285,10 +285,12 @@
 
 <script>
   const PORTAL_API = window.location.origin + '/api/portal/invitee';
+  const COLLECTION_API = window.location.origin + '/api/portal/collection';
   const params = new URLSearchParams(window.location.search);
   const STORYTELLER_ID = params.get('id');
   const WORKSPACE_TYPE = params.get('type') || 'memoir';
   const IS_BOOK = WORKSPACE_TYPE === 'book';
+  const IS_COLLECTION = WORKSPACE_TYPE === 'collection';
 
   const L = {
     pageTitle:       IS_BOOK ? 'MyCogna · Book Workspace'   : 'MyCogna · Memoir Workspace',
@@ -312,6 +314,7 @@
   };
 
   function apiUrl(path) {
+    if (IS_COLLECTION) return `${COLLECTION_API}${path}`;
     return `${PORTAL_API}/${pmState.storytellerId}${path}`;
   }
 
@@ -362,7 +365,9 @@
 
       const list = document.getElementById('recList');
       if (recs.length === 0) {
-        list.innerHTML = '<p class="empty-state">No recordings yet. This person hasn\'t recorded any stories.</p>';
+        list.innerHTML = IS_COLLECTION
+          ? '<p class="empty-state">No recordings yet. Share an invite code with your storytellers and check back once they\'ve recorded.</p>'
+          : '<p class="empty-state">No recordings yet. This person hasn\'t recorded any stories.</p>';
       } else {
         list.innerHTML = recs.map(rec => {
           const preview = (rec.transcript || '').slice(0, 140) + ((rec.transcript || '').length > 140 ? '…' : '');
@@ -372,6 +377,7 @@
           const rid = rec.id.replace(/[^a-zA-Z0-9_]/g, '_');
           return `
             <div class="story-card">
+              ${IS_COLLECTION && rec.storyteller_name ? `<div style="font-size:12px;font-weight:600;color:var(--ink-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">${pm._esc(rec.storyteller_name)}</div>` : ''}
               <div class="story-card-question">${pm._esc(rec.prompt_text || 'Custom question')}</div>
               <div class="story-card-preview">${pm._esc(preview || '(No transcript)')}</div>
               <div class="story-card-footer">
@@ -443,7 +449,7 @@
     downloadBible() {
       const content = pmState.bookBible ? pmState.bookBible.content : '';
       const inv = pmState.invitee;
-      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee';
+      const name = IS_COLLECTION ? 'Combined Archive' : (inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee');
       const label = IS_BOOK ? 'Book Outline' : 'Book Bible';
       const blob = new Blob([`${name}'s ${label}\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -469,15 +475,33 @@
 
     _renderEditSidebar(activeId) {
       const list = document.getElementById('editChapterList');
+      const addBtn = IS_COLLECTION ? `<button class="btn-sm" style="margin-bottom:12px;width:100%;" onclick="pm.addCollectionChapter()">+ Add chapter</button>` : '';
       if (pmState.chapters.length === 0) {
-        list.innerHTML = `<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. ${IS_BOOK ? 'Assemble the book' : 'Assemble the memoir'} first to generate chapters.</p>`;
+        list.innerHTML = addBtn + `<p style="font-size:13px;color:var(--ink-muted);">No chapters yet.${IS_COLLECTION ? ' Use the outline above to draft chapters, then add them here.' : ` ${IS_BOOK ? 'Assemble the book' : 'Assemble the memoir'} first to generate chapters.`}</p>`;
         return;
       }
-      list.innerHTML = pmState.chapters.map(c =>
+      list.innerHTML = addBtn + pmState.chapters.map(c =>
         `<div class="chapter-item ${c.id === activeId ? 'active' : ''}" onclick="pm.loadChapter('${c.id}')" id="chap-item-${c.id}">
           <span class="chapter-title-text" style="font-size:14px;">${pm._esc(c.title)}</span>
         </div>`
       ).join('');
+    },
+
+    async addCollectionChapter() {
+      const title = prompt('Chapter title:');
+      if (!title || !title.trim()) return;
+      try {
+        const data = await apiFetch(apiUrl('/memoir/chapters'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title: title.trim(), content: '', sort_order: pmState.chapters.length}),
+        });
+        pmState.chapters.push(data.chapter);
+        pm._renderEditSidebar(data.chapter.id);
+        pm.loadChapter(data.chapter.id);
+      } catch (err) {
+        alert('Could not create chapter: ' + err.message);
+      }
     },
 
     async loadChapter(chapterId) {
@@ -592,18 +616,21 @@
   // ── Boot ──
   window.addEventListener('load', async () => {
     const token = localStorage.getItem('portalToken');
-    if (!token || !STORYTELLER_ID) { window.location = '/portal'; return; }
+    if (!token || (!STORYTELLER_ID && !IS_COLLECTION)) { window.location = '/portal'; return; }
     pmState.authToken = token;
 
     try {
-      const data = await apiFetch(apiUrl('/data'));
-      pmState.invitee = data.invitee;
+      const data = IS_COLLECTION
+        ? await apiFetch(apiUrl('/data'))
+        : await apiFetch(apiUrl('/data'));
+      pmState.invitee = data.invitee || null;
       pmState.recordings = data.recordings || [];
       pmState.bookBible = data.book_bible;
       pmState.chapters = data.chapters || [];
 
-      const inv = data.invitee;
-      const name = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email;
+      const name = IS_COLLECTION
+        ? `Combined Legacy Archive (${data.storyteller_count || 0} storyteller${(data.storyteller_count || 0) !== 1 ? 's' : ''})`
+        : ([data.invitee?.first_name, data.invitee?.last_name].filter(Boolean).join(' ') || data.invitee?.email || '');
       setInviteeName(name);
 
       // Apply workspace type labels

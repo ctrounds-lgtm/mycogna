@@ -2526,6 +2526,11 @@ def _memoir_db_defaults(db: Dict[str, Any]):
     db.setdefault("chapters", {})
 
 
+def _collection_db_defaults(db: Dict[str, Any]):
+    db.setdefault("collection_book_bibles", {})
+    db.setdefault("collection_chapters", {})
+
+
 @app.get("/api/memoir/dashboard")
 async def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
     st_user = _auth_storyteller_user(authorization)
@@ -3029,6 +3034,186 @@ async def portal_invitee_chapter_edit(storyteller_id: str, chapter_id: str, payl
     else:
         db["chapters"][chapter_id]["edit_messages"] = messages
         db["chapters"][chapter_id]["updated_at"] = _utc_now()
+        _save_db(db)
+    return {"message": reply}
+
+
+# ----------------------------------------------------
+# Collection (F-tier combined book) endpoints
+# ----------------------------------------------------
+
+def _get_f_tier_storyteller_ids(portal_user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return list of {id, first_name, last_name, email} for all F-tier storytellers owned by this portal user."""
+    portal_email = portal_user["email"]
+    if supabase:
+        codes_r = supabase.table("promo_codes").select("code").eq("portal_user_email", portal_email).eq("tier", "F").execute()
+        f_codes = [c["code"] for c in (codes_r.data or [])]
+        if not f_codes:
+            return []
+        st_r = supabase.table("storyteller_users").select("id, first_name, last_name, email").in_("signup_code", f_codes).execute()
+        return st_r.data or []
+    else:
+        db = _load_db()
+        f_codes = [c["code"] for c in db.get("promo_codes", {}).values() if c.get("portal_user_email") == portal_email and c.get("tier") == "F"]
+        return [{"id": u["id"], "first_name": u.get("first_name", ""), "last_name": u.get("last_name", ""), "email": u["email"]}
+                for u in db.get("storyteller_users", {}).values() if u.get("signup_code") in f_codes]
+
+
+@app.get("/api/portal/collection/data")
+def portal_collection_data(authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    storytellers = _get_f_tier_storyteller_ids(portal_user)
+    st_ids = [s["id"] for s in storytellers]
+    st_name_map = {s["id"]: ([s["first_name"], s["last_name"]] if (s.get("first_name") or s.get("last_name")) else [s["email"]]) for s in storytellers}
+
+    all_recordings = []
+    if st_ids:
+        if supabase:
+            recs_r = supabase.table("story_recordings").select("id, storyteller_user_id, prompt_id, transcript, created_at").in_("storyteller_user_id", st_ids).order("created_at").execute()
+            recs = recs_r.data or []
+            prompt_ids = list({rec["prompt_id"] for rec in recs if rec.get("prompt_id")})
+            prompt_map = {}
+            if prompt_ids:
+                pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+                prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+        else:
+            db = _load_db()
+            recs = sorted([r for r in db["story_recordings"].values() if r.get("storyteller_user_id") in st_ids], key=lambda x: x.get("created_at", ""))
+            prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+        for rec in recs:
+            rec["prompt_text"] = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
+            parts = st_name_map.get(rec.get("storyteller_user_id"), ["Unknown"])
+            rec["storyteller_name"] = " ".join(p for p in parts if p)
+            all_recordings.append(rec)
+
+    if supabase:
+        bb_r = supabase.table("collection_book_bibles").select("id, content, assembled_at").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+        book_bible = bb_r.data[0] if bb_r.data else None
+        ch_r = supabase.table("collection_chapters").select("id, title, sort_order, content, updated_at").eq("portal_user_id", portal_id).order("sort_order").execute()
+        chapters = ch_r.data or []
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        bbs = sorted([b for b in db["collection_book_bibles"].values() if b.get("portal_user_id") == portal_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        book_bible = bbs[0] if bbs else None
+        chapters = sorted([c for c in db["collection_chapters"].values() if c.get("portal_user_id") == portal_id], key=lambda x: x.get("sort_order", 0))
+
+    return {"recordings": all_recordings, "book_bible": book_bible, "chapters": chapters, "storyteller_count": len(storytellers)}
+
+
+@app.post("/api/portal/collection/memoir/assemble")
+async def portal_collection_assemble(authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    storytellers = _get_f_tier_storyteller_ids(portal_user)
+    st_ids = [s["id"] for s in storytellers]
+    st_name_map = {s["id"]: " ".join(p for p in [s.get("first_name", ""), s.get("last_name", "")] if p) or s["email"] for s in storytellers}
+
+    if not st_ids:
+        raise HTTPException(status_code=400, detail="No storytellers found. Share an invite code first.")
+
+    if supabase:
+        recs_r = supabase.table("story_recordings").select("id, storyteller_user_id, prompt_id, transcript, created_at").in_("storyteller_user_id", st_ids).order("created_at").execute()
+        recs = recs_r.data or []
+        prompt_ids = list({rec["prompt_id"] for rec in recs if rec.get("prompt_id")})
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+    else:
+        db = _load_db()
+        recs = sorted([r for r in db["story_recordings"].values() if r.get("storyteller_user_id") in st_ids], key=lambda x: x.get("created_at", ""))
+        prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+
+    if not recs:
+        raise HTTPException(status_code=400, detail="No recordings yet. Wait for your storytellers to record their stories first.")
+
+    context_parts = []
+    for rec in recs:
+        name = st_name_map.get(rec.get("storyteller_user_id"), "Unknown")
+        question = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
+        context_parts.append(f"STORYTELLER: {name}\nQUESTION: {question}\nANSWER: {rec.get('transcript', '')}\n")
+
+    full_context = "\n".join(context_parts)
+    collection_system = MEMOIR_ASSEMBLE_SYSTEM + "\n\nNote: This is a collection from multiple storytellers. Treat it as a group legacy archive — identify common themes, varied perspectives, and organizing principles that honor all contributors."
+    content = _generate_memoir_response(collection_system, [{"role": "user", "content": full_context}], max_tokens=2000)
+
+    bible_id = "cbible_" + secrets.token_hex(8)
+    now = _utc_now()
+    if supabase:
+        supabase.table("collection_book_bibles").insert({"id": bible_id, "portal_user_id": portal_id, "content": content, "assembled_at": now}).execute()
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        db["collection_book_bibles"][bible_id] = {"id": bible_id, "portal_user_id": portal_id, "content": content, "assembled_at": now}
+        _save_db(db)
+    return {"book_bible_id": bible_id, "content": content}
+
+
+@app.post("/api/portal/collection/memoir/chapters")
+async def portal_collection_create_chapter(payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    chapter_id = "cc_" + secrets.token_hex(8)
+    now = _utc_now()
+    chapter = {"id": chapter_id, "portal_user_id": portal_id, "title": payload.title or "New Chapter", "content": payload.content or "", "edit_messages": [], "sort_order": payload.sort_order or 0, "created_at": now, "updated_at": now}
+    if supabase:
+        supabase.table("collection_chapters").insert(chapter).execute()
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        db["collection_chapters"][chapter_id] = chapter
+        _save_db(db)
+    return {"chapter": chapter}
+
+
+@app.get("/api/portal/collection/memoir/chapters")
+async def portal_collection_get_chapters(authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    if supabase:
+        r = supabase.table("collection_chapters").select("*").eq("portal_user_id", portal_id).order("sort_order").execute()
+        return {"chapters": r.data or []}
+    db = _load_db(); _collection_db_defaults(db)
+    chapters = sorted([c for c in db["collection_chapters"].values() if c.get("portal_user_id") == portal_id], key=lambda x: x.get("sort_order", 0))
+    return {"chapters": chapters}
+
+
+@app.put("/api/portal/collection/memoir/chapters/{chapter_id}")
+async def portal_collection_save_chapter(chapter_id: str, payload: MemoirChapterRequest, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    updates = {"title": payload.title, "content": payload.content, "updated_at": _utc_now()}
+    if supabase:
+        supabase.table("collection_chapters").update(updates).eq("id", chapter_id).eq("portal_user_id", portal_id).execute()
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        if chapter_id in db["collection_chapters"]:
+            db["collection_chapters"][chapter_id].update(updates)
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.post("/api/portal/collection/memoir/chapters/{chapter_id}/edit")
+async def portal_collection_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["id"]
+    if supabase:
+        r = supabase.table("collection_chapters").select("*").eq("id", chapter_id).eq("portal_user_id", portal_id).limit(1).execute()
+        chapter = r.data[0] if r.data else None
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        chapter = next((c for c in db["collection_chapters"].values() if c.get("id") == chapter_id and c.get("portal_user_id") == portal_id), None)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    system = _build_memoir_edit_system(portal_id, chapter_id, chapter.get("content", ""))
+    messages = chapter.get("edit_messages") or []
+    messages.append({"role": "user", "content": payload.message})
+    reply = _generate_memoir_response(system, messages)
+    messages.append({"role": "assistant", "content": reply})
+    if supabase:
+        supabase.table("collection_chapters").update({"edit_messages": messages, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
+    else:
+        db["collection_chapters"][chapter_id]["edit_messages"] = messages
+        db["collection_chapters"][chapter_id]["updated_at"] = _utc_now()
         _save_db(db)
     return {"message": reply}
 

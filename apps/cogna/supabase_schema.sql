@@ -343,3 +343,31 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_seat_item_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'none';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_period_end TIMESTAMPTZ;
+
+-- ─────────────────────────────────────────────
+-- Migration: Collection book builder (2026-05-24)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- Collection-level book bibles (F-tier combined archive, keyed to portal user)
+CREATE TABLE IF NOT EXISTS collection_book_bibles (
+  id              TEXT PRIMARY KEY,
+  portal_user_id  TEXT NOT NULL,
+  content         TEXT,
+  assembled_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS collection_book_bibles_user_idx ON collection_book_bibles(portal_user_id);
+
+-- Collection-level chapters
+CREATE TABLE IF NOT EXISTS collection_chapters (
+  id                        TEXT PRIMARY KEY,
+  portal_user_id            TEXT NOT NULL,
+  collection_book_bible_id  TEXT,
+  title                     TEXT,
+  content                   TEXT,
+  edit_messages             JSONB NOT NULL DEFAULT '[]',
+  sort_order                INTEGER NOT NULL DEFAULT 0,
+  created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS collection_chapters_user_idx ON collection_chapters(portal_user_id);
