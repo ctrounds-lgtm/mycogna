@@ -431,6 +431,11 @@ def portal_memoir_page():
     return FileResponse(ROOT / "static" / "portal-memoir.html")
 
 
+@app.get("/portal/collection-book")
+def portal_collection_book_page():
+    return FileResponse(ROOT / "static" / "portal-collection-book.html")
+
+
 @app.get("/signup")
 def signup_page():
     return FileResponse(ROOT / "static" / "signup.html")
@@ -2412,6 +2417,20 @@ WHAT'S MISSING: a short, encouraging paragraph noting gaps
 
 Tone: warm, encouraging, professional. This person's stories matter."""
 
+
+def _parse_assembly_output(text: str) -> dict:
+    import re
+    def extract(label: str, src: str) -> str:
+        pattern = rf'\*?\*?{label}\*?\*?:?\s*(.*?)(?=\*?\*?(?:BOOK BIBLE|CHAPTER OUTLINE|WHAT\'S MISSING)\*?\*?:|$)'
+        m = re.search(pattern, src, re.DOTALL | re.IGNORECASE)
+        return m.group(1).strip() if m else ''
+    return {
+        'book_bible':      extract('BOOK BIBLE', text),
+        'chapter_outline': extract('CHAPTER OUTLINE', text),
+        'whats_missing':   extract("WHAT'S MISSING", text),
+    }
+
+
 MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given:
 
 - All interview questions and the storyteller's recorded answers (the complete source material)
@@ -2436,6 +2455,47 @@ Your editorial job on the current chapter:
 5. Offer to help rewrite any section the author requests
 
 Important: This is their story, their voice. You are not rewriting it in your own voice — you are helping them find the best version of theirs. Never change the facts. Never add events that didn't happen. Always ask before making significant changes."""
+
+
+COLLECTION_ASSEMBLE_SYSTEM = """You are an experienced editor assembling a collective Legacy Archive from the recorded stories of multiple contributors.
+
+You have been given transcripts grouped by storyteller name and question. Your job is to read across all contributors and produce three things:
+
+CRITICAL RULES:
+- Work only with what was actually said. Never invent details, events, or emotions.
+- If transcripts are too thin to support a full book, say so honestly.
+- Each storyteller's voice is distinct — honor that; don't flatten them into a single narrator.
+
+1. BOOK BIBLE: Write 3–5 paragraphs describing the collective themes, the range of voices, and the emotional arc of the archive as a whole. What unifies these stories? What tensions or contrasts make them interesting together? What is the organizing emotional truth of this collection?
+
+2. CHAPTER OUTLINE: Suggest 5–10 chapters that weave across multiple storytellers. Each chapter should gather multiple voices around a shared theme, question, or life stage. Format as a numbered list: chapter title in bold, followed by a 1–2 sentence description naming which storytellers' voices are most relevant.
+
+3. WHAT'S MISSING: A short, encouraging paragraph noting gaps — stories not yet told, questions not yet asked, voices not yet captured — that would strengthen the archive.
+
+Format your response with these exact section headers:
+BOOK BIBLE:
+CHAPTER OUTLINE:
+WHAT'S MISSING:
+
+Tone: warm, editorial, respectful of each contributor's individuality."""
+
+
+COLLECTION_FIRST_PASS_SYSTEM = """You are a skilled editor writing a first-draft chapter for a Legacy Collection — a book that weaves together the recorded stories of multiple contributors.
+
+You have been given:
+- The Book Bible: the thematic overview and organizing vision for the entire collection
+- The chapter title and any existing description
+- All storyteller recordings from the collection
+
+Write a complete first-draft chapter that:
+1. Opens with a scene or line that draws the reader into the chapter's theme
+2. Weaves together relevant voices from multiple storytellers — quoting or paraphrasing their actual words
+3. Finds the thread that connects different contributors' experiences of this theme
+4. Closes with a line that resonates forward into the next chapter
+
+CRITICAL: Use only what was actually said. Never invent quotes, events, or details. If a storyteller's words are directly quoted, make that clear. Write in a warm, literary non-fiction style — like a skilled oral history editor, not a ghostwriter making things up.
+
+Return the chapter text only — no commentary, no preamble. Write it as finished prose."""
 
 
 def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: str) -> str:
@@ -2518,6 +2578,42 @@ def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: st
     context_parts.append(f"\n\n---\nCHAPTER BEING EDITED — raw transcripts:\n\n{chapter_content}")
 
     return "".join(context_parts)
+
+
+def _build_collection_edit_system(portal_id: str, chapter_id: str, chapter_content: str) -> str:
+    """Build the system prompt for collection chapter editing using collection_book_bibles and collection_chapters."""
+    book_bible = ""
+    sibling_chapters = []
+
+    if supabase:
+        try:
+            bb = supabase.table("collection_book_bibles").select("content").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+            if bb.data:
+                book_bible = bb.data[0].get("content", "")
+        except Exception:
+            pass
+        try:
+            chs = supabase.table("collection_chapters").select("id, title, content").eq("portal_user_id", portal_id).execute()
+            sibling_chapters = [c for c in (chs.data or []) if c.get("id") != chapter_id]
+        except Exception:
+            pass
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        bbs = sorted([b for b in db["collection_book_bibles"].values() if b.get("portal_user_id") == portal_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        if bbs:
+            book_bible = bbs[0].get("content", "")
+        sibling_chapters = [c for c in db["collection_chapters"].values() if c.get("portal_user_id") == portal_id and c.get("id") != chapter_id]
+
+    system = MEMOIR_EDIT_SYSTEM
+    if book_bible:
+        system += f"\n\n---\nBOOK BIBLE (collection overview and structure):\n\n{book_bible}"
+    if sibling_chapters:
+        system += "\n\n---\nOTHER CHAPTERS ALREADY DRAFTED:\n" + "\n\n".join(
+            f"Chapter: {c['title']}\n{(c.get('content') or '')[:300]}..." for c in sibling_chapters if c.get('content')
+        )
+    if chapter_content:
+        system += f"\n\n---\nCURRENT CHAPTER CONTENT:\n\n{chapter_content}"
+    return system
 
 
 def _memoir_db_defaults(db: Dict[str, Any]):
@@ -3107,7 +3203,7 @@ def portal_collection_data(authorization: Optional[str] = Header(default=None)):
     chapters = []
     if supabase:
         try:
-            bb_r = supabase.table("collection_book_bibles").select("id, content, assembled_at").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+            bb_r = supabase.table("collection_book_bibles").select("id, content, chapter_outline, whats_missing, assembled_at").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
             book_bible = bb_r.data[0] if bb_r.data else None
             ch_r = supabase.table("collection_chapters").select("id, title, sort_order, content, updated_at").eq("portal_user_id", portal_id).order("sort_order").execute()
             chapters = ch_r.data or []
@@ -3155,19 +3251,182 @@ async def portal_collection_assemble(authorization: Optional[str] = Header(defau
         question = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
         context_parts.append(f"STORYTELLER: {name}\nQUESTION: {question}\nANSWER: {rec.get('transcript', '')}\n")
 
-    full_context = "\n".join(context_parts)
-    collection_system = MEMOIR_ASSEMBLE_SYSTEM + "\n\nNote: This is a collection from multiple storytellers. Treat it as a group legacy archive — identify common themes, varied perspectives, and organizing principles that honor all contributors."
-    content = _generate_memoir_response(collection_system, [{"role": "user", "content": full_context}], max_tokens=2000)
+    full_context = "\n---\n".join(context_parts)
+    raw_content = _generate_memoir_response(COLLECTION_ASSEMBLE_SYSTEM, [{"role": "user", "content": full_context}], max_tokens=3000)
+    parsed = _parse_assembly_output(raw_content)
 
     bible_id = "cbible_" + secrets.token_hex(8)
     now = _utc_now()
+    record = {
+        "id": bible_id,
+        "portal_user_id": portal_id,
+        "content": parsed["book_bible"],
+        "chapter_outline": parsed["chapter_outline"],
+        "whats_missing": parsed["whats_missing"],
+        "assembled_at": now,
+    }
     if supabase:
-        supabase.table("collection_book_bibles").insert({"id": bible_id, "portal_user_id": portal_id, "content": content, "assembled_at": now}).execute()
+        supabase.table("collection_book_bibles").insert(record).execute()
     else:
         db = _load_db(); _collection_db_defaults(db)
-        db["collection_book_bibles"][bible_id] = {"id": bible_id, "portal_user_id": portal_id, "content": content, "assembled_at": now}
+        db["collection_book_bibles"][bible_id] = record
         _save_db(db)
-    return {"book_bible_id": bible_id, "content": content}
+
+    return {
+        "book_bible_id": bible_id,
+        "book_bible": parsed["book_bible"],
+        "chapter_outline": parsed["chapter_outline"],
+        "whats_missing": parsed["whats_missing"],
+    }
+
+
+class CollectionBibleSaveRequest(BaseModel):
+    book_bible: Optional[str] = None
+    chapter_outline: Optional[str] = None
+
+
+@app.put("/api/portal/collection/memoir/bible")
+async def portal_collection_save_bible(payload: CollectionBibleSaveRequest, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["email"]
+    updates = {"assembled_at": _utc_now()}
+    if payload.book_bible is not None:
+        updates["content"] = payload.book_bible
+    if payload.chapter_outline is not None:
+        updates["chapter_outline"] = payload.chapter_outline
+    if supabase:
+        bb_r = supabase.table("collection_book_bibles").select("id").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+        if bb_r.data:
+            supabase.table("collection_book_bibles").update(updates).eq("id", bb_r.data[0]["id"]).execute()
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        bbs = sorted([b for b in db["collection_book_bibles"].values() if b.get("portal_user_id") == portal_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        if bbs:
+            bbs[0].update(updates)
+        _save_db(db)
+    return {"ok": True}
+
+
+class FromOutlineRequest(BaseModel):
+    outline_text: str
+
+
+@app.post("/api/portal/collection/memoir/chapters/from-outline")
+async def portal_collection_chapters_from_outline(payload: FromOutlineRequest, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["email"]
+
+    import re
+    lines = payload.outline_text.strip().split("\n")
+    chapters = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        m = re.match(r'^\d+\.\s+\*?\*?([^*\n]+?)\*?\*?\s*[—–-]?\s*(.*)', line)
+        if m:
+            title = m.group(1).strip()
+            description = m.group(2).strip()
+            chapters.append({"title": title, "content": description})
+
+    if not chapters:
+        raise HTTPException(status_code=400, detail="Could not parse any chapters from the outline.")
+
+    now = _utc_now()
+    created = []
+    for i, ch in enumerate(chapters):
+        chapter_id = "cc_" + secrets.token_hex(8)
+        record = {
+            "id": chapter_id,
+            "portal_user_id": portal_id,
+            "title": ch["title"],
+            "content": ch["content"],
+            "edit_messages": [],
+            "sort_order": i,
+            "created_at": now,
+            "updated_at": now,
+        }
+        if supabase:
+            supabase.table("collection_chapters").insert(record).execute()
+        else:
+            db = _load_db(); _collection_db_defaults(db)
+            db["collection_chapters"][chapter_id] = record
+            _save_db(db)
+        created.append(record)
+
+    return {"chapters": created}
+
+
+@app.post("/api/portal/collection/memoir/chapters/{chapter_id}/first-pass")
+async def portal_collection_chapter_first_pass(chapter_id: str, authorization: Optional[str] = Header(default=None)):
+    portal_user = _auth_user(authorization)
+    portal_id = portal_user["email"]
+
+    if supabase:
+        r = supabase.table("collection_chapters").select("*").eq("id", chapter_id).eq("portal_user_id", portal_id).limit(1).execute()
+        chapter = r.data[0] if r.data else None
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        chapter = next((c for c in db["collection_chapters"].values() if c.get("id") == chapter_id and c.get("portal_user_id") == portal_id), None)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found.")
+
+    book_bible = ""
+    if supabase:
+        try:
+            bb_r = supabase.table("collection_book_bibles").select("content").eq("portal_user_id", portal_id).order("assembled_at", desc=True).limit(1).execute()
+            if bb_r.data:
+                book_bible = bb_r.data[0].get("content", "")
+        except Exception:
+            pass
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        bbs = sorted([b for b in db["collection_book_bibles"].values() if b.get("portal_user_id") == portal_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        if bbs:
+            book_bible = bbs[0].get("content", "")
+
+    storytellers = _get_f_tier_storyteller_ids(portal_user)
+    st_ids = [s["id"] for s in storytellers]
+    st_name_map = {s["id"]: " ".join(p for p in [s.get("first_name", ""), s.get("last_name", "")] if p) or s["email"] for s in storytellers}
+    if supabase:
+        recs_r = supabase.table("story_recordings").select("storyteller_user_id, prompt_id, transcript").in_("storyteller_user_id", st_ids).execute()
+        recs = recs_r.data or []
+        prompt_ids = list({rec["prompt_id"] for rec in recs if rec.get("prompt_id")})
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+    else:
+        db = _load_db()
+        recs = [r for r in db["story_recordings"].values() if r.get("storyteller_user_id") in st_ids]
+        prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+
+    recording_context = "\n---\n".join(
+        f"STORYTELLER: {st_name_map.get(rec.get('storyteller_user_id'), 'Unknown')}\n"
+        f"QUESTION: {prompt_map.get(rec.get('prompt_id') or '', 'Custom question')}\n"
+        f"ANSWER: {rec.get('transcript', '')}"
+        for rec in recs
+    )
+
+    user_message = (
+        f"BOOK BIBLE:\n{book_bible}\n\n"
+        f"CHAPTER TO WRITE: {chapter['title']}\n"
+        f"CHAPTER DESCRIPTION: {chapter.get('content', '')}\n\n"
+        f"ALL STORYTELLER RECORDINGS:\n{recording_context}"
+    )
+
+    draft = _generate_memoir_response(COLLECTION_FIRST_PASS_SYSTEM, [{"role": "user", "content": user_message}], max_tokens=2500)
+
+    if supabase:
+        supabase.table("collection_chapters").update({"content": draft, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
+    else:
+        db = _load_db(); _collection_db_defaults(db)
+        if chapter_id in db["collection_chapters"]:
+            db["collection_chapters"][chapter_id]["content"] = draft
+            db["collection_chapters"][chapter_id]["updated_at"] = _utc_now()
+        _save_db(db)
+
+    return {"content": draft}
 
 
 @app.post("/api/portal/collection/memoir/chapters")
@@ -3225,7 +3484,7 @@ async def portal_collection_chapter_edit(chapter_id: str, payload: MemoirChapter
         chapter = next((c for c in db["collection_chapters"].values() if c.get("id") == chapter_id and c.get("portal_user_id") == portal_id), None)
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    system = _build_memoir_edit_system(portal_id, chapter_id, chapter.get("content", ""))
+    system = _build_collection_edit_system(portal_id, chapter_id, chapter.get("content", ""))
     messages = chapter.get("edit_messages") or []
     messages.append({"role": "user", "content": payload.message})
     reply = _generate_memoir_response(system, messages)
@@ -3233,8 +3492,10 @@ async def portal_collection_chapter_edit(chapter_id: str, payload: MemoirChapter
     if supabase:
         supabase.table("collection_chapters").update({"edit_messages": messages, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
     else:
-        db["collection_chapters"][chapter_id]["edit_messages"] = messages
-        db["collection_chapters"][chapter_id]["updated_at"] = _utc_now()
+        db = _load_db(); _collection_db_defaults(db)
+        if chapter_id in db["collection_chapters"]:
+            db["collection_chapters"][chapter_id]["edit_messages"] = messages
+            db["collection_chapters"][chapter_id]["updated_at"] = _utc_now()
         _save_db(db)
     return {"message": reply}
 

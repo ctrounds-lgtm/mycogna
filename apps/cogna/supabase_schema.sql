@@ -371,3 +371,9 @@ CREATE TABLE IF NOT EXISTS collection_chapters (
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS collection_chapters_user_idx ON collection_chapters(portal_user_id);
+
+
+-- Migration: Add chapter_outline and whats_missing to collection_book_bibles (2026-05-24)
+-- Run once in Supabase SQL editor.
+ALTER TABLE collection_book_bibles ADD COLUMN IF NOT EXISTS chapter_outline TEXT;
+ALTER TABLE collection_book_bibles ADD COLUMN IF NOT EXISTS whats_missing TEXT;

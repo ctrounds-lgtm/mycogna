@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>MyCogna · Collection Book Builder</title>
+  <style>
+    :root {
+      --gold: #B8860B; --gold-light: #F5EDD6; --gold-pale: #FDFAF3;
+      --cream: #FAF7F2; --ink: #1C1A17; --ink-muted: #6B6560;
+      --border: #E8E2D9; --danger: #C0392B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Georgia', serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+    .top-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      background: #fff; position: sticky; top: 0; z-index: 10;
+    }
+    .top-nav .wordmark { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted); text-transform: uppercase; }
+    .top-nav a, .top-nav button.link-btn {
+      font-size: 13px; color: var(--ink-muted); text-decoration: none;
+      background: none; border: none; cursor: pointer; font-family: inherit;
+    }
+    .top-nav a:hover, .top-nav button.link-btn:hover { color: var(--ink); }
+    .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; width: 100%; }
+    .btn-primary {
+      display: block; width: 100%; padding: 14px 20px;
+      background: var(--gold); color: #fff; border: none; border-radius: 10px;
+      font-size: 16px; font-family: 'Georgia', serif; font-weight: 600;
+      cursor: pointer; text-align: center;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-secondary {
+      display: block; width: 100%; padding: 12px 20px;
+      background: transparent; color: var(--ink); border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
+      cursor: pointer; text-align: center; margin-top: 10px;
+    }
+    .btn-secondary:hover { border-color: var(--ink-muted); }
+    .btn-sm {
+      display: inline-block; padding: 7px 14px;
+      background: var(--gold-light); color: var(--gold); border: 1px solid #e0d0a0;
+      border-radius: 6px; font-size: 13px; font-family: 'Georgia', serif; cursor: pointer;
+    }
+    .btn-sm:hover { background: #eee4c0; }
+    .btn-first-pass {
+      display: block; width: 100%; padding: 11px 20px; margin-bottom: 16px;
+      background: #fff; color: var(--gold); border: 1.5px solid var(--gold);
+      border-radius: 10px; font-size: 14px; font-family: 'Georgia', serif;
+      cursor: pointer; text-align: center; font-weight: 600;
+    }
+    .btn-first-pass:hover { background: var(--gold-light); }
+    .btn-first-pass:disabled { opacity: 0.5; cursor: default; }
+    .stat-row { display: flex; gap: 20px; margin-bottom: 24px; }
+    .stat { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+    .section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 8px; }
+    .section-block { margin-bottom: 28px; }
+    .editable-area {
+      width: 100%; padding: 16px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: 'Georgia', serif; line-height: 1.75; resize: vertical;
+      color: var(--ink); background: #fff; min-height: 160px;
+    }
+    .editable-area:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .readonly-box {
+      background: var(--gold-pale); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; font-size: 15px; line-height: 1.75; color: var(--ink);
+      white-space: pre-wrap;
+    }
+    .chapter-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px; cursor: pointer; gap: 10px;
+    }
+    .chapter-item:hover { border-color: var(--gold); }
+    .chapter-item.active { border-color: var(--gold); background: var(--gold-light); }
+    .chapter-title-text { font-size: 14px; font-weight: 600; }
+    .edit-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .edit-sidebar { width: 220px; flex-shrink: 0; }
+    .edit-main { flex: 1; min-width: 0; }
+    @media (max-width: 600px) { .edit-layout { flex-direction: column; } .edit-sidebar { width: 100%; } }
+    .chapter-editor {
+      width: 100%; min-height: 200px; padding: 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
+      line-height: 1.7; resize: vertical; color: var(--ink); margin-bottom: 12px;
+    }
+    .chapter-editor:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+    .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; }
+    .chat-bubble.ai { background: var(--gold-light); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .chat-bubble.user { background: var(--ink); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .chat-input-row textarea {
+      flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: 'Georgia', serif; color: var(--ink); resize: none; height: 70px; line-height: 1.5;
+    }
+    .chat-input-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .chat-send-btn {
+      padding: 12px 18px; background: var(--gold); color: #fff; border: none;
+      border-radius: 10px; font-size: 15px; cursor: pointer; font-family: 'Georgia', serif;
+    }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .empty-state { text-align: center; color: var(--ink-muted); padding: 32px 0; font-size: 15px; }
+    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
+    .loading-msg { color: var(--ink-muted); font-size: 14px; font-style: italic; }
+    h1 { font-size: clamp(22px, 5vw, 32px); margin-bottom: 6px; }
+    h2 { font-size: clamp(18px, 4vw, 26px); margin-bottom: 6px; }
+    .sub { color: var(--ink-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+    .save-notice { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: ASSEMBLE
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenAssemble">
+  <nav class="top-nav">
+    <a href="/portal">← Back to portal</a>
+    <span class="wordmark">MyCogna · Collection Book Builder</span>
+    <span></span>
+  </nav>
+  <div class="page">
+    <h1>Compile Combined Book</h1>
+    <p class="sub" id="assembleSub">Loading…</p>
+
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="statStorytellers">—</div><div class="stat-label">Storytellers</div></div>
+      <div class="stat"><div class="stat-num" id="statRecordings">—</div><div class="stat-label">Recordings</div></div>
+      <div class="stat"><div class="stat-num" id="statChapters">—</div><div class="stat-label">Chapters</div></div>
+    </div>
+
+    <!-- Pre-assemble action -->
+    <div id="assembleAction">
+      <button class="btn-primary" id="assembleBtn" onclick="cb.runAssemble()">Assemble Book →</button>
+    </div>
+
+    <!-- Loading state -->
+    <div id="assembleLoading" style="display:none; text-align:center; padding:48px 0;">
+      <p class="loading-msg">Claude is reading all recordings… this may take 30–90 seconds.</p>
+    </div>
+
+    <!-- Output sections -->
+    <div id="assembleOutput" style="display:none;">
+
+      <div class="section-block">
+        <div class="section-label">Book Bible</div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">The organizing vision for the whole collection. Edit freely — your changes are saved automatically.</p>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here after assembly…" onblur="cb.saveBible()"></textarea>
+        <p class="save-notice" id="bibleSaveNotice"></p>
+      </div>
+
+      <div class="section-block">
+        <div class="section-label">Chapter Outline</div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">Suggested chapter structure. Edit or rearrange before proceeding. Your changes are saved automatically.</p>
+        <textarea class="editable-area" id="outlineEditor" rows="12" placeholder="Chapter outline will appear here after assembly…" onblur="cb.saveOutline()"></textarea>
+        <p class="save-notice" id="outlineSaveNotice"></p>
+      </div>
+
+      <div class="section-block">
+        <div class="section-label">What's Missing</div>
+        <div class="readonly-box" id="whatsMissingBox"></div>
+      </div>
+
+      <button class="btn-primary" onclick="cb.downloadBible()">Download Book Bible</button>
+      <button class="btn-secondary" onclick="cb.proceedToEdit()">Proceed to editing →</button>
+      <button class="btn-secondary" onclick="cb.runAssemble()">Reassemble with new stories</button>
+    </div>
+
+    <div id="assembleError" class="error-msg" style="display:none; margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: EDIT CHAPTERS
+══════════════════════════════════════════════ -->
+<div class="screen" id="screenEdit">
+  <nav class="top-nav">
+    <button class="link-btn" onclick="cb.showAssemble()">← Book Bible</button>
+    <span class="wordmark">MyCogna · Collection Book Builder</span>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn-sm" onclick="cb.downloadManuscript()">Download full book</button>
+    </div>
+  </nav>
+  <div class="page">
+    <h2>Edit Chapters</h2>
+    <p class="sub">Select a chapter to draft or refine it. Use Claude to generate a first pass or get editorial feedback.</p>
+
+    <div class="edit-layout">
+      <div class="edit-sidebar">
+        <div class="section-label">Chapters</div>
+        <button class="btn-sm" style="margin-bottom:12px;width:100%;" onclick="cb.addChapter()">+ Add chapter</button>
+        <div id="editChapterList"><p class="loading-msg">Loading…</p></div>
+      </div>
+      <div class="edit-main" id="editMain">
+        <p class="empty-state">Select a chapter from the list to begin editing.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = window.location.origin + '/api/portal/collection';
+
+  const cbState = {
+    authToken: '',
+    recordings: [],
+    storytellerCount: 0,
+    bookBibleId: null,
+    bookBible: '',
+    chapterOutline: '',
+    whatsMissing: '',
+    chapters: [],
+    currentChapterId: null,
+  };
+
+  async function apiFetch(url, opts = {}) {
+    opts.headers = { ...opts.headers, 'Authorization': 'Bearer ' + cbState.authToken };
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let detail = `Error ${res.status}`;
+      try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+
+  const cb = {
+
+    showAssemble() {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenAssemble').classList.add('active');
+      window.scrollTo(0, 0);
+    },
+
+    showEdit() {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenEdit').classList.add('active');
+      window.scrollTo(0, 0);
+    },
+
+    updateStats() {
+      document.getElementById('statStorytellers').textContent = cbState.storytellerCount;
+      document.getElementById('statRecordings').textContent = cbState.recordings.length;
+      document.getElementById('statChapters').textContent = cbState.chapters.length;
+    },
+
+    async runAssemble() {
+      document.getElementById('assembleAction').style.display = 'none';
+      document.getElementById('assembleOutput').style.display = 'none';
+      document.getElementById('assembleLoading').style.display = '';
+      document.getElementById('assembleError').style.display = 'none';
+      try {
+        const data = await apiFetch(`${API}/memoir/assemble`, { method: 'POST' });
+        cbState.bookBibleId = data.book_bible_id;
+        cbState.bookBible = data.book_bible || '';
+        cbState.chapterOutline = data.chapter_outline || '';
+        cbState.whatsMissing = data.whats_missing || '';
+        cb.showAssembleOutput();
+      } catch (err) {
+        document.getElementById('assembleLoading').style.display = 'none';
+        document.getElementById('assembleAction').style.display = '';
+        document.getElementById('assembleError').textContent = err.message;
+        document.getElementById('assembleError').style.display = '';
+      }
+    },
+
+    showAssembleOutput() {
+      document.getElementById('assembleLoading').style.display = 'none';
+      document.getElementById('assembleAction').style.display = 'none';
+      document.getElementById('bibleEditor').value = cbState.bookBible;
+      document.getElementById('outlineEditor').value = cbState.chapterOutline;
+      document.getElementById('whatsMissingBox').textContent = cbState.whatsMissing;
+      document.getElementById('assembleOutput').style.display = '';
+    },
+
+    async saveBible() {
+      const val = document.getElementById('bibleEditor').value;
+      cbState.bookBible = val;
+      const notice = document.getElementById('bibleSaveNotice');
+      try {
+        await apiFetch(`${API}/memoir/bible`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_bible: val }),
+        });
+        notice.textContent = 'Saved.';
+        setTimeout(() => { notice.textContent = ''; }, 2000);
+      } catch (err) {
+        notice.textContent = 'Save failed: ' + err.message;
+      }
+    },
+
+    async saveOutline() {
+      const val = document.getElementById('outlineEditor').value;
+      cbState.chapterOutline = val;
+      const notice = document.getElementById('outlineSaveNotice');
+      try {
+        await apiFetch(`${API}/memoir/bible`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapter_outline: val }),
+        });
+        notice.textContent = 'Saved.';
+        setTimeout(() => { notice.textContent = ''; }, 2000);
+      } catch (err) {
+        notice.textContent = 'Save failed: ' + err.message;
+      }
+    },
+
+    downloadBible() {
+      const content = `COLLECTION BOOK BIBLE\n${'='.repeat(50)}\n\n${cbState.bookBible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${cbState.chapterOutline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${cbState.whatsMissing}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'collection-book-bible.txt'; a.click();
+    },
+
+    async proceedToEdit() {
+      cb.showEdit();
+      try {
+        const data = await apiFetch(`${API}/memoir/chapters`);
+        cbState.chapters = data.chapters || [];
+        if (cbState.chapters.length === 0 && cbState.chapterOutline.trim()) {
+          // Auto-populate from outline on first visit
+          const populated = await apiFetch(`${API}/memoir/chapters/from-outline`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outline_text: cbState.chapterOutline }),
+          });
+          cbState.chapters = populated.chapters || [];
+          cb.updateStats();
+        }
+        cb._renderChapterSidebar(null);
+        if (cbState.chapters.length > 0) cb.loadChapter(cbState.chapters[0].id);
+      } catch (err) {
+        document.getElementById('editMain').innerHTML = `<p class="error-msg">${err.message}</p>`;
+      }
+    },
+
+    _renderChapterSidebar(activeId) {
+      const list = document.getElementById('editChapterList');
+      if (cbState.chapters.length === 0) {
+        list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Go back to the Book Bible and assemble first, or add a chapter manually.</p>';
+        return;
+      }
+      list.innerHTML = cbState.chapters.map(c =>
+        `<div class="chapter-item ${c.id === activeId ? 'active' : ''}" onclick="cb.loadChapter('${c.id}')" id="chap-item-${c.id}">
+          <span class="chapter-title-text">${cb._esc(c.title)}</span>
+        </div>`
+      ).join('');
+    },
+
+    async addChapter() {
+      const title = prompt('Chapter title:');
+      if (!title || !title.trim()) return;
+      try {
+        const data = await apiFetch(`${API}/memoir/chapters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title.trim(), content: '', sort_order: cbState.chapters.length }),
+        });
+        cbState.chapters.push(data.chapter);
+        cb._renderChapterSidebar(data.chapter.id);
+        cb.loadChapter(data.chapter.id);
+        cb.updateStats();
+      } catch (err) {
+        alert('Could not create chapter: ' + err.message);
+      }
+    },
+
+    async loadChapter(chapterId) {
+      cbState.currentChapterId = chapterId;
+      document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
+      const item = document.getElementById('chap-item-' + chapterId);
+      if (item) item.classList.add('active');
+
+      const chapter = cbState.chapters.find(c => c.id === chapterId);
+      if (!chapter) return;
+
+      document.getElementById('editMain').innerHTML = `
+        <div>
+          <div class="section-label">${cb._esc(chapter.title)}</div>
+          <textarea class="chapter-editor" id="chapterEditor" placeholder="This chapter's content will appear here. Use 'Ask Claude for a first pass' to generate a draft, then edit freely.">${cb._esc(chapter.content || '')}</textarea>
+          <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+            <button class="btn-sm" onclick="cb.saveChapter()">Save</button>
+            <button class="btn-sm" onclick="cb.downloadChapter()">Download chapter</button>
+            <button class="btn-sm" onclick="cb.downloadManuscript()">Download full book</button>
+          </div>
+          <button class="btn-first-pass" id="firstPassBtn" onclick="cb.runFirstPass()">Ask Claude to write a first pass →</button>
+          <div id="firstPassLoading" style="display:none;text-align:center;padding:16px 0;"><p class="loading-msg">Claude is drafting the chapter… this may take 30–60 seconds.</p></div>
+          <hr class="divider" />
+          <div class="section-label">Editorial feedback</div>
+          <div class="chat-messages" id="editMessages"><p class="loading-msg">Ask Claude for feedback, or request a rewrite of any section.</p></div>
+          <div class="chat-input-row" style="margin-top:12px;">
+            <textarea id="editInput" placeholder="Ask Claude for feedback or a rewrite…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();cb.editSend();}"></textarea>
+            <button class="chat-send-btn" id="editSendBtn" onclick="cb.editSend()">Send</button>
+          </div>
+          <div id="editError" class="error-msg" style="display:none;margin-top:8px;"></div>
+        </div>`;
+
+      // Load existing edit messages
+      const msgs = chapter.edit_messages || [];
+      if (msgs.length > 0) {
+        const container = document.getElementById('editMessages');
+        container.innerHTML = '';
+        msgs.forEach(m => {
+          const div = document.createElement('div');
+          div.className = `chat-bubble ${m.role === 'user' ? 'user' : 'ai'}`;
+          div.textContent = m.content;
+          container.appendChild(div);
+        });
+      }
+    },
+
+    async saveChapter() {
+      const chapter = cbState.chapters.find(c => c.id === cbState.currentChapterId);
+      if (!chapter) return;
+      const content = document.getElementById('chapterEditor').value;
+      try {
+        await apiFetch(`${API}/memoir/chapters/${cbState.currentChapterId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: chapter.title, content, sort_order: chapter.sort_order }),
+        });
+        chapter.content = content;
+      } catch (err) {
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
+      }
+    },
+
+    downloadChapter() {
+      const chapter = cbState.chapters.find(c => c.id === cbState.currentChapterId);
+      if (!chapter) return;
+      const content = document.getElementById('chapterEditor')?.value || chapter.content || '';
+      const blob = new Blob([`${chapter.title}\n${'='.repeat(50)}\n\n${content}`], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${chapter.title.toLowerCase().replace(/\s+/g, '-')}.txt`; a.click();
+    },
+
+    downloadManuscript() {
+      const parts = cbState.chapters.map(c => `${c.title}\n${'='.repeat(50)}\n\n${c.content || ''}`);
+      const blob = new Blob([parts.join('\n\n\n')], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'collection-book.txt'; a.click();
+    },
+
+    async runFirstPass() {
+      if (!cbState.currentChapterId) return;
+      const btn = document.getElementById('firstPassBtn');
+      const loading = document.getElementById('firstPassLoading');
+      if (btn) btn.disabled = true;
+      if (loading) loading.style.display = '';
+      try {
+        const data = await apiFetch(`${API}/memoir/chapters/${cbState.currentChapterId}/first-pass`, { method: 'POST' });
+        const editor = document.getElementById('chapterEditor');
+        if (editor) editor.value = data.content || '';
+        const chapter = cbState.chapters.find(c => c.id === cbState.currentChapterId);
+        if (chapter) chapter.content = data.content || '';
+      } catch (err) {
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = 'First pass failed: ' + err.message; errEl.style.display = ''; }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (loading) loading.style.display = 'none';
+      }
+    },
+
+    _appendEditMessage(role, text) {
+      const container = document.getElementById('editMessages');
+      if (!container) return;
+      const loading = container.querySelector('.loading-msg');
+      if (loading) loading.remove();
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${role}`;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    },
+
+    async editSend() {
+      const input = document.getElementById('editInput');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text || !cbState.currentChapterId) return;
+      input.value = '';
+      const btn = document.getElementById('editSendBtn');
+      if (btn) btn.disabled = true;
+      cb._appendEditMessage('user', text);
+      cb._appendEditMessage('ai', '…');
+      try {
+        const data = await apiFetch(`${API}/memoir/chapters/${cbState.currentChapterId}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+        document.querySelectorAll('#editMessages .chat-bubble.ai').forEach((el, i, arr) => {
+          if (i === arr.length - 1) el.textContent = data.message;
+        });
+      } catch (err) {
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (input) input.focus();
+      }
+    },
+
+    _esc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    },
+  };
+
+  // ── Boot ──
+  window.addEventListener('load', async () => {
+    const token = localStorage.getItem('portalToken');
+    if (!token) { window.location = '/portal'; return; }
+    cbState.authToken = token;
+
+    try {
+      const data = await apiFetch(`${API}/data`);
+      cbState.recordings = data.recordings || [];
+      cbState.storytellerCount = data.storyteller_count || 0;
+      cbState.chapters = data.chapters || [];
+
+      // Restore previous Book Bible if one exists
+      if (data.book_bible) {
+        cbState.bookBibleId = data.book_bible.id;
+        cbState.bookBible = data.book_bible.content || '';
+        cbState.chapterOutline = data.book_bible.chapter_outline || '';
+        cbState.whatsMissing = data.book_bible.whats_missing || '';
+      }
+
+      cb.updateStats();
+      document.getElementById('assembleSub').textContent =
+        `${cbState.recordings.length} recording${cbState.recordings.length !== 1 ? 's' : ''} from ${cbState.storytellerCount} storyteller${cbState.storytellerCount !== 1 ? 's' : ''} will be included. Claude will generate a Book Bible, chapter outline, and editorial notes.`;
+
+      if (cbState.bookBible) {
+        cb.showAssembleOutput();
+      } else {
+        document.getElementById('assembleAction').style.display = '';
+      }
+
+      // Show assemble screen on load
+      cb.showAssemble();
+    } catch (err) {
+      document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:Georgia,serif;color:#C0392B;">
+        <p>Error loading workspace: ${err.message}</p>
+        <p style="margin-top:16px;"><a href="/portal" style="color:#B8860B;">← Back to portal</a></p>
+      </div>`;
+    }
+  });
+</script>
+</body>
+</html>
