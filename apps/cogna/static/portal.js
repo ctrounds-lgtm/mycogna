@@ -671,14 +671,6 @@ const portal = {
 
   async loadBookBuilderPanel() {
     portal.switchFTab('questions');
-    portal.loadEPrompts();
-    portal.loadLegacyInvitees();
-    try {
-      const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
-      portal._renderPromoCodes(codesData.codes || [], 'F');
-    } catch (err) {
-      console.error('loadBookBuilderPanel error:', err.message);
-    }
   },
 
   switchFTab(tab) {
@@ -687,6 +679,18 @@ const portal = {
       document.getElementById(`fPanel-${t}`)?.classList.toggle('hidden', t !== tab);
       document.getElementById(`fTab-${t}`)?.classList.toggle('active', t === tab);
     });
+    if (tab === 'questions') portal.loadEPrompts();
+    else if (tab === 'codes') portal.loadFCodes();
+    else if (tab === 'stories') portal.loadLegacyInvitees();
+  },
+
+  async loadFCodes() {
+    try {
+      const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
+      portal._renderPromoCodes(codesData.codes || [], 'F');
+    } catch (err) {
+      console.error('loadFCodes error:', err.message);
+    }
   },
 
   async loadLegacyInvitees() {
@@ -1065,7 +1069,9 @@ const portal = {
       if (newCode) {
         prompt(`Code created! Copy it below to share with your storyteller:`, newCode);
       }
-      await portal.loadStoryPanel(dt, dt !== t ? t : undefined);
+      if (t === 'E') await portal.loadLegacyPanel();
+      else if (t === 'F') await portal.loadFCodes();
+      else await portal.loadStoryPanel(dt, dt !== t ? t : undefined);
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1086,7 +1092,9 @@ const portal = {
         method: 'DELETE',
         headers: authHeaders(),
       });
-      await portal.loadStoryPanel(tier || 'A');
+      if (tier === 'E') await portal.loadLegacyPanel();
+      else if (tier === 'F') await portal.loadFCodes();
+      else await portal.loadStoryPanel(tier || 'A');
     } catch (err) {
       alert('Error: ' + err.message);
     }
