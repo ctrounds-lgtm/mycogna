@@ -175,6 +175,28 @@
       border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
       display: inline-block; margin-bottom: 16px;
     }
+    /* ── Assemble three-section layout ── */
+    .section-block { margin-bottom: 28px; }
+    .editable-area {
+      width: 100%; padding: 16px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: 'Georgia', serif; line-height: 1.75; resize: vertical;
+      color: var(--ink); background: #fff; min-height: 160px;
+    }
+    .editable-area:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .readonly-box {
+      background: var(--gold-pale); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; font-size: 15px; line-height: 1.75; color: var(--ink);
+      white-space: pre-wrap;
+    }
+    .save-notice { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
+    .btn-first-pass {
+      display: block; width: 100%; padding: 11px 20px; margin-bottom: 16px;
+      background: #fff; color: var(--gold); border: 1.5px solid var(--gold);
+      border-radius: 10px; font-size: 14px; font-family: 'Georgia', serif;
+      cursor: pointer; text-align: center; font-weight: 600;
+    }
+    .btn-first-pass:hover { background: var(--gold-light); }
+    .btn-first-pass:disabled { opacity: 0.5; cursor: default; }
   </style>
 </head>
 <body>
@@ -245,7 +267,26 @@
     </div>
 
     <div id="assembleOutput" style="display:none;">
-      <div class="assemble-output" id="assembleContent"></div>
+
+      <div class="section-block">
+        <div class="section-label">Book Bible</div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">The organizing vision for this memoir. Edit freely — your changes are saved automatically.</p>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here after assembly…" onblur="pm.saveBible()"></textarea>
+        <p class="save-notice" id="bibleSaveNotice"></p>
+      </div>
+
+      <div class="section-block">
+        <div class="section-label">Chapter Outline</div>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">Suggested chapter structure. Edit or rearrange before proceeding. Your changes are saved automatically.</p>
+        <textarea class="editable-area" id="outlineEditor" rows="12" placeholder="Chapter outline will appear here after assembly…" onblur="pm.saveOutline()"></textarea>
+        <p class="save-notice" id="outlineSaveNotice"></p>
+      </div>
+
+      <div class="section-block">
+        <div class="section-label">What's Missing</div>
+        <div class="readonly-box" id="whatsMissingBox"></div>
+      </div>
+
       <button class="btn-primary" id="downloadBibleBtn" onclick="pm.downloadBible()">Download Book Bible</button>
       <button class="btn-secondary" onclick="pm.proceedToEdit()">Proceed to editing →</button>
       <button class="btn-secondary" onclick="pm.runAssemble()">Reassemble</button>
@@ -309,6 +350,8 @@
     invitee: null,
     recordings: [],
     bookBible: null,
+    chapterOutline: '',
+    whatsMissing: '',
     chapters: [],
     currentChapterId: null,
   };
@@ -416,7 +459,9 @@
       document.getElementById('assembleSub').textContent =
         `${pmState.recordings.length} recording${pmState.recordings.length !== 1 ? 's' : ''} will be included. Claude will generate a ${bibleLabel}.`;
       if (pmState.bookBible) {
-        document.getElementById('assembleContent').textContent = pmState.bookBible.content || '';
+        document.getElementById('bibleEditor').value = pmState.bookBible.content || '';
+        document.getElementById('outlineEditor').value = pmState.chapterOutline || '';
+        document.getElementById('whatsMissingBox').textContent = pmState.whatsMissing || '';
         document.getElementById('assembleOutput').style.display = '';
         document.getElementById('assembleAction').style.display = 'none';
       } else {
@@ -434,8 +479,12 @@
       document.getElementById('assembleError').style.display = 'none';
       try {
         const data = await apiFetch(apiUrl('/memoir/assemble'), {method: 'POST'});
-        pmState.bookBible = {id: data.book_bible_id, content: data.content};
-        document.getElementById('assembleContent').textContent = data.content;
+        pmState.bookBible = {id: data.book_bible_id, content: data.book_bible || ''};
+        pmState.chapterOutline = data.chapter_outline || '';
+        pmState.whatsMissing = data.whats_missing || '';
+        document.getElementById('bibleEditor').value = pmState.bookBible.content;
+        document.getElementById('outlineEditor').value = pmState.chapterOutline;
+        document.getElementById('whatsMissingBox').textContent = pmState.whatsMissing;
         document.getElementById('assembleLoading').style.display = 'none';
         document.getElementById('assembleOutput').style.display = '';
       } catch (err) {
@@ -446,18 +495,71 @@
       }
     },
 
+    async saveBible() {
+      const val = document.getElementById('bibleEditor').value;
+      if (pmState.bookBible) pmState.bookBible.content = val;
+      const notice = document.getElementById('bibleSaveNotice');
+      try {
+        await apiFetch(apiUrl('/memoir/bible'), {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({book_bible: val}),
+        });
+        notice.textContent = 'Saved.';
+        setTimeout(() => { notice.textContent = ''; }, 2000);
+      } catch (err) {
+        notice.textContent = 'Save failed: ' + err.message;
+      }
+    },
+
+    async saveOutline() {
+      const val = document.getElementById('outlineEditor').value;
+      pmState.chapterOutline = val;
+      const notice = document.getElementById('outlineSaveNotice');
+      try {
+        await apiFetch(apiUrl('/memoir/bible'), {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({chapter_outline: val}),
+        });
+        notice.textContent = 'Saved.';
+        setTimeout(() => { notice.textContent = ''; }, 2000);
+      } catch (err) {
+        notice.textContent = 'Save failed: ' + err.message;
+      }
+    },
+
     downloadBible() {
-      const content = pmState.bookBible ? pmState.bookBible.content : '';
+      const bible = pmState.bookBible ? pmState.bookBible.content : '';
+      const outline = pmState.chapterOutline || '';
+      const missing = pmState.whatsMissing || '';
       const inv = pmState.invitee;
       const name = IS_COLLECTION ? 'Combined Archive' : (inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee');
       const label = IS_BOOK ? 'Book Outline' : 'Book Bible';
-      const blob = new Blob([`${name}'s ${label}\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
+      const content = `${name}'s ${label}\n${'='.repeat(50)}\n\nBOOK BIBLE\n${'='.repeat(50)}\n\n${bible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${outline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${missing}`;
+      const blob = new Blob([content], {type:'text/plain'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-${L.downloadBibleFile}.txt`; a.click();
     },
 
     async proceedToEdit() {
-      await pm.showEdit();
+      showScreen('screenEdit');
+      try {
+        const data = await apiFetch(apiUrl('/memoir/chapters'));
+        pmState.chapters = data.chapters || [];
+        if (pmState.chapters.length === 0 && pmState.chapterOutline.trim()) {
+          const populated = await apiFetch(apiUrl('/memoir/chapters/from-outline'), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({outline_text: pmState.chapterOutline}),
+          });
+          pmState.chapters = populated.chapters || [];
+        }
+        pm._renderEditSidebar(null);
+        if (pmState.chapters.length > 0) pm.loadChapter(pmState.chapters[0].id);
+      } catch (err) {
+        document.getElementById('editMain').innerHTML = `<p class="error-msg">${err.message}</p>`;
+      }
     },
 
     async showEdit(selectChapterId) {
@@ -521,6 +623,8 @@
             <button class="btn-sm" onclick="pm.saveChapter()">Save chapter</button>
             <button class="btn-sm" onclick="pm.downloadChapter()">Download chapter</button>
           </div>
+          <button class="btn-first-pass" id="firstPassBtn" onclick="pm.runFirstPass()">Ask Claude to write a first pass →</button>
+          <div id="firstPassLoading" style="display:none;text-align:center;padding:16px 0;"><p class="loading-msg">Claude is drafting the chapter… this may take 30–60 seconds.</p></div>
           <hr class="divider" />
           <div class="section-label">Editorial feedback</div>
           <div class="chat-messages" id="editMessages"><p class="loading-msg">Ask Claude for feedback, or request a rewrite of any section.</p></div>
@@ -556,6 +660,27 @@
       const blob = new Blob([`${chapter.title}\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${chapter.title.toLowerCase().replace(/\s+/g, '-')}.txt`; a.click();
+    },
+
+    async runFirstPass() {
+      if (!pmState.currentChapterId) return;
+      const btn = document.getElementById('firstPassBtn');
+      const loading = document.getElementById('firstPassLoading');
+      if (btn) btn.disabled = true;
+      if (loading) loading.style.display = '';
+      try {
+        const data = await apiFetch(apiUrl('/memoir/chapters/' + pmState.currentChapterId + '/first-pass'), {method: 'POST'});
+        const editor = document.getElementById('chapterEditor');
+        if (editor) editor.value = data.content || '';
+        const chapter = pmState.chapters.find(c => c.id === pmState.currentChapterId);
+        if (chapter) chapter.content = data.content || '';
+      } catch (err) {
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = 'First pass failed: ' + err.message; errEl.style.display = ''; }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (loading) loading.style.display = 'none';
+      }
     },
 
     downloadManuscript() {
@@ -626,6 +751,8 @@
       pmState.invitee = data.invitee || null;
       pmState.recordings = data.recordings || [];
       pmState.bookBible = data.book_bible;
+      pmState.chapterOutline = data.book_bible?.chapter_outline || '';
+      pmState.whatsMissing = data.book_bible?.whats_missing || '';
       pmState.chapters = data.chapters || [];
 
       const name = IS_COLLECTION
