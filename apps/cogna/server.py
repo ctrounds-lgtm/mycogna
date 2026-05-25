@@ -3323,11 +3323,17 @@ async def portal_collection_chapters_from_outline(payload: FromOutlineRequest, a
         line = line.strip()
         if not line:
             continue
-        m = re.match(r'^\d+\.\s+\*?\*?([^*\n]+?)\*?\*?\s*[—–-]?\s*(.*)', line)
+        # Match numbered list lines: "1. **Title** — description" or "1. Title — description"
+        m = re.match(r'^\d+\.\s+(.*)', line)
         if m:
-            title = m.group(1).strip()
-            description = m.group(2).strip()
-            chapters.append({"title": title, "content": description})
+            rest = m.group(1).strip()
+            rest = re.sub(r'\*+', '', rest)  # strip ** bold markers
+            # Split on em-dash, en-dash, or " - "
+            parts = re.split(r'\s*[—–]\s*|\s+-\s+', rest, maxsplit=1)
+            title = parts[0].strip()
+            description = parts[1].strip() if len(parts) > 1 else ''
+            if title:
+                chapters.append({"title": title, "content": description})
 
     if not chapters:
         raise HTTPException(status_code=400, detail="Could not parse any chapters from the outline.")
