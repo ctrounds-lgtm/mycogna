@@ -3319,21 +3319,26 @@ async def portal_collection_chapters_from_outline(payload: FromOutlineRequest, a
     import re
     lines = payload.outline_text.strip().split("\n")
     chapters = []
+    current_title = None
+    current_desc_lines = []
+
+    def _flush():
+        if current_title:
+            chapters.append({"title": current_title, "content": " ".join(current_desc_lines).strip()})
+
     for line in lines:
         line = line.strip()
-        if not line:
-            continue
-        # Match numbered list lines: "1. **Title** — description" or "1. Title — description"
         m = re.match(r'^\d+\.\s+(.*)', line)
         if m:
-            rest = m.group(1).strip()
-            rest = re.sub(r'\*+', '', rest)  # strip ** bold markers
-            # Split on em-dash, en-dash, or " - "
+            _flush()
+            rest = re.sub(r'\*+', '', m.group(1)).strip()
+            # Handle inline dash-separated description on the same line
             parts = re.split(r'\s*[—–]\s*|\s+-\s+', rest, maxsplit=1)
-            title = parts[0].strip()
-            description = parts[1].strip() if len(parts) > 1 else ''
-            if title:
-                chapters.append({"title": title, "content": description})
+            current_title = parts[0].strip()
+            current_desc_lines = [parts[1].strip()] if len(parts) > 1 and parts[1].strip() else []
+        elif current_title and line:
+            current_desc_lines.append(line)
+    _flush()
 
     if not chapters:
         raise HTTPException(status_code=400, detail="Could not parse any chapters from the outline.")
