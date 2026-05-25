@@ -430,7 +430,7 @@ def storyteller():
 
 @app.get("/memoir")
 def memoir():
-    return FileResponse(ROOT / "static" / "memoir.html")
+    return FileResponse(ROOT / "static" / "memoir.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
 @app.get("/portal/memoir")
