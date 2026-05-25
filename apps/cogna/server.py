@@ -379,6 +379,13 @@ class MemoirChapterEditRequest(BaseModel):
     message: str
     focus: Optional[str] = None  # general | structural | voice | emotional | transition
 
+class MemoirBibleUpdateRequest(BaseModel):
+    book_bible: Optional[str] = None
+    chapter_outline: Optional[str] = None
+
+class MemoirOutlineFromRequest(BaseModel):
+    outline_text: str
+
 
 EDITORIAL_FOCUSES = {
     "general":    "General edit — fix typos, punctuation, and flow. Improve sentence rhythm without changing the author's voice.",
@@ -2660,7 +2667,7 @@ async def memoir_dashboard(authorization: Optional[str] = Header(default=None)):
             prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
         ms = supabase.table("memoir_sessions").select("id, recording_id, finished").eq("storyteller_user_id", user_id).execute()
         session_map = {s["recording_id"]: s for s in (ms.data or [])}
-        bb = supabase.table("book_bibles").select("id, content, assembled_at").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
+        bb = supabase.table("book_bibles").select("id, content, chapter_outline, whats_missing, assembled_at").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
         book_bible = bb.data[0] if bb.data else None
         ch = supabase.table("chapters").select("id, title, sort_order, content, updated_at").eq("storyteller_user_id", user_id).order("sort_order").execute()
         chapters = ch.data or []
@@ -2841,17 +2848,21 @@ async def memoir_assemble(authorization: Optional[str] = Header(default=None)):
         context_parts.append("")
 
     full_context = "\n".join(context_parts)
-    content = _generate_memoir_response(MEMOIR_ASSEMBLE_SYSTEM, [{"role": "user", "content": full_context}], max_tokens=2000)
+    raw_content = _generate_memoir_response(MEMOIR_ASSEMBLE_SYSTEM, [{"role": "user", "content": full_context}], max_tokens=2000)
+    parsed = _parse_assembly_output(raw_content)
+    book_bible = parsed["book_bible"] or raw_content
+    chapter_outline = parsed["chapter_outline"]
+    whats_missing = parsed["whats_missing"]
 
     bible_id = "bible_" + secrets.token_hex(8)
     now = _utc_now()
     if supabase:
-        supabase.table("book_bibles").insert({"id": bible_id, "storyteller_user_id": user_id, "content": content, "assembled_at": now}).execute()
+        supabase.table("book_bibles").insert({"id": bible_id, "storyteller_user_id": user_id, "content": book_bible, "chapter_outline": chapter_outline, "whats_missing": whats_missing, "assembled_at": now}).execute()
     else:
-        db["book_bibles"][bible_id] = {"id": bible_id, "storyteller_user_id": user_id, "content": content, "assembled_at": now}
+        db["book_bibles"][bible_id] = {"id": bible_id, "storyteller_user_id": user_id, "content": book_bible, "chapter_outline": chapter_outline, "whats_missing": whats_missing, "assembled_at": now}
         _save_db(db)
 
-    return {"book_bible_id": bible_id, "content": content}
+    return {"book_bible_id": bible_id, "book_bible": book_bible, "chapter_outline": chapter_outline, "whats_missing": whats_missing}
 
 
 @app.get("/api/memoir/chapters")
@@ -2965,6 +2976,161 @@ async def memoir_chapter_edit(chapter_id: str, payload: MemoirChapterEditRequest
         _save_db(db)
 
     return {"message": reply}
+
+
+@app.put("/api/memoir/bible")
+async def memoir_save_bible(payload: MemoirBibleUpdateRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+    updates = {"assembled_at": _utc_now()}
+    if payload.book_bible is not None:
+        updates["content"] = payload.book_bible
+    if payload.chapter_outline is not None:
+        updates["chapter_outline"] = payload.chapter_outline
+    if supabase:
+        bb_r = supabase.table("book_bibles").select("id").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
+        if bb_r.data:
+            supabase.table("book_bibles").update(updates).eq("id", bb_r.data[0]["id"]).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        bbs = sorted([b for b in db["book_bibles"].values() if b.get("storyteller_user_id") == user_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        if bbs:
+            bbs[0].update(updates)
+        _save_db(db)
+    return {"ok": True}
+
+
+@app.post("/api/memoir/chapters/from-outline")
+async def memoir_chapters_from_outline(payload: MemoirOutlineFromRequest, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    import re
+    lines = payload.outline_text.strip().split("\n")
+    chapters = []
+    current_title = None
+    current_desc_lines = []
+
+    def _flush():
+        if current_title:
+            chapters.append({"title": current_title, "content": " ".join(current_desc_lines).strip()})
+
+    for line in lines:
+        line = line.strip()
+        m = re.match(r'^\d+\.\s+(.*)', line)
+        if m:
+            _flush()
+            rest = re.sub(r'\*+', '', m.group(1)).strip()
+            parts = re.split(r'\s*[—–]\s*|\s+-\s+', rest, maxsplit=1)
+            current_title = parts[0].strip()
+            current_desc_lines = [parts[1].strip()] if len(parts) > 1 and parts[1].strip() else []
+        elif current_title and line:
+            current_desc_lines.append(line)
+    _flush()
+
+    if not chapters:
+        raise HTTPException(status_code=400, detail="Could not parse any chapters from the outline.")
+
+    now = _utc_now()
+    created = []
+    for i, ch in enumerate(chapters):
+        chapter_id = "chap_" + secrets.token_hex(8)
+        record = {
+            "id": chapter_id,
+            "storyteller_user_id": user_id,
+            "title": ch["title"],
+            "content": ch["content"],
+            "edit_messages": [],
+            "sort_order": i,
+            "created_at": now,
+            "updated_at": now,
+        }
+        if supabase:
+            supabase.table("chapters").insert(record).execute()
+        else:
+            db = _load_db(); _memoir_db_defaults(db)
+            db["chapters"][chapter_id] = record
+            _save_db(db)
+        created.append(record)
+
+    return {"chapters": created}
+
+
+@app.post("/api/memoir/chapters/{chapter_id}/first-pass")
+async def memoir_chapter_first_pass(chapter_id: str, authorization: Optional[str] = Header(default=None)):
+    st_user = _auth_storyteller_user(authorization)
+    user_id = st_user["id"]
+
+    if supabase:
+        r = supabase.table("chapters").select("*").eq("id", chapter_id).eq("storyteller_user_id", user_id).limit(1).execute()
+        chapter = r.data[0] if r.data else None
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        c = db["chapters"].get(chapter_id)
+        chapter = c if c and c.get("storyteller_user_id") == user_id else None
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found.")
+
+    book_bible = ""
+    if supabase:
+        try:
+            bb_r = supabase.table("book_bibles").select("content").eq("storyteller_user_id", user_id).order("assembled_at", desc=True).limit(1).execute()
+            if bb_r.data:
+                book_bible = bb_r.data[0].get("content", "")
+        except Exception:
+            pass
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        bbs = sorted([b for b in db["book_bibles"].values() if b.get("storyteller_user_id") == user_id], key=lambda x: x.get("assembled_at", ""), reverse=True)
+        if bbs:
+            book_bible = bbs[0].get("content", "")
+
+    if supabase:
+        r2 = supabase.table("story_recordings").select("id, prompt_id, transcript, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+        recordings = r2.data or []
+        prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
+        prompt_map = {}
+        if prompt_ids:
+            pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+            prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+        ms = supabase.table("memoir_sessions").select("recording_id, messages").eq("storyteller_user_id", user_id).eq("finished", True).execute()
+        sessions_by_recording = {s["recording_id"]: s["messages"] for s in (ms.data or [])}
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        recordings = sorted([rec for rec in db["story_recordings"].values() if rec.get("storyteller_user_id") == user_id], key=lambda x: x.get("created_at", ""))
+        prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+        sessions_by_recording = {s["recording_id"]: s["messages"] for s in db["memoir_sessions"].values() if s.get("storyteller_user_id") == user_id and s.get("finished")}
+
+    context_parts = []
+    for rec in recordings:
+        question = prompt_map.get(rec.get("prompt_id") or "", "Custom question")
+        context_parts.append(f"QUESTION: {question}\nANSWER: {rec.get('transcript', '')}")
+        if rec["id"] in sessions_by_recording:
+            msgs = sessions_by_recording[rec["id"]]
+            exchanges = [f"  {'AI' if m['role'] == 'assistant' else 'User'}: {m['content']}" for m in msgs]
+            context_parts.append("FOLLOW-UP CONVERSATION:\n" + "\n".join(exchanges))
+        context_parts.append("")
+    recording_context = "\n".join(context_parts)
+
+    user_message = (
+        f"BOOK BIBLE:\n{book_bible}\n\n"
+        f"CHAPTER TO WRITE: {chapter['title']}\n"
+        f"CHAPTER DESCRIPTION: {chapter.get('content', '')}\n\n"
+        f"ALL RECORDINGS:\n{recording_context}"
+    )
+
+    draft = _generate_memoir_response(MEMOIR_FIRST_PASS_SYSTEM, [{"role": "user", "content": user_message}], max_tokens=2500)
+
+    if supabase:
+        supabase.table("chapters").update({"content": draft, "updated_at": _utc_now()}).eq("id", chapter_id).execute()
+    else:
+        db = _load_db(); _memoir_db_defaults(db)
+        if chapter_id in db["chapters"]:
+            db["chapters"][chapter_id]["content"] = draft
+            db["chapters"][chapter_id]["updated_at"] = _utc_now()
+        _save_db(db)
+
+    return {"content": draft}
 
 
 # ----------------------------------------------------

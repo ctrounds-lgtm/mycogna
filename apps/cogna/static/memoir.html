@@ -125,12 +125,29 @@
       margin-top: 12px; font-size: 15px; color: var(--ink-muted); font-family: 'Georgia', serif;
     }
 
-    /* ── Assemble output ── */
-    .assemble-output {
-      background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      padding: 24px; font-size: 15px; line-height: 1.8; color: var(--ink);
-      white-space: pre-wrap; margin: 20px 0;
+    /* ── Assemble sections ── */
+    .section-block { margin: 20px 0; }
+    .section-block .section-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .editable-area {
+      width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 14px; font-family: 'Georgia', serif; line-height: 1.7; resize: vertical;
+      color: var(--ink); background: #fff;
     }
+    .editable-area:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .readonly-box {
+      background: #fff; border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; font-size: 14px; line-height: 1.7; color: var(--ink-muted);
+      white-space: pre-wrap;
+    }
+    .save-notice { font-size: 11px; font-weight: 400; color: var(--gold); text-transform: none; letter-spacing: 0; }
+    .btn-first-pass {
+      width: 100%; padding: 13px 20px; background: var(--gold-light);
+      border: 1.5px solid var(--gold); border-radius: 10px;
+      font-family: 'Georgia', serif; font-size: 15px; font-weight: 600;
+      color: var(--ink); cursor: pointer; text-align: center; margin-bottom: 16px;
+    }
+    .btn-first-pass:hover { background: #faeec8; border-color: #a07828; }
+    .btn-first-pass:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── Chapter list ── */
     .chapter-item {
@@ -344,8 +361,19 @@
     </div>
 
     <div id="assembleOutput" style="display:none;">
-      <div class="assemble-output" id="assembleContent"></div>
-      <button class="btn-primary" onclick="m.downloadBible()">Download Book Bible</button>
+      <div class="section-block">
+        <div class="section-label">Book Bible <span class="save-notice" id="bibleSaveNotice"></span></div>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here…" onblur="m.saveBible()"></textarea>
+      </div>
+      <div class="section-block">
+        <div class="section-label">Chapter Outline <span class="save-notice" id="outlineSaveNotice"></span></div>
+        <textarea class="editable-area" id="outlineEditor" rows="8" placeholder="Chapter Outline will appear here…" onblur="m.saveOutline()"></textarea>
+      </div>
+      <div class="section-block">
+        <div class="section-label">What's Missing</div>
+        <div class="readonly-box" id="whatsMissingBox"></div>
+      </div>
+      <button class="btn-primary" style="margin-top:8px;" onclick="m.downloadBible()">Download Book Bible</button>
       <button class="btn-secondary" onclick="m.proceedToEdit()">Proceed to editing →</button>
       <button class="btn-secondary" onclick="m.runAssemble()">Reassemble with new stories</button>
     </div>
@@ -392,7 +420,8 @@
     firstName: '',
     recordings: [],
     bookBible: null,
-    bookBibleContent: '',
+    chapterOutline: '',
+    whatsMissing: '',
     chapters: [],
     currentRecording: null,
     deepenSessionId: null,
@@ -436,6 +465,8 @@
         const data = await apiFetch(API + '/dashboard');
         mState.recordings = data.recordings || [];
         mState.bookBible = data.book_bible;
+        mState.chapterOutline = data.book_bible?.chapter_outline || '';
+        mState.whatsMissing = data.book_bible?.whats_missing || '';
         mState.chapters = data.chapters || [];
         m._renderDashboard();
       } catch (err) {
@@ -638,7 +669,9 @@
 
     showAssemble() {
       if (mState.bookBible) {
-        document.getElementById('assembleContent').textContent = mState.bookBible.content || '';
+        document.getElementById('bibleEditor').value = mState.bookBible.content || '';
+        document.getElementById('outlineEditor').value = mState.chapterOutline || '';
+        document.getElementById('whatsMissingBox').textContent = mState.whatsMissing || '';
         document.getElementById('assembleOutput').style.display = '';
         document.getElementById('assembleAction').style.display = 'none';
       } else {
@@ -658,9 +691,12 @@
 
       try {
         const data = await apiFetch(API + '/assemble', {method: 'POST'});
-        mState.bookBible = {id: data.book_bible_id, content: data.content};
-        mState.bookBibleContent = data.content;
-        document.getElementById('assembleContent').textContent = data.content;
+        mState.bookBible = {id: data.book_bible_id, content: data.book_bible};
+        mState.chapterOutline = data.chapter_outline || '';
+        mState.whatsMissing = data.whats_missing || '';
+        document.getElementById('bibleEditor').value = data.book_bible || '';
+        document.getElementById('outlineEditor').value = data.chapter_outline || '';
+        document.getElementById('whatsMissingBox').textContent = data.whats_missing || '';
         document.getElementById('assembleLoading').style.display = 'none';
         document.getElementById('assembleOutput').style.display = '';
       } catch (err) {
@@ -671,15 +707,70 @@
       }
     },
 
+    async saveBible() {
+      const content = document.getElementById('bibleEditor').value;
+      if (!mState.bookBible) return;
+      const notice = document.getElementById('bibleSaveNotice');
+      try {
+        await apiFetch(API + '/bible', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({book_bible: content}),
+        });
+        mState.bookBible.content = content;
+        if (notice) { notice.textContent = 'Saved'; setTimeout(() => { notice.textContent = ''; }, 2000); }
+      } catch (err) {
+        if (notice) notice.textContent = 'Save failed';
+      }
+    },
+
+    async saveOutline() {
+      const content = document.getElementById('outlineEditor').value;
+      if (!mState.bookBible) return;
+      const notice = document.getElementById('outlineSaveNotice');
+      try {
+        await apiFetch(API + '/bible', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({chapter_outline: content}),
+        });
+        mState.chapterOutline = content;
+        if (notice) { notice.textContent = 'Saved'; setTimeout(() => { notice.textContent = ''; }, 2000); }
+      } catch (err) {
+        if (notice) notice.textContent = 'Save failed';
+      }
+    },
+
     downloadBible() {
-      const content = mState.bookBible ? mState.bookBible.content : '';
+      const bible = mState.bookBible ? mState.bookBible.content : '';
+      const outline = mState.chapterOutline || '';
+      const missing = mState.whatsMissing || '';
       const name = mState.firstName || 'My';
-      const blob = new Blob([`${name}'s Book Bible\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
+      const text = [
+        `${name}'s Book Bible`, '='.repeat(50), '', bible,
+        '', 'Chapter Outline', '='.repeat(50), '', outline,
+        '', "What's Missing", '='.repeat(50), '', missing,
+      ].join('\n');
+      const blob = new Blob([text], {type:'text/plain'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${name.toLowerCase()}-book-bible.txt`; a.click();
     },
 
     async proceedToEdit() {
+      const outline = document.getElementById('outlineEditor')?.value || mState.chapterOutline || '';
+      // Auto-populate chapters from outline if none exist yet
+      const existingChapters = await apiFetch(API + '/chapters').then(d => d.chapters || []).catch(() => []);
+      if (existingChapters.length === 0 && outline.trim()) {
+        try {
+          await apiFetch(API + '/chapters/from-outline', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({outline_text: outline}),
+          });
+        } catch (err) {
+          console.error('from-outline failed:', err.message);
+        }
+      }
       await m.showEdit();
     },
 
@@ -830,7 +921,7 @@
         <div>
           <div class="section-label">${chapter.title}</div>
           <div style="margin-bottom:16px;">
-            <button class="draft-chapter-btn" onclick="m.requestDraft()">Ask Claude to create this chapter based on the stories you've provided</button>
+            <button class="btn-first-pass" id="firstPassBtn" onclick="m.runFirstPass()">✨ Ask Claude for a first pass on this chapter</button>
           </div>
           <textarea class="chapter-editor" id="chapterEditor" placeholder="Paste or write chapter content here…">${chapter.content || ''}</textarea>
           <div style="display:flex;gap:10px;margin-bottom:20px;">
@@ -930,33 +1021,23 @@
         </div>`;
     },
 
-    async requestDraft() {
-      const draftBtn = document.querySelector('.draft-chapter-btn');
-      const input = document.getElementById('editInput');
-      if (!input || !mState.currentChapterId) return;
-      if (draftBtn) draftBtn.disabled = true;
-      input.value = 'Please write a complete first draft of this chapter. Draw from the interview questions and recorded answers in the source material. Shape the storyteller\'s raw answers into a flowing narrative in their own voice. Write the full chapter — not a summary or outline.';
-      await m.editSend();
-      if (draftBtn) draftBtn.disabled = false;
-      // Add "Use as chapter content" button to Claude's last response
-      const bubbles = document.querySelectorAll('#editMessages .chat-bubble.ai');
-      const last = bubbles[bubbles.length - 1];
-      if (last && last.textContent !== '…' && !last.querySelector('.use-draft-btn')) {
-        const useBtn = document.createElement('button');
-        useBtn.className = 'use-draft-btn';
-        useBtn.textContent = '→ Use as chapter content';
-        useBtn.onclick = () => {
-          const draftText = last.childNodes[0]?.textContent || last.textContent;
-          const editor = document.getElementById('chapterEditor');
-          if (editor) {
-            editor.value = draftText;
-            const chapter = mState.chapters.find(c => c.id === mState.currentChapterId);
-            if (chapter) chapter.content = draftText;
-          }
-          useBtn.textContent = '✓ Copied to editor';
-          useBtn.disabled = true;
-        };
-        last.appendChild(useBtn);
+    async runFirstPass() {
+      const btn = document.getElementById('firstPassBtn');
+      if (!mState.currentChapterId) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Claude is writing… this may take a moment.'; }
+      try {
+        const data = await apiFetch(API + '/chapters/' + mState.currentChapterId + '/first-pass', {method: 'POST'});
+        const editor = document.getElementById('chapterEditor');
+        if (editor) {
+          editor.value = data.content || '';
+          const chapter = mState.chapters.find(c => c.id === mState.currentChapterId);
+          if (chapter) chapter.content = data.content || '';
+        }
+        if (btn) { btn.textContent = '✓ First pass complete — edit below'; btn.disabled = false; }
+      } catch (err) {
+        if (btn) { btn.textContent = '✨ Ask Claude for a first pass on this chapter'; btn.disabled = false; }
+        const errEl = document.getElementById('editError');
+        if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
       }
     },
 
