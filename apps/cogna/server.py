@@ -921,7 +921,7 @@ def auth_register(payload: FamilyRegisterRequest):
     setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
     requested_tier = payload.tier if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
     checkout_tier = None
-    if requested_tier in {"B", "C", "D", "E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
+    if requested_tier in {"B", "C", "D", "E", "F"}:
         tier = "A"
         checkout_tier = requested_tier
     else:
