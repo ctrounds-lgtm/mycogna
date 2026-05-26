@@ -958,23 +958,13 @@ def auth_register(payload: FamilyRegisterRequest):
         token = _create_session(email)
         return {"token": token, "user": _public_user(user)}
 
-    salt = secrets.token_hex(8)
-    password_hash = _hash_password(payload.password, salt)
-    user = {
-        "email": email,
-        "name": payload.name.strip(),
-        "password_salt": salt,
-        "password_hash": password_hash,
-        "setup_type": setup_type,
-        "tier": tier,
-        "child_access_code": _generate_child_access_code(tier),
-        "created_at": _utc_now(),
-    }
-    _create_user(user)
-    _update_user(email, {"role": "portal_admin", "first_name": "", "last_name": ""})
-    token = _create_session(email)
-    result = {"token": token, "user": _public_user(user)}
-    if checkout_tier and stripe_sdk and STRIPE_SECRET_KEY:
+    # For paid tiers: create Stripe checkout session BEFORE creating the account.
+    # If Stripe is unavailable or the session creation fails, block registration
+    # so no one can access the portal without completing payment.
+    checkout_url = None
+    if checkout_tier:
+        if not stripe_sdk or not STRIPE_SECRET_KEY:
+            raise HTTPException(status_code=503, detail="Payment processing is unavailable. Please contact support.")
         try:
             base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
             if checkout_tier == "B":
@@ -1001,9 +991,31 @@ def auth_register(payload: FamilyRegisterRequest):
                 success_url=f"{base_url}/portal?checkout=success",
                 cancel_url=f"{base_url}/portal?checkout=canceled",
             )
-            result["checkout_url"] = stripe_session.url
-        except Exception:
-            pass
+            checkout_url = stripe_session.url
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[Stripe] register checkout failed for {email}/{checkout_tier}: {e}")
+            raise HTTPException(status_code=503, detail="Could not start payment session. Please try again.")
+
+    salt = secrets.token_hex(8)
+    password_hash = _hash_password(payload.password, salt)
+    user = {
+        "email": email,
+        "name": payload.name.strip(),
+        "password_salt": salt,
+        "password_hash": password_hash,
+        "setup_type": setup_type,
+        "tier": tier,
+        "child_access_code": _generate_child_access_code(tier),
+        "created_at": _utc_now(),
+    }
+    _create_user(user)
+    _update_user(email, {"role": "portal_admin", "first_name": "", "last_name": ""})
+    token = _create_session(email)
+    result = {"token": token, "user": _public_user(user)}
+    if checkout_url:
+        result["checkout_url"] = checkout_url
     return result
 
 
@@ -1649,15 +1661,43 @@ def storyteller_signup(payload: StorySignupRequest):
             user_managed = False
     else:
         plan_hint = (payload.plan or "").strip().upper()
-        if plan_hint in {"B", "C", "D"} and stripe_sdk and STRIPE_SECRET_KEY:
+        if plan_hint in {"B", "C", "D"}:
             user_tier = "A"
             checkout_plan = plan_hint
         else:
-            user_tier = plan_hint if plan_hint in {"B", "C", "D"} else "A"
+            user_tier = "A"
             checkout_plan = None
         user_managed = False
 
     user_id = "stuser_" + secrets.token_hex(8)
+
+    # For paid self-signup plans: create Stripe checkout session BEFORE creating
+    # the account so a Stripe failure blocks registration entirely.
+    checkout_url = None
+    if checkout_plan:
+        if not stripe_sdk or not STRIPE_SECRET_KEY:
+            raise HTTPException(status_code=503, detail="Payment processing is unavailable. Please contact support.")
+        try:
+            base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+            price_map = {"B": STRIPE_PRICES["B"], "C": STRIPE_PRICES["C"], "D": STRIPE_PRICES["D"]}
+            stripe_session = stripe_sdk.checkout.Session.create(
+                mode="subscription",
+                line_items=[{"price": price_map[checkout_plan], "quantity": 1}],
+                customer_email=email,
+                client_reference_id=f"storyteller:{user_id}",
+                allow_promotion_codes=True,
+                subscription_data={"metadata": {"tier": checkout_plan, "user_type": "storyteller"}},
+                metadata={"tier": checkout_plan, "user_type": "storyteller"},
+                success_url=f"{base_url}/storyteller?checkout=success",
+                cancel_url=f"{base_url}/storyteller?checkout=canceled",
+            )
+            checkout_url = stripe_session.url
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[Stripe] storyteller register checkout failed for {email}/{checkout_plan}: {e}")
+            raise HTTPException(status_code=503, detail="Could not start payment session. Please try again.")
+
     salt = secrets.token_hex(8)
     pw_hash = _hash_password(payload.password, salt)
     st_user = {
@@ -1733,24 +1773,8 @@ def storyteller_signup(payload: StorySignupRequest):
         },
         "prompts": [{"id": p["id"], "text": p["text"]} for p in prompts],
     }
-    if checkout_plan and stripe_sdk and STRIPE_SECRET_KEY:
-        try:
-            base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
-            price_map = {"B": STRIPE_PRICES["B"], "C": STRIPE_PRICES["C"], "D": STRIPE_PRICES["D"]}
-            stripe_session = stripe_sdk.checkout.Session.create(
-                mode="subscription",
-                line_items=[{"price": price_map[checkout_plan], "quantity": 1}],
-                customer_email=email,
-                client_reference_id=f"storyteller:{user_id}",
-                allow_promotion_codes=True,
-                subscription_data={"metadata": {"tier": checkout_plan, "user_type": "storyteller"}},
-                metadata={"tier": checkout_plan, "user_type": "storyteller"},
-                success_url=f"{base_url}/storyteller?checkout=success",
-                cancel_url=f"{base_url}/storyteller?checkout=canceled",
-            )
-            result["checkout_url"] = stripe_session.url
-        except Exception:
-            pass
+    if checkout_url:
+        result["checkout_url"] = checkout_url
     return result
 
 
