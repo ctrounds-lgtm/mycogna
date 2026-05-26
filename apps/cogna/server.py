@@ -2292,7 +2292,10 @@ def create_promo_code(
 
     # E/F codes require an active Stripe subscription
     if tier in {"E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
-        if user.get("subscription_status") != "active":
+        status = user.get("subscription_status", "none")
+        sub_id = user.get("stripe_subscription_id")
+        print(f"[Billing] code create for {user['email']}: status={status} sub_id={sub_id} tier={user.get('tier')}")
+        if status != "active" or not sub_id:
             raise HTTPException(
                 status_code=402,
                 detail="An active subscription is required to create storyteller codes. Please complete your plan purchase first."
