@@ -921,7 +921,7 @@ def auth_register(payload: FamilyRegisterRequest):
     setup_type = payload.setup_type if payload.setup_type in {"guardian", "self"} else "guardian"
     requested_tier = payload.tier if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
     checkout_tier = None
-    if requested_tier in {"E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
+    if requested_tier in {"B", "C", "D", "E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
         tier = "A"
         checkout_tier = requested_tier
     else:
@@ -977,7 +977,13 @@ def auth_register(payload: FamilyRegisterRequest):
     if checkout_tier and stripe_sdk and STRIPE_SECRET_KEY:
         try:
             base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
-            if checkout_tier == "E":
+            if checkout_tier == "B":
+                line_items = [{"price": STRIPE_PRICES["B"], "quantity": 1}]
+            elif checkout_tier == "C":
+                line_items = [{"price": STRIPE_PRICES["C"], "quantity": 1}]
+            elif checkout_tier == "D":
+                line_items = [{"price": STRIPE_PRICES["D"], "quantity": 1}]
+            elif checkout_tier == "E":
                 line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
             else:
                 line_items = [
