@@ -614,17 +614,20 @@ async def create_checkout_session(
             except Exception as e:
                 print(f"[Stripe] subscription modify failed, falling through to checkout: {e}")
 
+    # Portal users (admins) return to /portal; storytellers return to /storyteller
+    portal_flow = (payload.user_type == "portal")
+
     if tier == "B":
         line_items = [{"price": STRIPE_PRICES["B"], "quantity": 1}]
-        success_path = "/storyteller"
+        success_path = "/portal" if portal_flow else "/storyteller"
         description = "Unlimited story recordings, custom interview questions."
     elif tier == "C":
         line_items = [{"price": STRIPE_PRICES["C"], "quantity": 1}]
-        success_path = "/storyteller"
+        success_path = "/portal" if portal_flow else "/storyteller"
         description = "Unlimited recordings plus AI-assisted memoir assembly and editing."
     elif tier == "D":
         line_items = [{"price": STRIPE_PRICES["D"], "quantity": 1}]
-        success_path = "/storyteller"
+        success_path = "/portal" if portal_flow else "/storyteller"
         description = "Build a Cogna voice companion for a loved one."
     elif tier == "E":
         line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
@@ -883,10 +886,16 @@ async def reactivate_subscription(authorization: Optional[str] = Header(default=
 async def billing_status(authorization: Optional[str] = Header(default=None)):
     try:
         user = _auth_storyteller_user(authorization)
+        status = user.get("subscription_status", "none")
+        period_end = user.get("subscription_period_end")
+        sub_id = user.get("stripe_subscription_id")
+        has_subscription = status in ("active", "canceling", "past_due") and bool(sub_id)
         return {
             "tier": user.get("tier", "A"),
-            "subscription_status": user.get("subscription_status", "none"),
-            "subscription_period_end": user.get("subscription_period_end"),
+            "subscription_status": status,
+            "subscription_period_end": period_end,
+            "period_end": period_end,  # alias used by frontend
+            "has_subscription": has_subscription,
             "user_type": "storyteller",
         }
     except HTTPException:
@@ -896,10 +905,18 @@ async def billing_status(authorization: Optional[str] = Header(default=None)):
     if supabase and user.get("tier") in ("E", "F"):
         r = supabase.table("promo_codes").select("code").eq("created_by", user["email"]).eq("active", True).execute()
         active_code_count = len(r.data or [])
+    status = user.get("subscription_status", "none")
+    period_end = user.get("subscription_period_end")
+    sub_id = user.get("stripe_subscription_id")
+    # Treat "active" status with no Stripe subscription ID as no subscription —
+    # this catches accounts (like those pre-dating billing) where status is stale.
+    has_subscription = status in ("active", "canceling", "past_due") and bool(sub_id)
     return {
         "tier": user.get("tier", "A"),
-        "subscription_status": user.get("subscription_status", "none"),
-        "subscription_period_end": user.get("subscription_period_end"),
+        "subscription_status": status,
+        "subscription_period_end": period_end,
+        "period_end": period_end,  # alias used by frontend
+        "has_subscription": has_subscription,
         "active_code_count": active_code_count,
         "user_type": "portal",
     }
@@ -980,7 +997,45 @@ def auth_register(payload: FamilyRegisterRequest):
                     token = _create_session(email)
                     return {"token": token, "user": _public_user(user)}
             raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
-        # Existing storyteller upgrading to portal — upgrade role, set new password
+        # Existing storyteller upgrading to portal — upgrade role, set new password.
+        # For paid tiers, create a Stripe checkout session before returning.
+        upgrade_checkout_url = None
+        if checkout_tier:
+            if not stripe_sdk or not STRIPE_SECRET_KEY:
+                raise HTTPException(status_code=503, detail="Payment processing is unavailable. Please contact support.")
+            try:
+                base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+                if checkout_tier == "B":
+                    ct_line_items = [{"price": STRIPE_PRICES["B"], "quantity": 1}]
+                elif checkout_tier == "C":
+                    ct_line_items = [{"price": STRIPE_PRICES["C"], "quantity": 1}]
+                elif checkout_tier == "D":
+                    ct_line_items = [{"price": STRIPE_PRICES["D"], "quantity": 1}]
+                elif checkout_tier == "E":
+                    ct_line_items = [{"price": STRIPE_PRICES["E_SEAT"], "quantity": 1}]
+                else:
+                    ct_line_items = [
+                        {"price": STRIPE_PRICES["F_FLAT"], "quantity": 1},
+                        {"price": STRIPE_PRICES["F_SEAT"], "quantity": 1},
+                    ]
+                ct_stripe_session = stripe_sdk.checkout.Session.create(
+                    mode="subscription",
+                    line_items=ct_line_items,
+                    customer_email=email,
+                    client_reference_id=f"portal:{email}",
+                    allow_promotion_codes=True,
+                    subscription_data={"metadata": {"tier": checkout_tier, "user_type": "portal"}},
+                    metadata={"tier": checkout_tier, "user_type": "portal"},
+                    success_url=f"{base_url}/portal?checkout=success",
+                    cancel_url=f"{base_url}/portal?checkout=canceled",
+                )
+                upgrade_checkout_url = ct_stripe_session.url
+            except HTTPException:
+                raise
+            except Exception as e:
+                print(f"[Stripe] storyteller→portal upgrade checkout failed for {email}/{checkout_tier}: {e}")
+                raise HTTPException(status_code=503, detail="Could not start payment session. Please try again.")
+
         salt = secrets.token_hex(8)
         password_hash = _hash_password(payload.password, salt)
         access_code = _generate_child_access_code(tier)
@@ -995,7 +1050,10 @@ def auth_register(payload: FamilyRegisterRequest):
         })
         user = _get_user(email)
         token = _create_session(email)
-        return {"token": token, "user": _public_user(user)}
+        result = {"token": token, "user": _public_user(user)}
+        if upgrade_checkout_url:
+            result["checkout_url"] = upgrade_checkout_url
+        return result
 
     # For paid tiers: create Stripe checkout session BEFORE creating the account.
     # If Stripe is unavailable or the session creation fails, block registration

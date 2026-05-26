@@ -1074,7 +1074,13 @@ const portal = {
       else if (t === 'F') await portal.loadFCodes();
       else await portal.loadStoryPanel(dt, dt !== t ? t : undefined);
     } catch (err) {
-      alert('Error: ' + err.message);
+      if (err.message && err.message.includes('active subscription')) {
+        if (confirm(err.message + '\n\nGo to the Billing tab to subscribe?')) {
+          portal.switchDashTab('Billing');
+        }
+      } else {
+        alert('Error: ' + err.message);
+      }
     }
   },
 
@@ -1246,7 +1252,25 @@ const portal = {
     if (loading) loading.style.display = 'none';
 
     if (!data.has_subscription) {
-      if (noSub) noSub.style.display = 'block';
+      if (noSub) {
+        noSub.style.display = 'block';
+        const hasPaidTier = data.tier && data.tier !== 'A';
+        const msgEl = document.getElementById('billingNoSubMsg');
+        const resubBtn = document.getElementById('billingResubBtn');
+        const upgradeLink = document.getElementById('billingUpgradeLink');
+        if (hasPaidTier) {
+          // Existing paid-tier account with no active subscription — offer resubscribe
+          const tierNames = { B: 'Storytelling Unlimited', C: 'Storytelling Unlimited + Memoir Builder', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
+          if (msgEl) msgEl.textContent = `Your ${tierNames[data.tier] || data.tier} subscription is not active. Subscribe to restore access.`;
+          if (resubBtn) { resubBtn.style.display = 'inline-block'; resubBtn.dataset.tier = data.tier; }
+          if (upgradeLink) upgradeLink.style.display = 'none';
+        } else {
+          // Free-tier account — offer plan selection
+          if (msgEl) msgEl.textContent = "You're on the free plan. Choose a plan to unlock more features.";
+          if (resubBtn) { resubBtn.style.display = 'none'; }
+          if (upgradeLink) upgradeLink.style.display = 'inline-block';
+        }
+      }
       return;
     }
 
@@ -1293,6 +1317,25 @@ const portal = {
       await req(`${api}/stripe/reactivate`, { method: 'POST', headers: authHeaders() });
       alert('Your subscription has been reactivated.');
       portal.loadBillingSection();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  },
+
+  async resubscribe() {
+    const btn = document.getElementById('billingResubBtn');
+    const tier = (btn && btn.dataset.tier) || (state.user && state.user.tier) || '';
+    if (!tier || tier === 'A') {
+      window.location.href = '/portal/signup';
+      return;
+    }
+    try {
+      const data = await req(`${api}/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, user_type: 'portal' }),
+      });
+      if (data.url) window.location.href = data.url;
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -1535,6 +1578,17 @@ async function init() {
         document.body.appendChild(notice);
         setTimeout(() => notice.remove(), 5000);
       }, 300);
+    } else if (checkoutResult === 'canceled') {
+      history.replaceState({}, '', '/portal');
+      setTimeout(() => {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#7a5230;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+        notice.textContent = 'Payment was not completed. Go to the Billing tab to subscribe when ready.';
+        document.body.appendChild(notice);
+        setTimeout(() => notice.remove(), 8000);
+      }, 300);
+      // Switch to Billing tab so user can easily retry
+      portal.switchDashTab('Billing');
     }
   } catch {
     localStorage.removeItem('portalToken');

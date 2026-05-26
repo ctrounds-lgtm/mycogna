@@ -256,9 +256,10 @@
 
     let selectedTier = null;
 
-    // If already logged into portal, redirect
+    // If already logged into portal, redirect — UNLESS ?resub=1 is set (re-subscribe flow)
+    const _signupParams = new URLSearchParams(window.location.search);
     const existingToken = localStorage.getItem('portalToken');
-    if (existingToken) {
+    if (existingToken && !_signupParams.get('resub')) {
       fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + existingToken } })
         .then(r => { if (r.ok) window.location.href = '/portal'; })
         .catch(() => {});
