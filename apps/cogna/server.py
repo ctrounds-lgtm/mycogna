@@ -386,6 +386,9 @@ class MemoirBibleUpdateRequest(BaseModel):
 class MemoirOutlineFromRequest(BaseModel):
     outline_text: str
 
+class FromOutlineRequest(BaseModel):
+    outline_text: str
+
 
 EDITORIAL_FOCUSES = {
     "general":    "General edit — fix typos, punctuation, and flow. Improve sentence rhythm without changing the author's voice.",
@@ -3670,10 +3673,6 @@ async def portal_collection_save_bible(payload: CollectionBibleSaveRequest, auth
             bbs[0].update(updates)
         _save_db(db)
     return {"ok": True}
-
-
-class FromOutlineRequest(BaseModel):
-    outline_text: str
 
 
 @app.post("/api/portal/collection/memoir/chapters/from-outline")
