@@ -137,7 +137,7 @@ def _update_seat_quantity(portal_email: str, delta: int) -> None:
     if not supabase:
         return
     try:
-        r = supabase.table("users").select("stripe_subscription_id, stripe_seat_item_id, tier").eq("email", portal_email).limit(1).execute()
+        r = supabase.table("users").select("stripe_subscription_id, stripe_seat_item_id, stripe_customer_id, tier").eq("email", portal_email).limit(1).execute()
         if not r.data:
             return
         user = r.data[0]
@@ -145,12 +145,51 @@ def _update_seat_quantity(portal_email: str, delta: int) -> None:
             return
         sub_id = user.get("stripe_subscription_id")
         item_id = user.get("stripe_seat_item_id")
+
+        # Fallback: look up subscription from Stripe when DB columns aren't populated
+        # (accounts that predate the billing system won't have these cached)
+        if not item_id:
+            customer_id = user.get("stripe_customer_id")
+            # Try customer ID first, then email search
+            candidates = []
+            if customer_id:
+                candidates.append(customer_id)
+            else:
+                try:
+                    custs = stripe_sdk.Customer.list(email=portal_email, limit=5)
+                    cust_data = list(custs.auto_paging_iter()) if hasattr(custs, 'auto_paging_iter') else (custs.data if hasattr(custs, 'data') else [])
+                    candidates = [(c.id if hasattr(c, 'id') else c.get('id')) for c in cust_data if c]
+                except Exception:
+                    pass
+            for cid in candidates:
+                if not cid:
+                    continue
+                try:
+                    subs = stripe_sdk.Subscription.list(customer=cid, status="active", limit=1)
+                    sub_list = list(subs.auto_paging_iter()) if hasattr(subs, 'auto_paging_iter') else (subs.data if hasattr(subs, 'data') else [])
+                    if sub_list:
+                        found_sub = sub_list[0]
+                        sub_id = found_sub.id if hasattr(found_sub, 'id') else found_sub.get('id')
+                        break
+                except Exception:
+                    continue
+            if sub_id:
+                sub = stripe_sdk.Subscription.retrieve(sub_id)
+                sub_items = sub.get("items", {}).get("data", []) if hasattr(sub, "get") else sub["items"]["data"]
+                seat_price_ids = {STRIPE_PRICES.get("E_SEAT"), STRIPE_PRICES.get("F_SEAT")} - {None, ""}
+                item_id = next((i["id"] for i in sub_items if i["price"]["id"] in seat_price_ids), None)
+                if item_id:
+                    supabase.table("users").update({"stripe_seat_item_id": item_id, "stripe_subscription_id": sub_id}).eq("email", portal_email).execute()
+                    print(f"[Stripe] cached seat item {item_id} for {portal_email}")
+
         if not sub_id or not item_id:
+            print(f"[Stripe] seat update skipped for {portal_email}: no active subscription or seat item found")
             return
         item = stripe_sdk.SubscriptionItem.retrieve(item_id)
         new_qty = max(0, (item.get("quantity") or 0) + delta)
         behavior = "always_invoice" if delta > 0 else "none"
         stripe_sdk.SubscriptionItem.modify(item_id, quantity=new_qty, proration_behavior=behavior)
+        print(f"[Stripe] seat qty updated to {new_qty} for {portal_email} (delta={delta})")
     except Exception as e:
         print(f"[Stripe] seat quantity update failed for {portal_email}: {e}")
 
