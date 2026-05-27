@@ -2348,12 +2348,41 @@ def create_promo_code(
     user = _auth_user(authorization)
     tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
 
-    # E/F codes require an active Stripe subscription
-    if tier in {"E", "F"} and stripe_sdk and STRIPE_SECRET_KEY:
-        status = user.get("subscription_status", "none")
+    # E/F codes always require an active Stripe subscription — verified live against Stripe API
+    if tier in {"E", "F"}:
+        if not stripe_sdk or not STRIPE_SECRET_KEY:
+            raise HTTPException(
+                status_code=503,
+                detail="Billing is not configured on this server. Cannot create paid-tier codes."
+            )
+        stripe_sdk.api_key = STRIPE_SECRET_KEY
         sub_id = user.get("stripe_subscription_id")
-        print(f"[Billing] code create for {user['email']}: status={status} sub_id={sub_id} tier={user.get('tier')}")
-        if status != "active" or not sub_id:
+        customer_id = user.get("stripe_customer_id")
+        email = user.get("email", "")
+        stripe_active = False
+        if sub_id:
+            try:
+                sub = stripe_sdk.Subscription.retrieve(sub_id)
+                stripe_active = sub.get("status") in ("active", "trialing")
+            except Exception:
+                stripe_active = False
+        if not stripe_active and customer_id:
+            # Fallback: search subscriptions by customer
+            try:
+                subs = stripe_sdk.Subscription.list(customer=customer_id, status="active", limit=1)
+                if subs.data:
+                    live_sub = subs.data[0]
+                    stripe_active = True
+                    sub_id = live_sub["id"]
+                    if supabase:
+                        supabase.table("users").update({
+                            "stripe_subscription_id": sub_id,
+                            "subscription_status": "active"
+                        }).eq("email", email).execute()
+            except Exception:
+                stripe_active = False
+        print(f"[Billing] code create for {email}: stripe_active={stripe_active} sub_id={sub_id} tier={user.get('tier')}")
+        if not stripe_active:
             raise HTTPException(
                 status_code=402,
                 detail="An active subscription is required to create storyteller codes. Please complete your plan purchase first."
