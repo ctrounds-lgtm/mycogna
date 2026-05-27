@@ -1059,6 +1059,18 @@ const portal = {
   async generatePromoCode(codeTier, displayTier) {
     const t = codeTier || 'A';
     const dt = displayTier || t;
+
+    // Seat billing warning for E/F codes
+    if (t === 'E' || t === 'F') {
+      const price = t === 'E' ? '$5' : '$5';
+      const confirmed = confirm(
+        `Adding a storyteller code adds ${price}/month to your subscription — one charge per active code.\n\n` +
+        `To stop the charge for a code, click "Deactivate" next to it on this page.\n\n` +
+        `Continue and add this code?`
+      );
+      if (!confirmed) return;
+    }
+
     const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
     try {
       const result = await req(`${api}/storyteller/user-codes`, {
