@@ -1062,11 +1062,10 @@ const portal = {
 
     // Seat billing warning for E/F codes
     if (t === 'E' || t === 'F') {
-      const price = t === 'E' ? '$5' : '$5';
       const confirmed = confirm(
-        `Adding a storyteller code adds ${price}/month to your subscription — one charge per active code.\n\n` +
-        `To stop the charge for a code, click "Deactivate" next to it on this page.\n\n` +
-        `Continue and add this code?`
+        t === 'E'
+          ? `Legacy Collection includes 5 storyteller codes at $25/month.\n\nIf you need more than 5 active codes, each additional code adds $5/month to your subscription.\n\nTo remove a code and stop any additional charge, click "Deactivate" next to it on this page.\n\nContinue and add this code?`
+          : `Legacy Collection + Book Builder includes 5 storyteller codes at $50/month.\n\nIf you need more than 5 active codes, each additional code adds $5/month to your subscription.\n\nTo remove a code and stop any additional charge, click "Deactivate" next to it on this page.\n\nContinue and add this code?`
       );
       if (!confirmed) return;
     }
