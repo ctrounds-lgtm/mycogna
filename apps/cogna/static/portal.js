@@ -1269,17 +1269,18 @@ const portal = {
         const msgEl = document.getElementById('billingNoSubMsg');
         const resubBtn = document.getElementById('billingResubBtn');
         const upgradeLink = document.getElementById('billingUpgradeLink');
+        const picker = document.getElementById('billingPlanPicker');
         if (hasPaidTier) {
           // Existing paid-tier account with no active subscription — offer resubscribe
           const tierNames = { B: 'Storytelling Unlimited', C: 'Storytelling Unlimited + Memoir Builder', D: 'AI Companion', E: 'Legacy Collection', F: 'Legacy Collection + Book Builder' };
           if (msgEl) msgEl.textContent = `Your ${tierNames[data.tier] || data.tier} subscription is not active. Subscribe to restore access.`;
           if (resubBtn) { resubBtn.style.display = 'inline-block'; resubBtn.dataset.tier = data.tier; }
-          if (upgradeLink) upgradeLink.style.display = 'none';
+          if (picker) picker.style.display = 'none';
         } else {
-          // Free-tier account — offer plan selection
-          if (msgEl) msgEl.textContent = "You're on the free plan. Choose a plan to unlock more features.";
-          if (resubBtn) { resubBtn.style.display = 'none'; }
-          if (upgradeLink) upgradeLink.style.display = 'inline-block';
+          // Free/legacy account — show plan picker inline
+          if (msgEl) msgEl.textContent = "No active subscription found. Choose a plan to get started:";
+          if (resubBtn) resubBtn.style.display = 'none';
+          if (picker) picker.style.display = 'block';
         }
       }
       return;
@@ -1349,6 +1350,21 @@ const portal = {
       if (data.url) window.location.href = data.url;
     } catch (err) {
       alert('Error: ' + err.message);
+    }
+  },
+
+  async subscribeWithPicker() {
+    const selected = document.querySelector('input[name="billingTierPick"]:checked');
+    const tier = selected ? selected.value : 'E';
+    try {
+      const data = await req(`${api}/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, user_type: 'portal' }),
+      });
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      alert('Error starting checkout: ' + err.message);
     }
   },
 

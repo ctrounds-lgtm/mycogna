@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyCogna — Guardian Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/portal.css?v=20260527a">
+<link rel="stylesheet" href="/static/portal.css?v=20260527b">
 </head>
 <body>
 
@@ -484,10 +484,34 @@
         </div>
 
       </div>
-      <div id="billingNoSub" style="display:none;padding:32px 0;text-align:center">
-        <p id="billingNoSubMsg" style="color:var(--ink-muted);font-size:14px;margin-bottom:16px">You're on the free plan.</p>
-        <button id="billingResubBtn" class="save-btn" style="display:none;margin-bottom:10px;width:auto" onclick="portal.resubscribe()">Subscribe now →</button>
-        <a href="/portal/signup?resub=1" class="ghost-btn" id="billingUpgradeLink" style="display:inline-block;text-decoration:none">View plans →</a>
+      <div id="billingNoSub" style="display:none;padding:32px 0">
+        <p id="billingNoSubMsg" style="color:var(--ink-muted);font-size:14px;margin-bottom:20px;text-align:center">You're on the free plan.</p>
+        <!-- Resubscribe button for known paid-tier accounts -->
+        <div style="text-align:center">
+          <button id="billingResubBtn" class="save-btn" style="display:none;margin-bottom:10px;width:auto" onclick="portal.resubscribe()">Subscribe now →</button>
+        </div>
+        <!-- Plan picker for free/legacy accounts -->
+        <div id="billingPlanPicker" style="display:none">
+          <p style="font-size:14px;font-weight:500;margin-bottom:12px">Choose a plan to subscribe:</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="radio" name="billingTierPick" value="B"> <span><strong>Storyteller Unlimited</strong> — $5/month</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="radio" name="billingTierPick" value="C"> <span><strong>Storyteller + Memoir Builder</strong> — $10/month</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="radio" name="billingTierPick" value="D"> <span><strong>AI Companion</strong> — $15/month</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="radio" name="billingTierPick" value="E" checked> <span><strong>Legacy Collection</strong> — $25/month (5 storyteller codes included)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+              <input type="radio" name="billingTierPick" value="F"> <span><strong>Legacy Collection + Book Builder</strong> — $50/month</span>
+            </label>
+          </div>
+          <button class="save-btn" style="width:auto" onclick="portal.subscribeWithPicker()">Subscribe →</button>
+        </div>
       </div>
     </div>
 
@@ -789,6 +813,6 @@
   </div>
 </div>
 
-<script src="/static/portal.js?v=20260527a"></script>
+<script src="/static/portal.js?v=20260527b"></script>
 </body>
 </html>
