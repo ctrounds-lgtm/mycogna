@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyCogna — Guardian Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/portal.css?v=20260526c">
+<link rel="stylesheet" href="/static/portal.css?v=20260527a">
 </head>
 <body>
 
@@ -123,7 +123,10 @@
         <div class="eyebrow">MyCogna</div>
         <h1 class="display-title" id="dashWelcome">Welcome back</h1>
       </div>
-      <button class="ghost-btn" onclick="portal.logout()">Sign out</button>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="ghost-btn" onclick="portal.switchDashTab('Billing')" style="font-size:13px">Billing</button>
+        <button class="ghost-btn" onclick="portal.logout()">Sign out</button>
+      </div>
     </div>
 
     <!-- Dashboard tabs: one per tier -->
@@ -457,6 +460,7 @@
 
     <!-- ── PANEL Billing ── -->
     <div id="panelBilling" class="hidden">
+      <div style="margin-bottom:16px"><button class="ghost-btn" style="font-size:13px" onclick="portal.switchDashTab(portal.state?.user?.tier || 'B')">← Back to my plan</button></div>
       <div id="billingLoading" style="padding:40px;text-align:center;color:var(--ink-muted);font-size:14px">Loading billing info…</div>
       <div id="billingDetails" style="display:none">
 
@@ -785,6 +789,6 @@
   </div>
 </div>
 
-<script src="/static/portal.js?v=20260526c"></script>
+<script src="/static/portal.js?v=20260527a"></script>
 </body>
 </html>
