@@ -453,6 +453,7 @@ class GiftPurchaseRequest(BaseModel):
     purchaser_email: str
     recipient_name: Optional[str] = None
     recipient_email: Optional[str] = None
+    promo: Optional[str] = None
 
 
 class GiftRedeemRequest(BaseModel):
@@ -1112,6 +1113,15 @@ async def gift_purchase(payload: GiftPurchaseRequest):
         raise HTTPException(status_code=400, detail="Purchaser name and email are required.")
 
     price_cents = GIFT_PRICES[tier] * payload.duration_months
+
+    # Father's Day promo: C + 12 months for $60 (valid through June 21, 2026)
+    if payload.promo == 'fathersday2026' and tier == 'C' and payload.duration_months == 12:
+        from datetime import date as _date
+        if _date.today() <= _date(2026, 6, 21):
+            price_cents = 6000
+        else:
+            raise HTTPException(status_code=400, detail="This promotional offer has expired.")
+
     code = _generate_gift_code()
     gift_id = "gift_" + secrets.token_hex(8)
     base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")

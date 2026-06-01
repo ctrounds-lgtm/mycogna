@@ -104,9 +104,41 @@
       .field-row { grid-template-columns: 1fr; }
       .price-summary.visible { flex-direction: column; align-items: flex-start; gap: 6px; }
     }
+
+    /* ── Father's Day promo modal ── */
+    .promo-overlay { position: fixed; inset: 0; background: rgba(28,26,23,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(4px); }
+    .promo-overlay.hidden { display: none; }
+    .promo-modal { background: var(--cream); border-radius: 20px; padding: 40px 36px 32px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 24px 80px rgba(28,26,23,0.22); }
+    .promo-ribbon { display: inline-block; background: var(--gold); color: white; font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 16px; border-radius: 100px; margin-bottom: 22px; }
+    .promo-modal-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(30px, 7vw, 44px); font-weight: 300; line-height: 1.15; margin-bottom: 14px; }
+    .promo-modal-title em { font-style: italic; color: var(--gold); }
+    .promo-modal-body { font-size: 15px; color: var(--ink-muted); line-height: 1.65; margin-bottom: 24px; max-width: 360px; margin-left: auto; margin-right: auto; }
+    .promo-price-row { display: flex; align-items: baseline; justify-content: center; gap: 12px; margin-bottom: 28px; }
+    .promo-strike { font-size: 22px; color: var(--ink-faint); text-decoration: line-through; }
+    .promo-final { font-size: 52px; font-weight: 500; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+    .promo-save-badge { font-size: 12px; font-weight: 500; color: var(--teal); background: rgba(58,123,114,0.1); padding: 4px 12px; border-radius: 100px; }
+    .promo-modal .btn-primary { max-width: 100%; }
+    .promo-dismiss-btn { display: block; width: 100%; margin-top: 14px; font-size: 13px; color: var(--ink-faint); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 4px; }
+    .promo-dismiss-btn:hover { color: var(--ink-muted); }
   </style>
 </head>
 <body>
+  <!-- Father's Day Promo Modal -->
+  <div class="promo-overlay hidden" id="promoOverlay" onclick="closePromoOverlay(event)">
+    <div class="promo-modal">
+      <div class="promo-ribbon">Father's Day · Limited Offer</div>
+      <h2 class="promo-modal-title">Half off a year<br>of <em>storytelling.</em></h2>
+      <p class="promo-modal-body">Give 12 months of Storyteller + Memoir Builder — AI follow-ups, story deepening, and memoir building — for half the regular price.</p>
+      <div class="promo-price-row">
+        <span class="promo-strike">$120</span>
+        <span class="promo-final">$60</span>
+        <span class="promo-save-badge">Save $60</span>
+      </div>
+      <button class="btn-primary" onclick="claimPromo()">Claim this offer →</button>
+      <button class="promo-dismiss-btn" onclick="dismissPromo()">No thanks, I'll choose my own plan</button>
+    </div>
+  </div>
+
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
 
@@ -182,10 +214,10 @@
       <div class="section-title">How long?</div>
       <div class="section-sub">Access starts the day the recipient redeems the code.</div>
       <div class="duration-row">
-        <button class="duration-pill" onclick="selectDuration(1)">1 month</button>
-        <button class="duration-pill" onclick="selectDuration(3)">3 months</button>
-        <button class="duration-pill" onclick="selectDuration(6)">6 months</button>
-        <button class="duration-pill" onclick="selectDuration(12)">1 year</button>
+        <button class="duration-pill" data-months="1" onclick="selectDuration(1)">1 month</button>
+        <button class="duration-pill" data-months="3" onclick="selectDuration(3)">3 months</button>
+        <button class="duration-pill" data-months="6" onclick="selectDuration(6)">6 months</button>
+        <button class="duration-pill" data-months="12" onclick="selectDuration(12)">1 year</button>
       </div>
     </div>
 
@@ -247,9 +279,13 @@
   <script>
     const TIER_PRICES = { B: 5, C: 10, D: 15 };
     const TIER_NAMES = { B: 'Storyteller Unlimited', C: 'Storyteller + Memoir Builder', D: 'AI Companion' };
+    const PROMO_CODE = 'fathersday2026';
+    const PROMO_EXPIRES = new Date('2026-06-22T00:00:00');
+
     let selectedTier = null;
     let selectedDuration = null;
     let recipientOpen = false;
+    let promoActive = false;
 
     // Pre-fill purchaser email if logged in as portal user
     const _pt = localStorage.getItem('portalToken');
@@ -264,6 +300,31 @@
         }).catch(() => {});
     }
 
+    // ── Promo modal ──
+    function showPromoIfEligible() {
+      if (new Date() >= PROMO_EXPIRES) return;
+      if (sessionStorage.getItem('promoDismissed')) return;
+      document.getElementById('promoOverlay').classList.remove('hidden');
+    }
+
+    function claimPromo() {
+      promoActive = true;
+      document.getElementById('promoOverlay').classList.add('hidden');
+      selectTier('C');
+      selectDuration(12);
+      setTimeout(() => document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    }
+
+    function dismissPromo() {
+      sessionStorage.setItem('promoDismissed', '1');
+      document.getElementById('promoOverlay').classList.add('hidden');
+    }
+
+    function closePromoOverlay(e) {
+      if (e.target === document.getElementById('promoOverlay')) dismissPromo();
+    }
+
+    // ── Tier & duration ──
     function selectTier(tier) {
       selectedTier = tier;
       document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
@@ -275,21 +336,24 @@
     function selectDuration(months) {
       selectedDuration = months;
       document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('selected'));
-      event.target.classList.add('selected');
+      document.querySelector(`.duration-pill[data-months="${months}"]`)?.classList.add('selected');
       document.getElementById('formSection').style.display = 'block';
       updateTotal();
     }
 
     function updateTotal() {
       const summary = document.getElementById('priceSummary');
-      if (!selectedTier || !selectedDuration) {
-        summary.classList.remove('visible');
-        return;
-      }
-      const total = TIER_PRICES[selectedTier] * selectedDuration;
+      if (!selectedTier || !selectedDuration) { summary.classList.remove('visible'); return; }
+      const isPromo = promoActive && selectedTier === 'C' && selectedDuration === 12;
+      const regularTotal = TIER_PRICES[selectedTier] * selectedDuration;
       const durationStr = selectedDuration === 12 ? '1 year' : selectedDuration + ' month' + (selectedDuration === 1 ? '' : 's');
       document.getElementById('priceSummaryLabel').textContent = durationStr + ' of ' + TIER_NAMES[selectedTier];
-      document.getElementById('priceSummaryAmount').textContent = '$' + total;
+      const amountEl = document.getElementById('priceSummaryAmount');
+      if (isPromo) {
+        amountEl.innerHTML = `<span style="text-decoration:line-through;color:var(--ink-faint);font-size:18px;margin-right:10px">$${regularTotal}</span>$60 <span style="font-size:12px;font-weight:500;color:var(--teal);background:rgba(58,123,114,0.12);padding:3px 10px;border-radius:100px;vertical-align:middle">Father's Day — 50% off</span>`;
+      } else {
+        amountEl.textContent = '$' + regularTotal;
+      }
       summary.classList.add('visible');
     }
 
@@ -324,6 +388,7 @@
         purchaser_email: purchaserEmail,
         recipient_name: document.getElementById('recipientName').value.trim() || null,
         recipient_email: document.getElementById('recipientEmail').value.trim() || null,
+        promo: (promoActive && selectedTier === 'C' && selectedDuration === 12) ? PROMO_CODE : null,
       };
 
       try {
@@ -348,6 +413,8 @@
         btn.textContent = 'Purchase Gift →';
       }
     }
+
+    window.addEventListener('load', showPromoIfEligible);
   </script>
 </body>
 </html>
