@@ -173,7 +173,7 @@
     <div class="plan-section-divider"><span>or, for organizations</span></div>
 
     <!-- Institutional section -->
-    <div class="plan-section">
+    <div class="plan-section" id="section-organizations">
       <div class="plan-section-eyebrow">For organizations</div>
       <p class="plan-section-lead">Do you work for a non-profit, historical society, or another organization that needs to collect stories from multiple people? Select our story collection tool, or upgrade to our AI-assisted Book Builder that also prompts your storytellers to go deeper.</p>
       <div class="plans plans-institutional">
@@ -263,6 +263,16 @@
       fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + existingToken } })
         .then(r => { if (r.ok) window.location.href = '/portal'; })
         .catch(() => {});
+    }
+
+    // Scroll to org section and pre-select plan if ?plan=E or ?plan=F
+    const _planParam = _signupParams.get('plan');
+    if (_planParam === 'E' || _planParam === 'F') {
+      window.addEventListener('load', () => {
+        const orgSection = document.getElementById('section-organizations');
+        if (orgSection) orgSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        selectPlan(_planParam);
+      });
     }
 
     function selectPlan(tier) {
