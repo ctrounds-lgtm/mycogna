@@ -365,6 +365,7 @@ class StoryValidateRequest(BaseModel):
 
 class StoryPromptCreate(BaseModel):
     text: str
+    category: Optional[str] = None
 
 
 class StoryPromptUpdate(BaseModel):
@@ -2536,6 +2537,7 @@ def create_story_prompt(
         "sort_order": next_order,
         "created_by": user["email"],
         "portal_user_email": user["email"],
+        "category": payload.category or None,
         "created_at": _utc_now(),
     }
     if supabase:

@@ -412,3 +412,10 @@ CREATE INDEX IF NOT EXISTS gift_subscriptions_purchaser_idx ON gift_subscription
 -- Gift tracking columns on users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS gift_expires_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS gift_code TEXT;
+
+-- ─────────────────────────────────────────────
+-- Migration: per-category custom prompts (2026-06-01)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS category TEXT;

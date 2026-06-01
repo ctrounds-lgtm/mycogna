@@ -908,10 +908,33 @@ const portal = {
     const promptById = Object.fromEntries(prompts.map(p => [p.id, p]));
     const customPrompts = prompts.filter(p => p.portal_user_email);
 
+    const _customRow = (p, i, total) => `
+      <div class="prompt-row">
+        <div class="prompt-move-btns">
+          <button class="prompt-move-btn" data-id="${p.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button class="prompt-move-btn" data-id="${p.id}" data-dir="down" ${i === total - 1 ? 'disabled' : ''}>▼</button>
+        </div>
+        <span class="prompt-row-text">${p.text}</span>
+        <button class="prompt-active-badge ${p.active ? 'active-badge' : 'hidden-badge'}"
+                data-id="${p.id}" data-type="custom">
+          ${p.active ? 'Active' : 'Hidden'}
+        </button>
+        <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-b" data-source="${editSource}">✏</button>
+        <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete">✕</button>
+      </div>`;
+
+    const _addRow = (placeholder, catValue) => `
+      <div class="portal-add-prompt-row">
+        <textarea class="text-input portal-add-textarea" rows="2" placeholder="${placeholder}"></textarea>
+        <button class="save-btn portal-add-btn" data-cat="${catValue}">+ Add</button>
+      </div>`;
+
     let html = '';
     for (const cat of PROMPT_CATEGORIES) {
       const inCat = cat.ids.map(id => promptById[id]).filter(Boolean);
-      if (!inCat.length) continue;
+      const customInCat = customPrompts.filter(p => p.category === cat.name);
+      if (!inCat.length && !customInCat.length) continue;
+      const escapedCat = cat.name.replace(/"/g, '&quot;');
       html += `<div class="prompt-cat">
         <div class="prompt-cat-header">${cat.name}</div>
         <div class="prompt-cat-body">
@@ -923,37 +946,24 @@ const portal = {
                 ${p.hidden_by_me ? 'Hidden' : 'Active'}
               </button>
             </div>`).join('')}
+          ${customInCat.map((p, i) => _customRow(p, i, customInCat.length)).join('')}
+          ${_addRow(`Add your own ${cat.name} question…`, escapedCat)}
         </div>
       </div>`;
     }
 
-    // My Questions section
+    // My Questions — uncategorized custom prompts
+    const uncatCustom = customPrompts.filter(p => !p.category);
     html += `<div class="prompt-cat">
       <div class="prompt-cat-header">My Questions</div>
       <div class="prompt-cat-body">
-        ${customPrompts.length
-          ? customPrompts.map((p, i) => `
-            <div class="prompt-row">
-              <div class="prompt-move-btns">
-                <button class="prompt-move-btn" data-id="${p.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
-                <button class="prompt-move-btn" data-id="${p.id}" data-dir="down" ${i === customPrompts.length - 1 ? 'disabled' : ''}>▼</button>
-              </div>
-              <span class="prompt-row-text">${p.text}</span>
-              <button class="prompt-active-badge ${p.active ? 'active-badge' : 'hidden-badge'}"
-                      data-id="${p.id}" data-type="custom">
-                ${p.active ? 'Active' : 'Hidden'}
-              </button>
-              <button class="prompt-edit-btn" data-id="${p.id}" data-text="${p.text.replace(/"/g, '&quot;')}" data-action="edit-b" data-source="${editSource}">✏</button>
-              <button class="prompt-delete-btn" data-id="${p.id}" data-action="delete">✕</button>
-            </div>`).join('')
-          : '<p style="font-size:13px;color:var(--ink-faint);margin:4px 0 0">No custom questions yet — add one below.</p>'
-        }
+        ${uncatCustom.map((p, i) => _customRow(p, i, uncatCustom.length)).join('')}
+        ${_addRow('Add an uncategorized question…', '')}
       </div>
     </div>`;
 
     el.innerHTML = html;
 
-    // Attach event listeners to toggle badges, delete buttons, and move buttons
     el.querySelectorAll('.prompt-active-badge[data-id]').forEach(btn => {
       btn.addEventListener('click', function() {
         if (this.dataset.type === 'system') {
@@ -978,6 +988,27 @@ const portal = {
         portal.movePrompt(this.dataset.id, this.dataset.dir);
       });
     });
+    el.querySelectorAll('.portal-add-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const ta = this.closest('.portal-add-prompt-row').querySelector('.portal-add-textarea');
+        portal.addPromptInCategory(ta.value.trim(), this.dataset.cat || null, ta, editSource);
+      });
+    });
+  },
+
+  async addPromptInCategory(text, category, taEl, editSource) {
+    if (!text) { alert('Please enter a question.'); return; }
+    try {
+      await req(`${api}/storyteller/prompts`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, category: category || null }),
+      });
+      if (taEl) taEl.value = '';
+      await portal._reloadPrompts();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   },
 
   async toggleSystemPrompt(promptId, badge) {
@@ -1582,12 +1613,6 @@ document.getElementById('resetForm').addEventListener('submit', async e => {
 });
 
 // ── Panel button listeners (reliable alternative to inline onclick) ──
-const _addQuestionBtnB = document.getElementById('addPromptBtnB');
-if (_addQuestionBtnB) _addQuestionBtnB.addEventListener('click', () => portal.createPrompt());
-
-const _addQuestionBtnC = document.getElementById('addPromptBtnC');
-if (_addQuestionBtnC) _addQuestionBtnC.addEventListener('click', () => portal.createPromptC());
-
 const _addQuestionBtnE = document.getElementById('addPromptBtnE');
 if (_addQuestionBtnE) _addQuestionBtnE.addEventListener('click', () => portal.createEPrompt('newPromptTextE'));
 

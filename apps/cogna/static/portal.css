@@ -1073,6 +1073,25 @@ input[type=range]:focus { outline: none; }
 
 .add-prompt-row { width: 100%; }
 
+.portal-add-prompt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+.portal-add-prompt-row .portal-add-textarea {
+  width: 100%;
+  font-size: 13px;
+  resize: vertical;
+}
+.portal-add-prompt-row .portal-add-btn {
+  align-self: flex-start;
+  font-size: 13px;
+  padding: 6px 14px;
+}
+
 /* ── Prompt category selector (B/C tab) ── */
 .prompt-cat {
   border: 1px solid var(--border);
