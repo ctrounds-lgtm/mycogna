@@ -650,7 +650,7 @@ const portal = {
       const data = await req(`${api}/portal/invitees?tier=C`, { headers: authHeaders() });
       const invitees = data.invitees || [];
       if (!invitees.length) {
-        el.innerHTML = '<div class="empty-state"><p>No invitees yet. Generate a C-code and share it to get started.</p></div>';
+        el.innerHTML = '<div class="empty-state"><p>No invitees yet. Generate a code and share it to get started.</p></div>';
         return;
       }
       el.innerHTML = invitees.map(inv => {
