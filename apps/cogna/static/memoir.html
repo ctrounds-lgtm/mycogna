@@ -1093,7 +1093,7 @@
 
   // ── Boot ──
   const IS_STORY_MODE = new URLSearchParams(window.location.search).get('mode') === 'stories'
-    || (localStorage.getItem('st_signup_code') || '').startsWith('F-');
+    || !!(localStorage.getItem('st_signup_code'));
 
   window.addEventListener('load', async () => {
     const token = localStorage.getItem('st_token');
