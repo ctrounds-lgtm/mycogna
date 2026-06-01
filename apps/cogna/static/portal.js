@@ -271,6 +271,9 @@ const portal = {
     state.token = '';
     state.user = null;
     localStorage.removeItem('portalToken');
+    localStorage.removeItem('st_token');
+    localStorage.removeItem('st_email');
+    localStorage.removeItem('st_first_name');
     showScreen('authScreen');
   },
 
@@ -1619,6 +1622,9 @@ async function init() {
     }
   } catch {
     localStorage.removeItem('portalToken');
+    localStorage.removeItem('st_token');
+    localStorage.removeItem('st_email');
+    localStorage.removeItem('st_first_name');
     state.token = '';
     showScreen('authScreen');
   }
