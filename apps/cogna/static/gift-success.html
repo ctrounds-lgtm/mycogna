@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gift Ready — MyCogna</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #F9F5EF;
+      --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.55);
+      --ink-faint: rgba(28,26,23,0.35);
+      --gold: #C9963A;
+      --gold-pale: #F7F0E3;
+      --gold-light: #EDD9A8;
+      --teal: #3A7B72;
+      --border: rgba(28,26,23,0.12);
+    }
+    html, body { min-height: 100%; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+
+    .blob { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.18; pointer-events: none; z-index: 0; }
+    .blob-1 { width: 480px; height: 480px; background: var(--gold); top: -100px; right: -80px; }
+    .blob-2 { width: 360px; height: 360px; background: var(--teal); bottom: -60px; left: -60px; }
+
+    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; }
+
+    .wordmark { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; margin-bottom: 48px; }
+
+    .card { background: rgba(255,255,255,0.65); border: 1px solid var(--border); border-radius: 20px; padding: 48px 40px; max-width: 520px; width: 100%; backdrop-filter: blur(8px); text-align: center; }
+
+    .check { width: 56px; height: 56px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+    .check svg { width: 26px; height: 26px; color: white; }
+
+    .success-title { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 400; margin-bottom: 8px; }
+    .success-sub { font-size: 15px; color: var(--ink-muted); margin-bottom: 32px; line-height: 1.6; }
+
+    .code-box { background: var(--gold-pale); border: 2px solid var(--gold-light); border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; position: relative; }
+    .code-label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .code-value { font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; letter-spacing: 0.1em; color: var(--ink); margin-bottom: 12px; }
+    .copy-btn { padding: 8px 18px; background: var(--ink); color: white; border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+    .copy-btn:hover { opacity: 0.8; }
+
+    .gift-details { background: rgba(255,255,255,0.5); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 32px; text-align: left; }
+    .gift-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .gift-detail-row:last-child { border-bottom: none; }
+    .gift-detail-label { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-muted); }
+    .gift-detail-value { font-size: 14px; color: var(--ink); font-weight: 500; }
+
+    .instructions { text-align: left; margin-bottom: 32px; }
+    .instructions h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 400; margin-bottom: 12px; }
+    .instructions ol { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .instructions li { font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+    .instructions a { color: var(--ink); font-weight: 500; }
+
+    .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { padding: 14px 28px; background: var(--ink); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: opacity 0.2s; display: inline-block; }
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-outline { padding: 14px 28px; background: transparent; color: var(--ink); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: border-color 0.2s; display: inline-block; }
+    .btn-outline:hover { border-color: var(--ink); }
+
+    .loading { color: var(--ink-muted); font-size: 15px; }
+    .error-state { color: #C45E4A; font-size: 15px; }
+
+    @media (max-width: 560px) { .card { padding: 32px 20px; } .code-value { font-size: 22px; } }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="page">
+    <a href="/" class="wordmark">MYCOGNA</a>
+
+    <div class="card" id="mainCard">
+      <p class="loading">Loading your gift…</p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+
+    async function loadGift() {
+      const card = document.getElementById('mainCard');
+      if (!sessionId) {
+        card.innerHTML = '<p class="error-state">No session ID found. Please check your email for the gift code.</p>';
+        return;
+      }
+      try {
+        const res = await fetch('/api/gifts/session/' + sessionId);
+        if (!res.ok) {
+          card.innerHTML = '<p class="error-state">Could not load gift details. Please check your email — your code was sent there.</p>';
+          return;
+        }
+        const gift = await res.json();
+        renderGift(gift);
+      } catch (e) {
+        card.innerHTML = '<p class="error-state">Network error. Please check your email for the gift code.</p>';
+      }
+    }
+
+    function renderGift(gift) {
+      const card = document.getElementById('mainCard');
+      const months = gift.duration_months;
+      const durationStr = months === 12 ? '1 year' : months + ' month' + (months === 1 ? '' : 's');
+      const recipientDisplay = gift.recipient_name || '(share the code yourself)';
+      const signupUrl = window.location.origin + '/portal/signup';
+
+      card.innerHTML = `
+        <div class="check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h1 class="success-title">Your gift is ready!</h1>
+        <p class="success-sub">A confirmation email is on its way to you${gift.recipient_email ? ' and ' + gift.recipient_name : ''}. Here's your gift code:</p>
+
+        <div class="code-box">
+          <div class="code-label">Gift Code</div>
+          <div class="code-value" id="giftCode">${gift.code}</div>
+          <button class="copy-btn" onclick="copyCode('${gift.code}')">Copy code</button>
+        </div>
+
+        <div class="gift-details">
+          <div class="gift-detail-row">
+            <span class="gift-detail-label">Plan</span>
+            <span class="gift-detail-value">${gift.tier_name}</span>
+          </div>
+          <div class="gift-detail-row">
+            <span class="gift-detail-label">Duration</span>
+            <span class="gift-detail-value">${durationStr}</span>
+          </div>
+          <div class="gift-detail-row">
+            <span class="gift-detail-label">For</span>
+            <span class="gift-detail-value">${recipientDisplay}</span>
+          </div>
+        </div>
+
+        <div class="instructions">
+          <h3>How to redeem</h3>
+          <ol>
+            <li>Share this code with the recipient (or print this page).</li>
+            <li>They visit <a href="${signupUrl}">${signupUrl}</a></li>
+            <li>They click <strong>"Have a gift code?"</strong> and enter the code above.</li>
+            <li>They create their account — no payment needed.</li>
+            <li>Access activates immediately and lasts ${durationStr}.</li>
+          </ol>
+        </div>
+
+        <div class="btn-row">
+          <a href="/gift" class="btn-outline">Give another gift</a>
+          <button class="btn-primary" onclick="window.print()">Print this page</button>
+        </div>
+      `;
+    }
+
+    function copyCode(code) {
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy code'; }, 2000); }
+      }).catch(() => {
+        const el = document.getElementById('giftCode');
+        if (el) {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+        }
+      });
+    }
+
+    loadGift();
+  </script>
+</body>
+</html>

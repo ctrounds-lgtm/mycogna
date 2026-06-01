@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Give the Gift of Story — MyCogna</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #F9F5EF;
+      --ink: #1C1A17;
+      --ink-muted: rgba(28,26,23,0.55);
+      --ink-faint: rgba(28,26,23,0.35);
+      --gold: #C9963A;
+      --gold-pale: #F7F0E3;
+      --gold-light: #EDD9A8;
+      --teal: #3A7B72;
+      --border: rgba(28,26,23,0.12);
+      --error: #C45E4A;
+      --nav-h: 64px;
+    }
+    html, body { min-height: 100%; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+
+    /* ── nav ── */
+    body > nav { position: sticky; top: 0; z-index: 100; background: rgba(249,245,239,0.92); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: var(--nav-h); border-bottom: 1px solid var(--border); }
+    .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; }
+    .nav-links { list-style: none; display: flex; align-items: center; gap: 32px; }
+    .nav-links a { text-decoration: none; color: var(--ink-muted); font-size: 14px; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-btn-outline { padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 6px; }
+    .nav-btn-outline:hover { border-color: var(--ink) !important; }
+
+    .blob { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.18; pointer-events: none; z-index: 0; }
+    .blob-1 { width: 480px; height: 480px; background: var(--gold); top: -100px; right: -80px; }
+    .blob-2 { width: 360px; height: 360px; background: var(--teal); bottom: -60px; left: -60px; }
+
+    .page { position: relative; z-index: 1; padding: calc(var(--nav-h) + 64px) 24px 100px; max-width: 860px; margin: 0 auto; }
+
+    .hero { text-align: center; margin-bottom: 64px; }
+    .hero-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .hero-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(40px, 7vw, 62px); font-weight: 300; line-height: 1.1; margin-bottom: 20px; }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-sub { font-size: 17px; color: var(--ink-muted); max-width: 520px; margin: 0 auto; line-height: 1.65; }
+
+    /* ── section headers ── */
+    .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+    .section-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; margin-bottom: 6px; }
+    .section-sub { font-size: 14px; color: var(--ink-muted); margin-bottom: 24px; }
+
+    /* ── tier cards ── */
+    .tier-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 48px; }
+    .tier-card { background: rgba(255,255,255,0.55); border: 2px solid var(--border); border-radius: 14px; padding: 24px 20px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; position: relative; }
+    .tier-card:hover { border-color: var(--gold-light); box-shadow: 0 4px 20px rgba(201,150,58,0.12); }
+    .tier-card.selected { border-color: var(--gold); box-shadow: 0 4px 24px rgba(201,150,58,0.18); }
+    .tier-badge { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 8px; }
+    .tier-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; margin-bottom: 6px; }
+    .tier-price { font-size: 15px; color: var(--ink-muted); margin-bottom: 14px; }
+    .tier-features { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .tier-features li { font-size: 13px; color: var(--ink-muted); }
+    .tier-features li::before { content: '✓ '; color: var(--gold); font-weight: 500; }
+    .tier-selector { position: absolute; top: 14px; right: 14px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); background: white; transition: all 0.2s; }
+    .tier-card.selected .tier-selector { border-color: var(--gold); background: var(--gold); }
+
+    /* ── duration pills ── */
+    .duration-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 48px; }
+    .duration-pill { padding: 10px 22px; border: 2px solid var(--border); border-radius: 100px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.55); }
+    .duration-pill:hover { border-color: var(--gold-light); }
+    .duration-pill.selected { border-color: var(--gold); background: var(--gold-pale); color: var(--ink); }
+
+    /* ── price summary ── */
+    .price-summary { background: var(--gold-pale); border: 1px solid var(--gold-light); border-radius: 12px; padding: 18px 22px; margin-bottom: 48px; display: none; }
+    .price-summary.visible { display: flex; align-items: center; justify-content: space-between; }
+    .price-summary-label { font-size: 14px; color: var(--ink-muted); }
+    .price-summary-amount { font-size: 28px; font-weight: 500; color: var(--ink); }
+
+    /* ── form ── */
+    .form-section { margin-bottom: 40px; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-muted); }
+    input { width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.7); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: var(--gold); }
+
+    .recipient-toggle { font-size: 14px; color: var(--ink-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; user-select: none; }
+    .recipient-toggle:hover { color: var(--ink); }
+    .recipient-fields { display: none; }
+    .recipient-fields.open { display: block; }
+    .recipient-note { font-size: 13px; color: var(--ink-muted); margin-bottom: 16px; font-style: italic; }
+
+    .error-msg { background: rgba(196,94,74,0.08); border: 1px solid rgba(196,94,74,0.3); border-radius: 8px; color: var(--error); font-size: 13px; padding: 10px 14px; margin-bottom: 16px; display: none; }
+    .error-msg.visible { display: block; }
+
+    .btn-primary { display: block; width: 100%; max-width: 380px; margin: 0 auto; padding: 16px; background: var(--ink); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── footer ── */
+    footer { text-align: center; padding: 40px 24px; font-size: 13px; color: var(--ink-faint); border-top: 1px solid var(--border); }
+
+    @media (max-width: 640px) {
+      body > nav { padding: 0 20px; }
+      .tier-grid { grid-template-columns: 1fr; }
+      .field-row { grid-template-columns: 1fr; }
+      .price-summary.visible { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <nav>
+    <a href="/" class="nav-logo">MyCogna</a>
+    <ul class="nav-links">
+      <li><a href="/individual">For Individuals</a></li>
+      <li><a href="/family">For Families</a></li>
+      <li><a href="/legacy">For Organizations</a></li>
+      <li><a href="/login" class="nav-btn-outline">Login</a></li>
+    </ul>
+  </nav>
+
+  <div class="page">
+    <div class="hero">
+      <div class="hero-eyebrow">Father's Day · Birthdays · Any Day</div>
+      <h1 class="hero-title">Give the gift of <em>story.</em></h1>
+      <p class="hero-sub">Capture what matters, before it fades. A MyCogna gift lets someone record their memories, deepen their stories, and build a memoir — all at their own pace.</p>
+    </div>
+
+    <!-- Step 1: Choose tier -->
+    <div class="form-section">
+      <div class="section-label">Step 1</div>
+      <div class="section-title">Choose a plan</div>
+      <div class="section-sub">All plans are individual — for one person's story journey.</div>
+      <div class="tier-grid">
+
+        <div class="tier-card" id="tierB" onclick="selectTier('B')">
+          <div class="tier-selector"></div>
+          <div class="tier-badge">Storyteller</div>
+          <div class="tier-name">Unlimited</div>
+          <div class="tier-price">$5 / month</div>
+          <ul class="tier-features">
+            <li>Unlimited story recordings</li>
+            <li>All story prompts</li>
+            <li>Voice recording &amp; transcription</li>
+            <li>Shareable story archive</li>
+          </ul>
+        </div>
+
+        <div class="tier-card" id="tierC" onclick="selectTier('C')">
+          <div class="tier-selector"></div>
+          <div class="tier-badge">AI Assisted</div>
+          <div class="tier-name">Storyteller + Memoir Builder</div>
+          <div class="tier-price">$10 / month</div>
+          <ul class="tier-features">
+            <li>Everything in Unlimited</li>
+            <li>AI follow-up questions</li>
+            <li>Intelligent story editing</li>
+            <li>Extended story sessions</li>
+          </ul>
+        </div>
+
+        <div class="tier-card" id="tierD" onclick="selectTier('D')">
+          <div class="tier-selector"></div>
+          <div class="tier-badge">Full Access</div>
+          <div class="tier-name">AI Companion</div>
+          <div class="tier-price">$15 / month</div>
+          <ul class="tier-features">
+            <li>Everything in Memoir Builder</li>
+            <li>Build a voice companion (Cogna)</li>
+            <li>Custom voice per Cogna</li>
+            <li>Multi-voice conversations</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Step 2: Choose duration -->
+    <div class="form-section" id="durationSection" style="display:none">
+      <div class="section-label">Step 2</div>
+      <div class="section-title">How long?</div>
+      <div class="section-sub">Access starts the day the recipient redeems the code.</div>
+      <div class="duration-row">
+        <button class="duration-pill" onclick="selectDuration(1)">1 month</button>
+        <button class="duration-pill" onclick="selectDuration(3)">3 months</button>
+        <button class="duration-pill" onclick="selectDuration(6)">6 months</button>
+        <button class="duration-pill" onclick="selectDuration(12)">1 year</button>
+      </div>
+    </div>
+
+    <!-- Price summary -->
+    <div class="price-summary" id="priceSummary">
+      <div>
+        <div class="price-summary-label" id="priceSummaryLabel">Total</div>
+      </div>
+      <div class="price-summary-amount" id="priceSummaryAmount">$0</div>
+    </div>
+
+    <!-- Step 3: Your info -->
+    <div class="form-section" id="formSection" style="display:none">
+      <div class="section-label">Step 3</div>
+      <div class="section-title">Your information</div>
+      <div class="section-sub">We'll send the gift code to your email address after payment.</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="purchaserName">Your name</label>
+          <input type="text" id="purchaserName" placeholder="First and last name" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="purchaserEmail">Your email</label>
+          <input type="email" id="purchaserEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="recipient-toggle" onclick="toggleRecipient()">
+        <span id="recipientToggleIcon">＋</span>
+        <span id="recipientToggleText">Include recipient's name &amp; email (optional — so we can notify them too)</span>
+      </div>
+
+      <div class="recipient-fields" id="recipientFields">
+        <p class="recipient-note">If you leave this blank, you can share the code yourself — by text, card, or any way you'd like.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="recipientName">Recipient's name</label>
+            <input type="text" id="recipientName" placeholder="Their first and last name" />
+          </div>
+          <div class="field">
+            <label for="recipientEmail">Recipient's email</label>
+            <input type="email" id="recipientEmail" placeholder="them@example.com" />
+          </div>
+        </div>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <button class="btn-primary" id="purchaseBtn" onclick="handlePurchase()">Purchase Gift →</button>
+      <p style="text-align:center;font-size:13px;color:var(--ink-muted);margin-top:14px;">Secure checkout via Stripe. No subscription — one-time payment.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2026 MyCogna · <a href="/individual" style="color:inherit">Pricing</a> · <a href="/login" style="color:inherit">Login</a></p>
+  </footer>
+
+  <script>
+    const TIER_PRICES = { B: 5, C: 10, D: 15 };
+    const TIER_NAMES = { B: 'Storyteller Unlimited', C: 'Storyteller + Memoir Builder', D: 'AI Companion' };
+    let selectedTier = null;
+    let selectedDuration = null;
+    let recipientOpen = false;
+
+    // Pre-fill purchaser email if logged in as portal user
+    const _pt = localStorage.getItem('portalToken');
+    if (_pt) {
+      fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + _pt } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && d.user) {
+            document.getElementById('purchaserName').value = d.user.name || '';
+            document.getElementById('purchaserEmail').value = d.user.email || '';
+          }
+        }).catch(() => {});
+    }
+
+    function selectTier(tier) {
+      selectedTier = tier;
+      document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('tier' + tier).classList.add('selected');
+      document.getElementById('durationSection').style.display = 'block';
+      updateTotal();
+    }
+
+    function selectDuration(months) {
+      selectedDuration = months;
+      document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('selected'));
+      event.target.classList.add('selected');
+      document.getElementById('formSection').style.display = 'block';
+      updateTotal();
+    }
+
+    function updateTotal() {
+      const summary = document.getElementById('priceSummary');
+      if (!selectedTier || !selectedDuration) {
+        summary.classList.remove('visible');
+        return;
+      }
+      const total = TIER_PRICES[selectedTier] * selectedDuration;
+      const durationStr = selectedDuration === 12 ? '1 year' : selectedDuration + ' month' + (selectedDuration === 1 ? '' : 's');
+      document.getElementById('priceSummaryLabel').textContent = durationStr + ' of ' + TIER_NAMES[selectedTier];
+      document.getElementById('priceSummaryAmount').textContent = '$' + total;
+      summary.classList.add('visible');
+    }
+
+    function toggleRecipient() {
+      recipientOpen = !recipientOpen;
+      document.getElementById('recipientFields').classList.toggle('open', recipientOpen);
+      document.getElementById('recipientToggleIcon').textContent = recipientOpen ? '−' : '＋';
+      document.getElementById('recipientToggleText').textContent = recipientOpen
+        ? 'Remove recipient info'
+        : 'Include recipient\'s name & email (optional — so we can notify them too)';
+    }
+
+    async function handlePurchase() {
+      const errEl = document.getElementById('errorMsg');
+      errEl.className = 'error-msg';
+
+      if (!selectedTier) { errEl.textContent = 'Please choose a plan.'; errEl.className = 'error-msg visible'; return; }
+      if (!selectedDuration) { errEl.textContent = 'Please choose a duration.'; errEl.className = 'error-msg visible'; return; }
+
+      const purchaserName = document.getElementById('purchaserName').value.trim();
+      const purchaserEmail = document.getElementById('purchaserEmail').value.trim();
+      if (!purchaserName || !purchaserEmail) { errEl.textContent = 'Please enter your name and email.'; errEl.className = 'error-msg visible'; return; }
+
+      const btn = document.getElementById('purchaseBtn');
+      btn.disabled = true;
+      btn.textContent = 'Starting checkout…';
+
+      const body = {
+        tier: selectedTier,
+        duration_months: selectedDuration,
+        purchaser_name: purchaserName,
+        purchaser_email: purchaserEmail,
+        recipient_name: document.getElementById('recipientName').value.trim() || null,
+        recipient_email: document.getElementById('recipientEmail').value.trim() || null,
+      };
+
+      try {
+        const res = await fetch('/api/gifts/purchase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.detail || 'Something went wrong. Please try again.';
+          errEl.className = 'error-msg visible';
+          btn.disabled = false;
+          btn.textContent = 'Purchase Gift →';
+          return;
+        }
+        window.location.href = data.url;
+      } catch (err) {
+        errEl.textContent = 'Network error. Please check your connection and try again.';
+        errEl.className = 'error-msg visible';
+        btn.disabled = false;
+        btn.textContent = 'Purchase Gift →';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -382,3 +382,33 @@ ALTER TABLE collection_book_bibles ADD COLUMN IF NOT EXISTS whats_missing TEXT;
 -- Run once in Supabase SQL editor.
 ALTER TABLE book_bibles ADD COLUMN IF NOT EXISTS chapter_outline TEXT;
 ALTER TABLE book_bibles ADD COLUMN IF NOT EXISTS whats_missing TEXT;
+
+-- ─────────────────────────────────────────────
+-- Migration: gift subscriptions (2026-06-01)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS gift_subscriptions (
+  id                         TEXT PRIMARY KEY,
+  code                       TEXT NOT NULL UNIQUE,
+  tier                       TEXT NOT NULL,
+  duration_months            INTEGER NOT NULL,
+  price_paid_cents           INTEGER NOT NULL,
+  purchaser_name             TEXT NOT NULL,
+  purchaser_email            TEXT NOT NULL,
+  recipient_name             TEXT,
+  recipient_email            TEXT,
+  stripe_payment_intent_id   TEXT,
+  stripe_checkout_session_id TEXT,
+  paid_at                    TIMESTAMPTZ,
+  redeemed_by_email          TEXT,
+  redeemed_at                TIMESTAMPTZ,
+  created_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS gift_subscriptions_code_idx ON gift_subscriptions(code);
+CREATE INDEX IF NOT EXISTS gift_subscriptions_purchaser_idx ON gift_subscriptions(purchaser_email);
+
+-- Gift tracking columns on users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gift_expires_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gift_code TEXT;

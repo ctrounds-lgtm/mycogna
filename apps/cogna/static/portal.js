@@ -113,6 +113,24 @@ async function loadDashboard() {
   document.getElementById('dashWelcome').textContent = `Welcome back, ${state.user.name}`;
   document.getElementById('accessCodeValue').textContent = state.user.child_access_code || '—';
 
+  // Gift expiry banner
+  const banner = document.getElementById('giftExpiryBanner');
+  if (banner && state.user.gift_expires_at) {
+    try {
+      const expiresDate = new Date(state.user.gift_expires_at);
+      const now = new Date();
+      const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 0 && daysLeft <= 30) {
+        const expiresStr = expiresDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('giftExpiryBannerText').textContent =
+          `Your gift access expires on ${expiresStr}. Add a payment method to keep your account active.`;
+        banner.style.display = 'flex';
+      }
+    } catch(e) {}
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+
   const tierOrder = ['B', 'C', 'D', 'E', 'F'];
   const rawTier = state.user.tier || 'B';
   const tier = tierOrder.includes(rawTier) ? rawTier : 'B';

@@ -37,6 +37,11 @@ except ImportError:
     OpenAI = None
 
 try:
+    from dateutil.relativedelta import relativedelta as _relativedelta
+except ImportError:
+    _relativedelta = None
+
+try:
     import resend as resend_sdk
 except ImportError:
     resend_sdk = None
@@ -125,6 +130,14 @@ STRIPE_PRICES = {
 
 if stripe_sdk and STRIPE_SECRET_KEY:
     stripe_sdk.api_key = STRIPE_SECRET_KEY
+
+# Gift subscription pricing (cents per month, tiers B/C/D only)
+GIFT_PRICES = {"B": 500, "C": 1000, "D": 1500}
+GIFT_TIER_NAMES = {
+    "B": "Storyteller Unlimited",
+    "C": "Storyteller + Memoir Builder",
+    "D": "AI Companion",
+}
 
 
 def _update_seat_quantity(portal_email: str, delta: int) -> None:
@@ -432,6 +445,22 @@ class FromOutlineRequest(BaseModel):
     outline_text: str
 
 
+class GiftPurchaseRequest(BaseModel):
+    tier: str                   # B, C, or D
+    duration_months: int        # 1, 3, 6, or 12
+    purchaser_name: str
+    purchaser_email: str
+    recipient_name: Optional[str] = None
+    recipient_email: Optional[str] = None
+
+
+class GiftRedeemRequest(BaseModel):
+    code: str
+    email: str
+    password: str
+    name: str
+
+
 EDITORIAL_FOCUSES = {
     "general":    "General edit — fix typos, punctuation, and flow. Improve sentence rhythm without changing the author's voice.",
     "structural": "Structural — evaluate whether this chapter builds toward something. Does it have a clear arc? Where does it drag or rush?",
@@ -516,6 +545,16 @@ def family_page():
 @app.get("/legacy")
 def legacy_page():
     return FileResponse(ROOT / "static" / "legacy.html")
+
+
+@app.get("/gift")
+def gift_page():
+    return FileResponse(ROOT / "static" / "gift.html")
+
+
+@app.get("/gift/success")
+def gift_success_page():
+    return FileResponse(ROOT / "static" / "gift-success.html")
 
 
 @app.get("/api/health")
@@ -708,6 +747,11 @@ async def stripe_webhook(request: Request):
 
 
 def _handle_checkout_completed(session: dict) -> None:
+    # Gift purchase — handled separately
+    if (session.get("metadata") or {}).get("type") == "gift":
+        _handle_gift_checkout_completed(session)
+        return
+
     client_ref = session.get("client_reference_id", "")
     tier = (session.get("metadata") or {}).get("tier", "")
     user_type = (session.get("metadata") or {}).get("user_type", "storyteller")
@@ -949,6 +993,289 @@ async def stripe_customer_portal(authorization: Optional[str] = Header(default=N
     return {"url": session.url}
 
 
+# ----------------------------------------------------
+# Gift subscription endpoints
+# ----------------------------------------------------
+
+def _generate_gift_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    for _ in range(20):
+        part1 = "".join(secrets.choice(chars) for _ in range(4))
+        part2 = "".join(secrets.choice(chars) for _ in range(4))
+        code = f"GIFT-{part1}-{part2}"
+        if supabase:
+            r = supabase.table("gift_subscriptions").select("code").eq("code", code).limit(1).execute()
+            if not r.data:
+                return code
+        else:
+            return code
+    return f"GIFT-{''.join(secrets.choice(chars) for _ in range(4))}-{''.join(secrets.choice(chars) for _ in range(4))}"
+
+
+def _send_gift_confirmation_email(gift: dict) -> None:
+    """Send gift code to purchaser (and optionally to recipient)."""
+    if not resend_sdk or not RESEND_API_KEY:
+        return
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+    tier_name = GIFT_TIER_NAMES.get(gift["tier"], gift["tier"])
+    months = gift["duration_months"]
+    code = gift["code"]
+    duration_str = f"{months} month" + ("s" if months != 1 else "")
+    recipient_display = gift.get("recipient_name") or "your recipient"
+
+    purchaser_html = f"""
+    <p>Hi {gift['purchaser_name']}!</p>
+    <p>Your gift is ready. Here are the details:</p>
+    <p style="font-size:24px;font-weight:bold;letter-spacing:0.08em;font-family:monospace">{code}</p>
+    <p><strong>What you gave:</strong> {duration_str} of MyCogna {tier_name}<br>
+    <strong>For:</strong> {recipient_display}</p>
+    <p><strong>How to share it:</strong><br>
+    Send this code to {recipient_display} and ask them to visit
+    <a href="{base_url}/portal/signup">{base_url}/portal/signup</a>.
+    They'll click "Have a gift code?" and enter the code above to activate their account — no payment required.</p>
+    <p>The gift is active for {duration_str} from the day they redeem it.</p>
+    <p>Thank you for sharing the gift of story.</p>
+    """
+    try:
+        resend_sdk.Emails.send({
+            "from": RESEND_FROM,
+            "to": [gift["purchaser_email"]],
+            "subject": f"Your MyCogna gift code — {code}",
+            "html": purchaser_html,
+        })
+    except Exception as e:
+        print(f"[Resend] gift purchaser email failed: {e}")
+
+    recipient_email = gift.get("recipient_email")
+    if recipient_email:
+        recipient_name = gift.get("recipient_name") or "there"
+        recipient_html = f"""
+        <p>Hi {recipient_name}!</p>
+        <p>{gift['purchaser_name']} has given you a gift — {duration_str} of MyCogna {tier_name}.</p>
+        <p>Use this code when you sign up:</p>
+        <p style="font-size:24px;font-weight:bold;letter-spacing:0.08em;font-family:monospace">{code}</p>
+        <p>Visit <a href="{base_url}/portal/signup">{base_url}/portal/signup</a>, click
+        "Have a gift code?", and enter the code above to create your account. No payment required.</p>
+        <p>Your {duration_str} of access starts the day you redeem it.</p>
+        """
+        try:
+            resend_sdk.Emails.send({
+                "from": RESEND_FROM,
+                "to": [recipient_email],
+                "subject": f"You've received a MyCogna gift from {gift['purchaser_name']}",
+                "html": recipient_html,
+            })
+        except Exception as e:
+            print(f"[Resend] gift recipient email failed: {e}")
+
+
+def _handle_gift_checkout_completed(session: dict) -> None:
+    """Mark a gift as paid, generate the code, and send confirmation emails."""
+    session_id = session.get("id", "")
+    metadata = session.get("metadata") or {}
+    gift_id = metadata.get("gift_id", "")
+    if not gift_id or not supabase:
+        print(f"[Gift] checkout completed but no gift_id in metadata: {session_id}")
+        return
+
+    r = supabase.table("gift_subscriptions").select("*").eq("id", gift_id).limit(1).execute()
+    if not r.data:
+        print(f"[Gift] gift record not found for id {gift_id}")
+        return
+    gift = r.data[0]
+    if gift.get("paid_at"):
+        return  # already processed
+
+    payment_intent_id = session.get("payment_intent", "")
+    supabase.table("gift_subscriptions").update({
+        "stripe_payment_intent_id": payment_intent_id,
+        "paid_at": _utc_now(),
+    }).eq("id", gift_id).execute()
+
+    gift["stripe_payment_intent_id"] = payment_intent_id
+    _send_gift_confirmation_email(gift)
+    print(f"[Gift] code {gift['code']} paid and emails sent for gift {gift_id}")
+
+
+@app.post("/api/gifts/purchase")
+async def gift_purchase(payload: GiftPurchaseRequest):
+    if not stripe_sdk or not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured.")
+
+    tier = payload.tier.upper()
+    if tier not in GIFT_PRICES:
+        raise HTTPException(status_code=400, detail="Invalid tier. Choose B, C, or D.")
+    if payload.duration_months not in (1, 3, 6, 12):
+        raise HTTPException(status_code=400, detail="Duration must be 1, 3, 6, or 12 months.")
+    if not payload.purchaser_name.strip() or not payload.purchaser_email.strip():
+        raise HTTPException(status_code=400, detail="Purchaser name and email are required.")
+
+    price_cents = GIFT_PRICES[tier] * payload.duration_months
+    code = _generate_gift_code()
+    gift_id = "gift_" + secrets.token_hex(8)
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+
+    gift_record = {
+        "id": gift_id,
+        "code": code,
+        "tier": tier,
+        "duration_months": payload.duration_months,
+        "price_paid_cents": price_cents,
+        "purchaser_name": payload.purchaser_name.strip(),
+        "purchaser_email": payload.purchaser_email.strip().lower(),
+        "recipient_name": payload.recipient_name.strip() if payload.recipient_name else None,
+        "recipient_email": payload.recipient_email.strip().lower() if payload.recipient_email else None,
+        "created_at": _utc_now(),
+    }
+
+    if supabase:
+        try:
+            supabase.table("gift_subscriptions").insert(gift_record).execute()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"DB error: {e}")
+
+    tier_name = GIFT_TIER_NAMES.get(tier, tier)
+    duration_str = f"{payload.duration_months} month" + ("s" if payload.duration_months != 1 else "")
+    try:
+        stripe_session = stripe_sdk.checkout.Session.create(
+            mode="payment",
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": price_cents,
+                    "product_data": {
+                        "name": f"MyCogna Gift — {tier_name}",
+                        "description": f"{duration_str} of {tier_name}",
+                    },
+                },
+                "quantity": 1,
+            }],
+            customer_email=payload.purchaser_email.strip().lower(),
+            client_reference_id=f"gift:{gift_id}",
+            metadata={"type": "gift", "gift_id": gift_id},
+            success_url=f"{base_url}/gift/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/gift?canceled=1",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+
+    if supabase:
+        try:
+            supabase.table("gift_subscriptions").update({
+                "stripe_checkout_session_id": stripe_session.id,
+            }).eq("id", gift_id).execute()
+        except Exception:
+            pass
+
+    return {"url": stripe_session.url}
+
+
+@app.get("/api/gifts/validate/{code}")
+async def gift_validate(code: str):
+    code = code.upper().strip()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+    r = supabase.table("gift_subscriptions").select("code,tier,duration_months,purchaser_name,recipient_name,recipient_email,paid_at,redeemed_at").eq("code", code).limit(1).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Gift code not found.")
+    gift = r.data[0]
+    if not gift.get("paid_at"):
+        raise HTTPException(status_code=400, detail="This gift has not been paid for yet.")
+    if gift.get("redeemed_at"):
+        raise HTTPException(status_code=400, detail="This gift code has already been redeemed.")
+    return {
+        "code": gift["code"],
+        "tier": gift["tier"],
+        "tier_name": GIFT_TIER_NAMES.get(gift["tier"], gift["tier"]),
+        "duration_months": gift["duration_months"],
+        "purchaser_name": gift["purchaser_name"],
+        "recipient_name": gift.get("recipient_name"),
+        "recipient_email": gift.get("recipient_email"),
+    }
+
+
+@app.post("/api/gifts/redeem")
+async def gift_redeem(payload: GiftRedeemRequest):
+    code = payload.code.upper().strip()
+    email = payload.email.strip().lower()
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    r = supabase.table("gift_subscriptions").select("*").eq("code", code).limit(1).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Gift code not found.")
+    gift = r.data[0]
+    if not gift.get("paid_at"):
+        raise HTTPException(status_code=400, detail="This gift has not been paid for yet.")
+    if gift.get("redeemed_at"):
+        raise HTTPException(status_code=400, detail="This gift code has already been redeemed.")
+
+    existing = _get_user(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
+
+    # Calculate expiry date
+    now = datetime.now(timezone.utc)
+    if _relativedelta:
+        expires_at = (now + _relativedelta(months=gift["duration_months"])).isoformat()
+    else:
+        from datetime import timedelta
+        approx_days = gift["duration_months"] * 30
+        expires_at = (now + timedelta(days=approx_days)).isoformat()
+
+    salt = secrets.token_hex(8)
+    pw_hash = _hash_password(payload.password, salt)
+
+    user_record = {
+        "email": email,
+        "name": payload.name.strip(),
+        "password_salt": salt,
+        "password_hash": pw_hash,
+        "setup_type": "guardian",
+        "tier": gift["tier"],
+        "child_access_code": _generate_child_access_code(gift["tier"]),
+        "created_at": _utc_now(),
+    }
+    _create_user(user_record)
+    _update_user(email, {
+        "role": "portal_admin",
+        "first_name": payload.name.strip().split(" ")[0] if payload.name.strip() else "",
+        "last_name": " ".join(payload.name.strip().split(" ")[1:]) if " " in payload.name.strip() else "",
+        "subscription_status": "active",
+        "gift_expires_at": expires_at,
+        "gift_code": code,
+    })
+
+    supabase.table("gift_subscriptions").update({
+        "redeemed_by_email": email,
+        "redeemed_at": _utc_now(),
+    }).eq("code", code).execute()
+
+    token = _create_session(email)
+    user = _get_user(email)
+    return {"token": token, "user": _public_user(user)}
+
+
+@app.get("/api/gifts/session/{session_id}")
+async def gift_session_info(session_id: str):
+    """Return gift details for the post-payment success page (no auth required)."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+    r = supabase.table("gift_subscriptions").select("code,tier,duration_months,purchaser_name,recipient_name,recipient_email,paid_at").eq("stripe_checkout_session_id", session_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Gift not found.")
+    gift = r.data[0]
+    return {
+        "code": gift["code"],
+        "tier": gift["tier"],
+        "tier_name": GIFT_TIER_NAMES.get(gift["tier"], gift["tier"]),
+        "duration_months": gift["duration_months"],
+        "purchaser_name": gift["purchaser_name"],
+        "recipient_name": gift.get("recipient_name"),
+        "recipient_email": gift.get("recipient_email"),
+    }
+
 
 # ----------------------------------------------------
 # Audio serving (local fallback only)
@@ -1137,6 +1464,26 @@ def auth_login(payload: FamilyLoginRequest):
 @app.get("/api/auth/me")
 def auth_me(authorization: Optional[str] = Header(default=None)):
     user = _auth_user(authorization)
+    # Check gift expiry: if gift_expires_at is set and in the past, downgrade to Tier A
+    gift_expires_str = user.get("gift_expires_at")
+    if gift_expires_str and supabase:
+        try:
+            expires = datetime.fromisoformat(gift_expires_str)
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires:
+                _update_user(user["email"], {
+                    "tier": "A",
+                    "gift_expires_at": None,
+                    "gift_code": None,
+                    "subscription_status": "none",
+                })
+                user["tier"] = "A"
+                user["gift_expires_at"] = None
+                user["gift_code"] = None
+                print(f"[Gift] expired for {user['email']}, downgraded to Tier A")
+        except Exception as e:
+            print(f"[Gift] expiry check failed for {user['email']}: {e}")
     return {"user": _public_user(user)}
 
 
@@ -4487,6 +4834,8 @@ def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "tier": user.get("tier", "A"),
         "child_access_code": user.get("child_access_code") or "",
         "role": user.get("role", "portal_admin"),
+        "gift_expires_at": user.get("gift_expires_at"),
+        "gift_code": user.get("gift_code"),
     }
 
 

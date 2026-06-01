@@ -103,6 +103,24 @@
     .link-row a { color: var(--ink); font-weight: 500; text-decoration: none; border-bottom: 1px solid var(--gold-light); }
     .link-row a:hover { border-color: var(--gold); }
 
+    /* Gift code entry */
+    .gift-toggle-row { text-align: center; margin-bottom: 24px; }
+    .gift-toggle-btn { font-size: 14px; color: var(--ink-muted); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
+    .gift-toggle-btn:hover { color: var(--ink); text-decoration: underline; }
+    .gift-entry-row { display: none; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .gift-entry-row.open { display: flex; }
+    .gift-entry-row input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .gift-apply-btn { padding: 11px 18px; background: var(--ink); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+    .gift-apply-btn:hover { opacity: 0.82; }
+    .gift-error { font-size: 13px; color: var(--error); margin-bottom: 12px; display: none; }
+    .gift-error.visible { display: block; }
+    .gift-confirmed { background: #EDF7F4; border: 1px solid #B5D9CE; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; display: none; }
+    .gift-confirmed.visible { display: block; }
+    .gift-confirmed-title { font-size: 13px; font-weight: 500; color: #2D6A5A; margin-bottom: 4px; }
+    .gift-confirmed-details { font-size: 14px; color: var(--ink-muted); margin-bottom: 8px; }
+    .gift-remove-btn { font-size: 12px; color: var(--ink-muted); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; text-decoration: underline; }
+    .gift-remove-btn:hover { color: var(--ink); }
+
     @media (max-width: 860px) { .plans-individual { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 520px) { .plans-individual, .plans-institutional { grid-template-columns: 1fr; } .card { padding: 24px 18px; } }
   </style>
@@ -114,6 +132,24 @@
   <div class="page">
     <a href="/" class="wordmark">MYCOGNA</a>
     <h1 class="page-title">Administrator <em>Portal</em></h1>
+
+    <!-- Gift code entry (shown above plan picker) -->
+    <div style="width:100%;max-width:440px;margin-bottom:32px;">
+      <div class="gift-toggle-row">
+        <button class="gift-toggle-btn" id="giftToggleBtn" onclick="toggleGiftEntry()">Have a gift code? Click here to redeem it.</button>
+      </div>
+      <div class="gift-entry-row" id="giftEntryRow">
+        <input type="text" id="giftCodeInput" placeholder="GIFT-XXXX-XXXX" maxlength="14" oninput="this.value=this.value.toUpperCase()" />
+        <button class="gift-apply-btn" onclick="applyGiftCode()">Apply</button>
+      </div>
+      <div class="gift-error" id="giftError"></div>
+      <div class="gift-confirmed" id="giftConfirmed">
+        <div class="gift-confirmed-title">🎁 Gift applied!</div>
+        <div class="gift-confirmed-details" id="giftConfirmedDetails"></div>
+        <button class="gift-remove-btn" onclick="clearGiftCode()">Remove gift code</button>
+      </div>
+    </div>
+
     <!-- Individual section -->
     <div class="plan-section">
       <div class="plan-section-eyebrow">For individuals</div>
@@ -255,6 +291,8 @@
     };
 
     let selectedTier = null;
+    let appliedGiftCode = null;
+    let appliedGiftData = null;
 
     // If already logged into portal, redirect — UNLESS ?resub=1 is set (re-subscribe flow)
     const _signupParams = new URLSearchParams(window.location.search);
@@ -276,6 +314,7 @@
     }
 
     function selectPlan(tier) {
+      if (appliedGiftCode) return; // gift code takes precedence
       selectedTier = tier;
       document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       document.getElementById('plan' + tier).classList.add('selected');
@@ -284,6 +323,77 @@
       document.getElementById('signupWrap').style.display = 'block';
       document.getElementById('signupWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // ── Gift code logic ──────────────────────────────────
+
+    function toggleGiftEntry() {
+      const row = document.getElementById('giftEntryRow');
+      const isOpen = row.classList.contains('open');
+      row.classList.toggle('open', !isOpen);
+      document.getElementById('giftToggleBtn').textContent = isOpen
+        ? 'Have a gift code? Click here to redeem it.'
+        : 'Hide gift code entry';
+    }
+
+    async function applyGiftCode() {
+      const input = document.getElementById('giftCodeInput');
+      const errEl = document.getElementById('giftError');
+      const code = input.value.trim().toUpperCase();
+      errEl.className = 'gift-error';
+
+      if (!code) { errEl.textContent = 'Please enter a gift code.'; errEl.className = 'gift-error visible'; return; }
+
+      try {
+        const res = await fetch('/api/gifts/validate/' + encodeURIComponent(code));
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.detail || 'Invalid gift code.';
+          errEl.className = 'gift-error visible';
+          return;
+        }
+        // Code is valid — activate gift flow
+        appliedGiftCode = code;
+        appliedGiftData = data;
+
+        const months = data.duration_months;
+        const durationStr = months === 12 ? '1 year' : months + ' month' + (months === 1 ? '' : 's');
+        document.getElementById('giftConfirmedDetails').textContent =
+          durationStr + ' of ' + data.tier_name + ' — gift from ' + data.purchaser_name;
+        document.getElementById('giftConfirmed').className = 'gift-confirmed visible';
+        document.getElementById('giftEntryRow').classList.remove('open');
+        document.getElementById('giftToggleBtn').style.display = 'none';
+
+        // Pre-select tier, show signup form, hide plan picker cards
+        document.querySelectorAll('.plan-card').forEach(c => c.style.pointerEvents = 'none');
+        document.getElementById('selectedTier').value = data.tier;
+        document.getElementById('planConfirm').textContent = durationStr + ' of ' + data.tier_name + ' (gift)';
+        document.getElementById('signupWrap').style.display = 'block';
+        document.getElementById('signupWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (data.recipient_email) {
+          document.getElementById('email').value = data.recipient_email;
+        }
+        if (data.recipient_name) {
+          document.getElementById('name').value = data.recipient_name;
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.className = 'gift-error visible';
+      }
+    }
+
+    function clearGiftCode() {
+      appliedGiftCode = null;
+      appliedGiftData = null;
+      document.getElementById('giftConfirmed').className = 'gift-confirmed';
+      document.getElementById('giftToggleBtn').style.display = '';
+      document.getElementById('giftCodeInput').value = '';
+      document.querySelectorAll('.plan-card').forEach(c => c.style.pointerEvents = '');
+      document.getElementById('signupWrap').style.display = 'none';
+      document.getElementById('selectedTier').value = '';
+      selectedTier = null;
+    }
+
+    // ── Signup ──────────────────────────────────────────
 
     async function handleSignup(e) {
       e.preventDefault();
@@ -303,6 +413,37 @@
       btn.disabled = true;
       btn.textContent = 'Creating account…';
 
+      // Gift redemption path
+      if (appliedGiftCode) {
+        try {
+          const res = await fetch('/api/gifts/redeem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: appliedGiftCode, email, password, name }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const msg = data.detail || 'Something went wrong. Please try again.';
+            errEl.innerHTML = msg.includes('already exists')
+              ? msg + ' <a href="/portal" style="color:inherit;font-weight:600;text-decoration:underline">Go to portal →</a>'
+              : msg;
+            errEl.className = 'error-msg visible';
+            btn.disabled = false;
+            btn.textContent = 'Create administrator account';
+            return;
+          }
+          localStorage.setItem('portalToken', data.token);
+          window.location.href = '/portal';
+        } catch (err) {
+          errEl.textContent = 'Network error. Please check your connection and try again.';
+          errEl.className = 'error-msg visible';
+          btn.disabled = false;
+          btn.textContent = 'Create administrator account';
+        }
+        return;
+      }
+
+      // Standard registration path
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',

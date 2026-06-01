@@ -11,3 +11,4 @@ httpx
 supabase
 resend
 stripe
+python-dateutil

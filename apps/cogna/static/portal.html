@@ -129,6 +129,12 @@
       </div>
     </div>
 
+    <!-- Gift expiry banner (hidden by default, shown by JS) -->
+    <div id="giftExpiryBanner" style="display:none;background:#FFF8E6;border:1px solid #EDD9A8;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+      <div style="font-size:14px;color:#1C1A17" id="giftExpiryBannerText"></div>
+      <a href="#" onclick="portal.switchDashTab('Billing');return false;" style="font-size:13px;font-weight:500;color:#C9963A;white-space:nowrap;">Add payment method →</a>
+    </div>
+
     <!-- Dashboard tabs: one per tier -->
     <div class="dash-tabs" id="dashTabs">
       <div class="tab-group" id="tabGroupIndividual">
