@@ -309,7 +309,7 @@
     <hr class="divider" />
     <div class="section-label">Memoir outline</div>
     <div id="dashAssembleSection">
-      <p class="sub" style="font-size:14px;">When you have enough stories, click below to have Claude read everything and generate your Book Bible and chapter outline.</p>
+      <p class="sub" style="font-size:14px;">When you have enough stories, click below to have Claude read everything and generate your Story Blueprint and chapter outline.</p>
       <button class="btn-primary" onclick="m.showAssemble()">Assemble my memoir →</button>
     </div>
     </div><!-- /dashMemoirOutlineSection -->
@@ -370,7 +370,7 @@
   </nav>
   <div class="page">
     <h2>Assemble My Memoir</h2>
-    <p class="sub" id="assembleSubtext">Claude will read all your stories and generate a Book Bible and chapter outline.</p>
+    <p class="sub" id="assembleSubtext">Claude will read all your stories and generate a Story Blueprint and chapter outline.</p>
 
     <div id="assembleAction">
       <button class="btn-primary" id="assembleBtn" onclick="m.runAssemble()">Assemble my memoir →</button>
@@ -382,8 +382,8 @@
 
     <div id="assembleOutput" style="display:none;">
       <div class="section-block">
-        <div class="section-label">Book Bible <span class="save-notice" id="bibleSaveNotice"></span></div>
-        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here…" onblur="m.saveBible()"></textarea>
+        <div class="section-label">Story Blueprint <span class="save-notice" id="bibleSaveNotice"></span></div>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Story Blueprint will appear here…" onblur="m.saveBible()"></textarea>
       </div>
       <div class="section-block">
         <div class="section-label">Chapter Outline <span class="save-notice" id="outlineSaveNotice"></span></div>
@@ -393,7 +393,7 @@
         <div class="section-label">What's Missing</div>
         <div class="readonly-box" id="whatsMissingBox"></div>
       </div>
-      <button class="btn-primary" style="margin-top:8px;" onclick="m.downloadBible()">Download Book Bible</button>
+      <button class="btn-primary" style="margin-top:8px;" onclick="m.downloadBible()">Download Story Blueprint</button>
       <button class="btn-secondary" onclick="m.proceedToEdit()">Proceed to editing →</button>
       <button class="btn-secondary" onclick="m.runAssemble()">Reassemble with new stories</button>
     </div>
@@ -767,7 +767,7 @@
       const missing = mState.whatsMissing || '';
       const name = mState.firstName || 'My';
       const text = [
-        `${name}'s Book Bible`, '='.repeat(50), '', bible,
+        `${name}'s Story Blueprint`, '='.repeat(50), '', bible,
         '', 'Chapter Outline', '='.repeat(50), '', outline,
         '', "What's Missing", '='.repeat(50), '', missing,
       ].join('\n');

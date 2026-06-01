@@ -2939,7 +2939,7 @@ Your job, when there IS sufficient material:
 5. Briefly note what kinds of stories seem missing that would strengthen the memoir
 
 Format your response as:
-BOOK BIBLE: 3-4 paragraphs describing themes, voice, and emotional arc
+STORY BLUEPRINT: 3-4 paragraphs describing themes, voice, and emotional arc
 CHAPTER OUTLINE: numbered list of chapter titles with 1-2 sentence descriptions
 WHAT'S MISSING: a short, encouraging paragraph noting gaps
 
@@ -2949,11 +2949,11 @@ Tone: warm, encouraging, professional. This person's stories matter."""
 def _parse_assembly_output(text: str) -> dict:
     import re
     def extract(label: str, src: str) -> str:
-        pattern = rf'\*?\*?{label}\*?\*?:?\s*(.*?)(?=\*?\*?(?:BOOK BIBLE|CHAPTER OUTLINE|WHAT\'S MISSING)\*?\*?:|$)'
+        pattern = rf'\*?\*?{label}\*?\*?:?\s*(.*?)(?=\*?\*?(?:STORY BLUEPRINT|CHAPTER OUTLINE|WHAT\'S MISSING)\*?\*?:|$)'
         m = re.search(pattern, src, re.DOTALL | re.IGNORECASE)
         return m.group(1).strip() if m else ''
     return {
-        'book_bible':      extract('BOOK BIBLE', text),
+        'book_bible':      extract('STORY BLUEPRINT', text),
         'chapter_outline': extract('CHAPTER OUTLINE', text),
         'whats_missing':   extract("WHAT'S MISSING", text),
     }
@@ -2962,7 +2962,7 @@ def _parse_assembly_output(text: str) -> dict:
 MEMOIR_EDIT_SYSTEM = """You are a skilled memoir editor working with a writer on their chapter drafts. You have been given:
 
 - All interview questions and the storyteller's recorded answers (the complete source material)
-- The memoir's Book Bible (overall plan and structure), if one exists
+- The memoir's Story Blueprint (overall plan and structure), if one exists
 - Any other chapters already drafted, for consistency
 - The raw transcripts assigned to the chapter currently being edited
 
@@ -2972,7 +2972,7 @@ Use this full context to:
 - Notice material that might fit better in a different chapter
 - Maintain consistency in voice, tone, and facts across the whole memoir
 - Catch contradictions or repeated stories between chapters
-- Ensure this chapter fits the arc established in the Book Bible
+- Ensure this chapter fits the arc established in the Story Blueprint
 - Suggest connections and callbacks to other chapters where meaningful
 
 Your editorial job on the current chapter:
@@ -2994,14 +2994,14 @@ CRITICAL RULES:
 - If transcripts are too thin to support a full book, say so honestly.
 - Each storyteller's voice is distinct — honor that; don't flatten them into a single narrator.
 
-1. BOOK BIBLE: Write 3–5 paragraphs describing the collective themes, the range of voices, and the emotional arc of the archive as a whole. What unifies these stories? What tensions or contrasts make them interesting together? What is the organizing emotional truth of this collection?
+1. STORY BLUEPRINT: Write 3–5 paragraphs describing the collective themes, the range of voices, and the emotional arc of the archive as a whole. What unifies these stories? What tensions or contrasts make them interesting together? What is the organizing emotional truth of this collection?
 
 2. CHAPTER OUTLINE: Suggest 5–10 chapters that weave across multiple storytellers. Each chapter should gather multiple voices around a shared theme, question, or life stage. Format as a numbered list: chapter title in bold, followed by a 1–2 sentence description naming which storytellers' voices are most relevant.
 
 3. WHAT'S MISSING: A short, encouraging paragraph noting gaps — stories not yet told, questions not yet asked, voices not yet captured — that would strengthen the archive.
 
 Format your response with these exact section headers:
-BOOK BIBLE:
+STORY BLUEPRINT:
 CHAPTER OUTLINE:
 WHAT'S MISSING:
 
@@ -3011,7 +3011,7 @@ Tone: warm, editorial, respectful of each contributor's individuality."""
 COLLECTION_FIRST_PASS_SYSTEM = """You are a skilled editor writing a first-draft chapter for a Legacy Collection — a book that weaves together the recorded stories of multiple contributors.
 
 You have been given:
-- The Book Bible: the thematic overview and organizing vision for the entire collection
+- The Story Blueprint: the thematic overview and organizing vision for the entire collection
 - The chapter title and any existing description
 - All storyteller recordings from the collection
 
@@ -3029,7 +3029,7 @@ Return the chapter text only — no commentary, no preamble. Write it as finishe
 MEMOIR_FIRST_PASS_SYSTEM = """You are a skilled memoir editor writing a first-draft chapter for a personal memoir.
 
 You have been given:
-- The Book Bible: the thematic overview and organizing plan for this memoir
+- The Story Blueprint: the thematic overview and organizing plan for this memoir
 - The chapter title and any existing description
 - All of this person's recorded stories and deepening conversations
 
@@ -3045,7 +3045,7 @@ Return the chapter text only — no commentary, no preamble. Write it as finishe
 
 
 def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: str) -> str:
-    """Build the full system prompt including book bible, sibling chapters, and all interview Q&A."""
+    """Build the full system prompt including story blueprint, sibling chapters, and all interview Q&A."""
     book_bible_content = ""
     sibling_chapters = []
     recordings_with_prompts = []
@@ -3100,7 +3100,7 @@ def _build_memoir_edit_system(user_id: str, chapter_id: str, chapter_content: st
     context_parts = [MEMOIR_EDIT_SYSTEM]
 
     if book_bible_content:
-        context_parts.append(f"\n\n---\nBOOK BIBLE (memoir plan and structure):\n\n{book_bible_content}")
+        context_parts.append(f"\n\n---\nSTORY BLUEPRINT (memoir plan and structure):\n\n{book_bible_content}")
 
     if recordings_with_prompts:
         qa_blocks = []
@@ -3152,7 +3152,7 @@ def _build_collection_edit_system(portal_id: str, chapter_id: str, chapter_conte
 
     system = MEMOIR_EDIT_SYSTEM
     if book_bible:
-        system += f"\n\n---\nBOOK BIBLE (collection overview and structure):\n\n{book_bible}"
+        system += f"\n\n---\nSTORY BLUEPRINT (collection overview and structure):\n\n{book_bible}"
     if sibling_chapters:
         system += "\n\n---\nOTHER CHAPTERS ALREADY DRAFTED:\n" + "\n\n".join(
             f"Chapter: {c['title']}\n{(c.get('content') or '')[:300]}..." for c in sibling_chapters if c.get('content')
@@ -3634,7 +3634,7 @@ async def memoir_chapter_first_pass(chapter_id: str, authorization: Optional[str
     recording_context = "\n".join(context_parts)
 
     user_message = (
-        f"BOOK BIBLE:\n{book_bible}\n\n"
+        f"STORY BLUEPRINT:\n{book_bible}\n\n"
         f"CHAPTER TO WRITE: {chapter['title']}\n"
         f"CHAPTER DESCRIPTION: {chapter.get('content', '')}\n\n"
         f"ALL RECORDINGS:\n{recording_context}"
@@ -3907,7 +3907,7 @@ async def portal_invitee_chapter_first_pass(storyteller_id: str, chapter_id: str
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found.")
 
-    # Get Book Bible
+    # Get Story Blueprint
     book_bible = ""
     if supabase:
         try:
@@ -3951,7 +3951,7 @@ async def portal_invitee_chapter_first_pass(storyteller_id: str, chapter_id: str
     recording_context = "\n".join(context_parts)
 
     user_message = (
-        f"BOOK BIBLE:\n{book_bible}\n\n"
+        f"STORY BLUEPRINT:\n{book_bible}\n\n"
         f"CHAPTER TO WRITE: {chapter['title']}\n"
         f"CHAPTER DESCRIPTION: {chapter.get('content', '')}\n\n"
         f"ALL RECORDINGS:\n{recording_context}"
@@ -4302,7 +4302,7 @@ async def portal_collection_chapter_first_pass(chapter_id: str, authorization: O
     )
 
     user_message = (
-        f"BOOK BIBLE:\n{book_bible}\n\n"
+        f"STORY BLUEPRINT:\n{book_bible}\n\n"
         f"CHAPTER TO WRITE: {chapter['title']}\n"
         f"CHAPTER DESCRIPTION: {chapter.get('content', '')}\n\n"
         f"ALL STORYTELLER RECORDINGS:\n{recording_context}"

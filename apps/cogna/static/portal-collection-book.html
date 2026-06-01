@@ -151,9 +151,9 @@
     <div id="assembleOutput" style="display:none;">
 
       <div class="section-block">
-        <div class="section-label">Book Bible</div>
+        <div class="section-label">Story Blueprint</div>
         <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">The organizing vision for the whole collection. Edit freely — your changes are saved automatically.</p>
-        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here after assembly…" onblur="cb.saveBible()"></textarea>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Story Blueprint will appear here after assembly…" onblur="cb.saveBible()"></textarea>
         <p class="save-notice" id="bibleSaveNotice"></p>
       </div>
 
@@ -169,7 +169,7 @@
         <div class="readonly-box" id="whatsMissingBox"></div>
       </div>
 
-      <button class="btn-primary" onclick="cb.downloadBible()">Download Book Bible</button>
+      <button class="btn-primary" onclick="cb.downloadBible()">Download Story Blueprint</button>
       <button class="btn-secondary" onclick="cb.proceedToEdit()">Proceed to editing →</button>
       <button class="btn-secondary" onclick="cb.runAssemble()">Reassemble with new stories</button>
     </div>
@@ -183,7 +183,7 @@
 ══════════════════════════════════════════════ -->
 <div class="screen" id="screenEdit">
   <nav class="top-nav">
-    <button class="link-btn" onclick="cb.showAssemble()">← Book Bible</button>
+    <button class="link-btn" onclick="cb.showAssemble()">← Story Blueprint</button>
     <span class="wordmark">MyCogna · Collection Book Builder</span>
     <div style="display:flex;gap:10px;align-items:center;">
       <button class="btn-sm" onclick="cb.downloadManuscript()">Download full book</button>
@@ -316,7 +316,7 @@
     },
 
     downloadBible() {
-      const content = `COLLECTION BOOK BIBLE\n${'='.repeat(50)}\n\n${cbState.bookBible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${cbState.chapterOutline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${cbState.whatsMissing}`;
+      const content = `COLLECTION STORY BLUEPRINT\n${'='.repeat(50)}\n\n${cbState.bookBible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${cbState.chapterOutline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${cbState.whatsMissing}`;
       const blob = new Blob([content], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = 'collection-book-bible.txt'; a.click();
@@ -347,7 +347,7 @@
     _renderChapterSidebar(activeId) {
       const list = document.getElementById('editChapterList');
       if (cbState.chapters.length === 0) {
-        list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Go back to the Book Bible and assemble first, or add a chapter manually.</p>';
+        list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Go back to the Story Blueprint and assemble first, or add a chapter manually.</p>';
         return;
       }
       list.innerHTML = cbState.chapters.map(c =>
@@ -530,7 +530,7 @@
       cbState.storytellerCount = data.storyteller_count || 0;
       cbState.chapters = data.chapters || [];
 
-      // Restore previous Book Bible if one exists
+      // Restore previous Story Blueprint if one exists
       if (data.book_bible) {
         cbState.bookBibleId = data.book_bible.id;
         cbState.bookBible = data.book_bible.content || '';
@@ -540,7 +540,7 @@
 
       cb.updateStats();
       document.getElementById('assembleSub').textContent =
-        `${cbState.recordings.length} recording${cbState.recordings.length !== 1 ? 's' : ''} from ${cbState.storytellerCount} storyteller${cbState.storytellerCount !== 1 ? 's' : ''} will be included. Claude will generate a Book Bible, chapter outline, and editorial notes.`;
+        `${cbState.recordings.length} recording${cbState.recordings.length !== 1 ? 's' : ''} from ${cbState.storytellerCount} storyteller${cbState.storytellerCount !== 1 ? 's' : ''} will be included. Claude will generate a Story Blueprint, chapter outline, and editorial notes.`;
 
       if (cbState.bookBible) {
         cb.showAssembleOutput();

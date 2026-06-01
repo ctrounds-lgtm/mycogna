@@ -256,7 +256,7 @@
   </nav>
   <div class="page">
     <h2 id="assembleHeading">Assemble Memoir</h2>
-    <p class="sub" id="assembleSub">Claude will read all recordings and generate a Book Bible and chapter outline.</p>
+    <p class="sub" id="assembleSub">Claude will read all recordings and generate a Story Blueprint and chapter outline.</p>
 
     <div id="assembleAction">
       <button class="btn-primary" id="assembleBtn" onclick="pm.runAssemble()">Assemble memoir →</button>
@@ -269,9 +269,9 @@
     <div id="assembleOutput" style="display:none;">
 
       <div class="section-block">
-        <div class="section-label">Book Bible</div>
+        <div class="section-label">Story Blueprint</div>
         <p style="font-size:13px;color:var(--ink-muted);margin-bottom:8px">The organizing vision for this memoir. Edit freely — your changes are saved automatically.</p>
-        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Book Bible will appear here after assembly…" onblur="pm.saveBible()"></textarea>
+        <textarea class="editable-area" id="bibleEditor" rows="10" placeholder="Story Blueprint will appear here after assembly…" onblur="pm.saveBible()"></textarea>
         <p class="save-notice" id="bibleSaveNotice"></p>
       </div>
 
@@ -287,7 +287,7 @@
         <div class="readonly-box" id="whatsMissingBox"></div>
       </div>
 
-      <button class="btn-primary" id="downloadBibleBtn" onclick="pm.downloadBible()">Download Book Bible</button>
+      <button class="btn-primary" id="downloadBibleBtn" onclick="pm.downloadBible()">Download Story Blueprint</button>
       <button class="btn-secondary" onclick="pm.proceedToEdit()">Proceed to editing →</button>
       <button class="btn-secondary" onclick="pm.runAssemble()">Reassemble</button>
     </div>
@@ -338,7 +338,7 @@
     wordmark:        IS_BOOK ? 'MyCogna · Book Workspace'   : 'MyCogna · Memoir Workspace',
     assembleHeading: IS_BOOK ? 'Assemble Book'              : 'Assemble Memoir',
     assembleBtn:     IS_BOOK ? 'Assemble book →'            : 'Assemble memoir →',
-    downloadBible:   IS_BOOK ? 'Download Book Outline'      : 'Download Book Bible',
+    downloadBible:   IS_BOOK ? 'Download Book Outline'      : 'Download Story Blueprint',
     downloadBibleFile: IS_BOOK ? 'book-outline'             : 'book-bible',
     manuscriptFile:  IS_BOOK ? 'book'                       : 'manuscript',
     manuscriptBtn:   IS_BOOK ? 'Download book'              : 'Download manuscript',
@@ -455,7 +455,7 @@
 
     showAssemble() {
       showScreen('screenAssemble');
-      const bibleLabel = IS_BOOK ? 'Book Outline' : 'Book Bible';
+      const bibleLabel = IS_BOOK ? 'Book Outline' : 'Story Blueprint';
       document.getElementById('assembleSub').textContent =
         `${pmState.recordings.length} recording${pmState.recordings.length !== 1 ? 's' : ''} will be included. Claude will generate a ${bibleLabel}.`;
       if (pmState.bookBible) {
@@ -535,8 +535,8 @@
       const missing = pmState.whatsMissing || '';
       const inv = pmState.invitee;
       const name = IS_COLLECTION ? 'Combined Archive' : (inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee');
-      const label = IS_BOOK ? 'Book Outline' : 'Book Bible';
-      const content = `${name}'s ${label}\n${'='.repeat(50)}\n\nBOOK BIBLE\n${'='.repeat(50)}\n\n${bible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${outline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${missing}`;
+      const label = IS_BOOK ? 'Book Outline' : 'Story Blueprint';
+      const content = `${name}'s ${label}\n${'='.repeat(50)}\n\nSTORY BLUEPRINT\n${'='.repeat(50)}\n\n${bible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${outline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${missing}`;
       const blob = new Blob([content], {type:'text/plain'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-${L.downloadBibleFile}.txt`; a.click();
