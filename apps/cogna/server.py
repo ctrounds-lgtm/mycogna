@@ -212,8 +212,10 @@ def _send_billing_confirmation_email(email: str, tier: str, first_name: str = ""
         body_html = f"""
         <p>{greeting}</p>
         <p>You're now subscribed to <strong>MyCogna {tier_name}</strong>.</p>
-        <p>Your subscription renews monthly. You can manage or cancel at any time from
-        your <a href="https://mycogna.org/portal">portal</a>.</p>
+        <p>Your subscription renews monthly. To see your renewal date, update your payment method,
+        or cancel, go to <strong>Billing</strong> in the top-right corner of your
+        <a href="https://mycogna.org/portal">portal</a>.
+        Canceling keeps your access active until the end of your current billing period.</p>
         <p>If you have any questions, just reply to this email.</p>
         """
     elif tier == "E":
@@ -221,14 +223,15 @@ def _send_billing_confirmation_email(email: str, tier: str, first_name: str = ""
         <p>{greeting}</p>
         <p>You're now subscribed to <strong>MyCogna {tier_name}</strong>.</p>
         <p><strong>How your billing works:</strong><br>
-        You're charged <strong>$5/month per active access code</strong>.
+        Your plan is <strong>$25/month</strong> and includes up to 5 storyteller codes.
         We've created your first code — it's ready to use in your
         <a href="https://mycogna.org/portal">portal</a>.</p>
-        <p>Each new code you generate adds $5/month starting on your next billing date.
-        Deactivating a code removes it from your next billing cycle.
-        There are no mid-month adjustments — changes take effect at renewal.</p>
-        <p>You can cancel at any time from the portal. Your codes stay active until
-        the end of your current billing period.</p>
+        <p>If you need more than 5 active codes, each additional code adds <strong>$5/month</strong>
+        starting on your next billing date. Deactivating a code removes it from your next billing cycle.</p>
+        <p>To see your renewal date, update your payment method, or cancel, go to
+        <strong>Billing</strong> in the top-right corner of your
+        <a href="https://mycogna.org/portal">portal</a>.
+        Canceling keeps your access active until the end of your current billing period.</p>
         """
     else:  # F
         body_html = f"""
