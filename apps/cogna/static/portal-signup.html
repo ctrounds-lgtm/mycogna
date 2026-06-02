@@ -29,7 +29,8 @@
 
     .page { position: relative; z-index: 1; min-height: 100vh; padding: 48px 24px 80px; display: flex; flex-direction: column; align-items: center; }
 
-    .wordmark { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; margin-bottom: 12px; }
+    .wordmark { text-decoration: none; margin-bottom: 12px; display: block; }
+    .wordmark img { height: 60px; display: block; margin: 0 auto; }
 
     .page-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; text-align: center; margin-bottom: 8px; }
     .page-title em { font-style: italic; }
@@ -130,7 +131,7 @@
   <div class="blob blob-2"></div>
 
   <div class="page">
-    <a href="/" class="wordmark">MYCOGNA</a>
+    <a href="/" class="wordmark"><img src="/mycogna-logo.svg" alt="MyCogna" /></a>
     <h1 class="page-title">Administrator <em>Portal</em></h1>
 
     <!-- Gift code entry (shown above plan picker) -->

@@ -44,14 +44,12 @@
     }
 
     .nav-logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 20px;
-      font-weight: 400;
-      color: #1C1A17;
       text-decoration: none;
       margin-right: auto;
-      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
     }
+    .nav-logo img { height: 38px; display: block; }
 
     .nav-links {
       display: flex;
@@ -452,14 +450,11 @@
     .footer-brand { flex: 1; min-width: 200px; }
 
     .footer-logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 22px;
-      font-weight: 400;
-      color: var(--cream);
       text-decoration: none;
       display: block;
       margin-bottom: 10px;
     }
+    .footer-logo img { height: 30px; display: block; filter: invert(1) brightness(2); }
 
     .footer-tagline {
       font-size: 13px;
@@ -534,7 +529,7 @@
 
   <!-- NAV -->
   <nav>
-    <a href="/" class="nav-logo">MyCogna</a>
+    <a href="/" class="nav-logo"><img src="/mycogna-logo.svg" alt="MyCogna" /></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/individual">For Individuals</a></li>
       <li><a href="/family">For Families</a></li>
@@ -735,7 +730,7 @@
     <div class="footer-inner">
       <div class="footer-top">
         <div class="footer-brand">
-          <a href="/" class="footer-logo">MyCogna</a>
+          <a href="/" class="footer-logo"><img src="/mycogna-logo.svg" alt="MyCogna" /></a>
           <p class="footer-tagline">Preserve the voices you love.<br>Every voice deserves to be heard.</p>
         </div>
         <nav class="footer-nav">

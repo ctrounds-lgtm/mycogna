@@ -24,7 +24,8 @@
 
     /* ── nav ── */
     body > nav { position: sticky; top: 0; z-index: 100; background: rgba(249,245,239,0.92); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: var(--nav-h); border-bottom: 1px solid var(--border); }
-    .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; }
+    .nav-logo { text-decoration: none; display: flex; align-items: center; }
+    .nav-logo img { height: 38px; display: block; }
     .nav-links { list-style: none; display: flex; align-items: center; gap: 32px; }
     .nav-links a { text-decoration: none; color: var(--ink-muted); font-size: 14px; }
     .nav-links a:hover { color: var(--ink); }
@@ -143,7 +144,7 @@
   <div class="blob blob-2"></div>
 
   <nav>
-    <a href="/" class="nav-logo">MyCogna</a>
+    <a href="/" class="nav-logo"><img src="/mycogna-logo.svg" alt="MyCogna" /></a>
     <ul class="nav-links">
       <li><a href="/individual">For Individuals</a></li>
       <li><a href="/family">For Families</a></li>
