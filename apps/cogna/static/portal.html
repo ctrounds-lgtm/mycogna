@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyCogna — Guardian Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/portal.css?v=20260601b">
+<link rel="stylesheet" href="/static/portal.css?v=20260603a">
 </head>
 <body>
 
@@ -805,6 +805,44 @@
   </div>
 </div>
 
-<script src="/static/portal.js?v=20260601b"></script>
+<!-- Generate code modal -->
+<div id="genCodeModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="genCodeModalTitle">
+  <div class="modal-card" style="max-width:420px">
+    <div id="genCodeForm">
+      <h2 class="modal-title" id="genCodeModalTitle">Create a storyteller code</h2>
+      <p class="modal-body" style="margin-bottom:20px">The person you name will receive an invitation email with the code and sign-up link.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+        <div>
+          <label class="field-label" for="genCodeLabel">Who is this for? <span style="color:var(--coral)">*</span></label>
+          <input class="text-input" id="genCodeLabel" type="text" placeholder='e.g. "John Smith" or "Dad"' />
+        </div>
+        <div>
+          <label class="field-label" for="genCodeEmail">Their email address <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-muted)">(optional — for the invite)</span></label>
+          <input class="text-input" id="genCodeEmail" type="email" placeholder="they@example.com" />
+        </div>
+      </div>
+      <div id="genCodeError" style="display:none;color:var(--coral);font-size:13px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:12px">
+        <button class="save-btn" id="genCodeSubmitBtn" onclick="portal.submitGenCode()" style="flex:1">Create code</button>
+        <button class="ghost-btn" onclick="portal.closeGenCodeModal()" style="flex:1">Cancel</button>
+      </div>
+    </div>
+    <div id="genCodeSuccess" style="display:none;text-align:center">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h2 class="modal-title" style="margin-bottom:8px">Code created!</h2>
+      <p class="modal-body" id="genCodeSuccessMsg" style="margin-bottom:16px"></p>
+      <div style="background:var(--gold-pale);border:2px solid var(--gold-light);border-radius:8px;padding:14px 18px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Storyteller Code</div>
+        <div id="genCodeValue" style="font-family:monospace;font-size:24px;font-weight:bold;letter-spacing:0.1em;color:var(--ink);margin-bottom:10px"></div>
+        <button class="save-btn" id="genCodeCopyBtn" onclick="portal.copyGenCode()" style="font-size:13px;padding:6px 16px">Copy code</button>
+      </div>
+      <button class="ghost-btn" onclick="portal.closeGenCodeModal()" style="width:100%">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/portal.js?v=20260603a"></script>
 </body>
 </html>

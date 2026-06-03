@@ -419,3 +419,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS gift_code TEXT;
 -- ─────────────────────────────────────────────
 
 ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS category TEXT;
+
+-- ─────────────────────────────────────────────
+-- Migration: recipient email on promo codes (2026-06-03)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS recipient_email TEXT;

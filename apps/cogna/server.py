@@ -379,6 +379,7 @@ class PromptsReorderRequest(BaseModel):
 class PromoCodeCreate(BaseModel):
     description: str = ""
     tier: str = "A"
+    recipient_email: Optional[str] = None
 
 
 class StripeCheckoutRequest(BaseModel):
@@ -1069,6 +1070,46 @@ def _send_gift_confirmation_email(gift: dict) -> None:
             })
         except Exception as e:
             print(f"[Resend] gift recipient email failed: {e}")
+
+
+def _send_code_invite_email(code: str, label: str, tier: str, portal_user: dict, recipient_email: str) -> None:
+    """Send a storyteller code invite to the recipient and cc the portal user."""
+    if not resend_sdk or not RESEND_API_KEY:
+        return
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+    portal_name = portal_user.get("first_name") or portal_user.get("name") or "Your storyteller guide"
+    portal_email = portal_user.get("email", "")
+    tier_labels = {"B": "Storytelling Unlimited", "C": "Storytelling + Memoir Builder", "D": "AI Companion", "E": "Legacy Collection", "F": "Legacy Collection + Book Builder"}
+    tier_name = tier_labels.get(tier, "MyCogna")
+    recipient_greeting = label or "there"
+
+    html = f"""
+    <p>Hi {recipient_greeting},</p>
+    <p>{portal_name} has invited you to share your stories on MyCogna.</p>
+    <p>Use this code to create your free account:</p>
+    <p style="font-size:26px;font-weight:bold;letter-spacing:0.1em;font-family:monospace;padding:12px 0">{code}</p>
+    <p>
+      <strong>How to get started:</strong><br>
+      Visit <a href="{base_url}/portal/signup">{base_url}/portal/signup</a>,
+      enter the code above, and create your account — no payment required.
+    </p>
+    <p>Your account includes: <strong>{tier_name}</strong></p>
+    <p>We look forward to hearing your stories.</p>
+    <p style="color:#888;font-size:12px">Questions? Reply to this email or reach out to {portal_name} directly.</p>
+    """
+    try:
+        params: dict = {
+            "from": RESEND_FROM,
+            "to": [recipient_email],
+            "subject": f"You're invited to share your stories on MyCogna",
+            "html": html,
+        }
+        if portal_email:
+            params["cc"] = [portal_email]
+        resend_sdk.Emails.send(params)
+        print(f"[Resend] invite email sent to {recipient_email} for code {code}")
+    except Exception as e:
+        print(f"[Resend] invite email failed for {recipient_email}: {e}")
 
 
 def _handle_gift_checkout_completed(session: dict) -> None:
@@ -2754,6 +2795,7 @@ def create_promo_code(
         code = _generate_story_promo_code(tier)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Code generation error: {exc}")
+    recipient_email = (payload.recipient_email or "").strip() or None
     record = {
         "code": code,
         "tier": tier,
@@ -2761,6 +2803,7 @@ def create_promo_code(
         "active": True,
         "created_by": user["email"],
         "created_at": _utc_now(),
+        "recipient_email": recipient_email,
     }
     if supabase:
         try:
@@ -2772,6 +2815,8 @@ def create_promo_code(
         db["promo_codes"][code] = record
         _save_db(db)
     _update_seat_quantity(user["email"], delta=+1)
+    if recipient_email:
+        _send_code_invite_email(code, payload.description.strip(), tier, user, recipient_email)
     return {"code": record}
 
 

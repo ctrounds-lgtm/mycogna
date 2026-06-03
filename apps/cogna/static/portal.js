@@ -1122,29 +1122,100 @@ const portal = {
       if (!confirmed) return;
     }
 
-    const desc = prompt('Optional: enter a label for this code (e.g. "Sister Cities 2026")') || '';
+    portal._pendingCodeTier = t;
+    portal._pendingCodeDisplayTier = dt;
+    portal.openGenCodeModal();
+  },
+
+  openGenCodeModal() {
+    const modal = document.getElementById('genCodeModal');
+    const formEl = document.getElementById('genCodeForm');
+    const successEl = document.getElementById('genCodeSuccess');
+    const errEl = document.getElementById('genCodeError');
+    if (!modal) return;
+    document.getElementById('genCodeLabel').value = '';
+    document.getElementById('genCodeEmail').value = '';
+    errEl.style.display = 'none';
+    formEl.style.display = '';
+    successEl.style.display = 'none';
+    const submitBtn = document.getElementById('genCodeSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create code'; }
+    modal.classList.remove('hidden');
+    setTimeout(() => document.getElementById('genCodeLabel').focus(), 50);
+  },
+
+  closeGenCodeModal() {
+    const modal = document.getElementById('genCodeModal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  async submitGenCode() {
+    const label = document.getElementById('genCodeLabel').value.trim();
+    const email = document.getElementById('genCodeEmail').value.trim();
+    const errEl = document.getElementById('genCodeError');
+    const submitBtn = document.getElementById('genCodeSubmitBtn');
+
+    if (!label) {
+      errEl.textContent = 'Please enter a name or label for this code.';
+      errEl.style.display = 'block';
+      document.getElementById('genCodeLabel').focus();
+      return;
+    }
+
+    errEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating…';
+
+    const t = portal._pendingCodeTier || 'A';
+    const dt = portal._pendingCodeDisplayTier || t;
+
     try {
       const result = await req(`${api}/storyteller/user-codes`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc, tier: t }),
+        body: JSON.stringify({ description: label, tier: t, recipient_email: email || null }),
       });
       const newCode = result?.code?.code || '';
-      if (newCode) {
-        prompt(`Code created! Copy it below to share with your storyteller:`, newCode);
+
+      document.getElementById('genCodeValue').textContent = newCode;
+      document.getElementById('genCodeCopyBtn').textContent = 'Copy code';
+      const msgEl = document.getElementById('genCodeSuccessMsg');
+      if (email) {
+        msgEl.textContent = `An invitation has been sent to ${email}. The code is also shown below — copy it to share directly if needed.`;
+      } else {
+        msgEl.textContent = `Share this code with ${label} so they can create their account.`;
       }
+      document.getElementById('genCodeForm').style.display = 'none';
+      document.getElementById('genCodeSuccess').style.display = '';
+
       if (t === 'E') await portal.loadLegacyPanel();
       else if (t === 'F') await portal.loadFCodes();
       else await portal.loadStoryPanel(dt, dt !== t ? t : undefined);
     } catch (err) {
       if (err.message && err.message.includes('active subscription')) {
+        portal.closeGenCodeModal();
         if (confirm(err.message + '\n\nGo to the Billing tab to subscribe?')) {
           portal.switchDashTab('Billing');
         }
       } else {
-        alert('Error: ' + err.message);
+        errEl.textContent = 'Error: ' + err.message;
+        errEl.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create code';
       }
     }
+  },
+
+  copyGenCode() {
+    const code = document.getElementById('genCodeValue').textContent;
+    const btn = document.getElementById('genCodeCopyBtn');
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy code'; }, 2000);
+    }).catch(() => {
+      const el = document.getElementById('genCodeValue');
+      if (el) { const r = document.createRange(); r.selectNodeContents(el); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); }
+    });
   },
 
   copyCode(code, btn) {
