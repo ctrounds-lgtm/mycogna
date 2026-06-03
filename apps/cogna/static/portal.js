@@ -292,7 +292,7 @@ const portal = {
     localStorage.removeItem('st_token');
     localStorage.removeItem('st_email');
     localStorage.removeItem('st_first_name');
-    showScreen('authScreen');
+    window.location.href = '/';
   },
 
   updateAvatar(name) {
