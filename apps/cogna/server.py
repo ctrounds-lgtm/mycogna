@@ -382,6 +382,13 @@ class PromoCodeCreate(BaseModel):
     recipient_email: Optional[str] = None
 
 
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    subject: str = "General question"
+    message: str
+
+
 class StripeCheckoutRequest(BaseModel):
     tier: str                    # B, C, D, E, F
     user_type: str = "storyteller"  # "storyteller" or "portal"
@@ -558,6 +565,46 @@ def gift_page():
 @app.get("/gift/success")
 def gift_success_page():
     return FileResponse(ROOT / "static" / "gift-success.html")
+
+
+@app.get("/contact")
+def contact_page():
+    return FileResponse(ROOT / "static" / "contact.html")
+
+
+@app.post("/api/contact")
+def submit_contact(payload: ContactRequest):
+    name = payload.name.strip()
+    email = payload.email.strip()
+    subject = payload.subject.strip()
+    message = payload.message.strip()
+    if not name or not email or not message:
+        raise HTTPException(status_code=400, detail="Name, email, and message are required.")
+
+    SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "ctrounds@gmail.com")
+
+    html = f"""
+    <p><strong>From:</strong> {name} &lt;{email}&gt;</p>
+    <p><strong>Subject:</strong> {subject}</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
+    <p style="white-space:pre-wrap">{message}</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
+    <p style="font-size:12px;color:#888">Sent via the MyCogna contact form at mycogna.org/contact</p>
+    """
+    if resend_sdk and RESEND_API_KEY:
+        try:
+            resend_sdk.Emails.send({
+                "from": RESEND_FROM,
+                "to": [SUPPORT_EMAIL],
+                "reply_to": email,
+                "subject": f"MyCogna Contact: {subject} — from {name}",
+                "html": html,
+            })
+        except Exception as e:
+            print(f"[Resend] contact form email failed: {e}")
+    else:
+        print(f"[Contact] (email not configured) {name} <{email}>: {subject}\n{message}")
+    return {"ok": True}
 
 
 @app.get("/api/health")

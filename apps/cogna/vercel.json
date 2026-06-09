@@ -13,6 +13,9 @@
     { "source": "/companion",    "destination": "https://mycogna-production.up.railway.app/companion" },
     { "source": "/portal",       "destination": "https://mycogna-production.up.railway.app/portal" },
     { "source": "/portal/signup","destination": "https://mycogna-production.up.railway.app/portal/signup" },
-    { "source": "/portal/memoir","destination": "https://mycogna-production.up.railway.app/portal/memoir" }
+    { "source": "/portal/memoir","destination": "https://mycogna-production.up.railway.app/portal/memoir" },
+    { "source": "/gift",         "destination": "https://mycogna-production.up.railway.app/gift" },
+    { "source": "/gift/success", "destination": "https://mycogna-production.up.railway.app/gift/success" },
+    { "source": "/contact",      "destination": "https://mycogna-production.up.railway.app/contact" }
   ]
 }
