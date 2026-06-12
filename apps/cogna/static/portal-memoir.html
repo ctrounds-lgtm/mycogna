@@ -7,44 +7,31 @@
   <title>MyCogna · Memoir Workspace</title>
   <style>
     :root {
-      --gold: #B8860B;
-      --gold-light: #F5EDD6;
-      --gold-pale: #FDFAF3;
-      --cream: #FAF7F2;
-      --ink: #1C1A17;
-      --ink-muted: #6B6560;
-      --border: #E8E2D9;
-      --danger: #C0392B;
+      --gold: #B8860B; --gold-light: #F5EDD6; --gold-pale: #FDFAF3;
+      --cream: #FAF7F2; --ink: #1C1A17; --ink-muted: #6B6560;
+      --border: #E8E2D9; --danger: #C0392B;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Georgia', serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
-
     .screen { display: none; min-height: 100vh; }
     .screen.active { display: flex; flex-direction: column; }
-
-    /* ── Top nav ── */
     .top-nav {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 20px; border-bottom: 1px solid var(--border);
       background: #fff; position: sticky; top: 0; z-index: 10;
     }
     .top-nav .wordmark { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted); text-transform: uppercase; }
-    .top-nav .nav-right { display: flex; gap: 12px; align-items: center; }
     .top-nav a, .top-nav button.link-btn {
       font-size: 13px; color: var(--ink-muted); text-decoration: none;
       background: none; border: none; cursor: pointer; font-family: inherit;
     }
     .top-nav a:hover, .top-nav button.link-btn:hover { color: var(--ink); }
-
-    /* ── Page container ── */
     .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; width: 100%; }
-
-    /* ── Buttons ── */
     .btn-primary {
       display: block; width: 100%; padding: 14px 20px;
       background: var(--gold); color: #fff; border: none; border-radius: 10px;
       font-size: 16px; font-family: 'Georgia', serif; font-weight: 600;
-      cursor: pointer; text-align: center; text-decoration: none;
+      cursor: pointer; text-align: center;
     }
     .btn-primary:hover { opacity: 0.88; }
     .btn-primary:disabled { opacity: 0.5; cursor: default; }
@@ -52,130 +39,28 @@
       display: block; width: 100%; padding: 12px 20px;
       background: transparent; color: var(--ink); border: 1.5px solid var(--border);
       border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
-      cursor: pointer; text-align: center; text-decoration: none; margin-top: 10px;
+      cursor: pointer; text-align: center; margin-top: 10px;
     }
     .btn-secondary:hover { border-color: var(--ink-muted); }
     .btn-sm {
       display: inline-block; padding: 7px 14px;
       background: var(--gold-light); color: var(--gold); border: 1px solid #e0d0a0;
-      border-radius: 6px; font-size: 13px; font-family: 'Georgia', serif;
-      cursor: pointer; white-space: nowrap;
+      border-radius: 6px; font-size: 13px; font-family: 'Georgia', serif; cursor: pointer;
     }
     .btn-sm:hover { background: #eee4c0; }
-
-    /* ── Progress bar ── */
-    .progress-steps {
-      display: flex; gap: 0; margin-bottom: 32px;
-      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    .btn-first-pass {
+      display: block; width: 100%; padding: 11px 20px; margin-bottom: 16px;
+      background: #fff; color: var(--gold); border: 1.5px solid var(--gold);
+      border-radius: 10px; font-size: 14px; font-family: 'Georgia', serif;
+      cursor: pointer; text-align: center; font-weight: 600;
     }
-    .progress-step {
-      flex: 1; padding: 10px 8px; text-align: center; font-size: 12px;
-      font-weight: 600; color: var(--ink-muted); background: #fff;
-      border-right: 1px solid var(--border); letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .progress-step:last-child { border-right: none; }
-    .progress-step.done { background: var(--gold-light); color: var(--gold); }
-    .progress-step.active { background: var(--gold); color: #fff; }
-
-    /* ── Story cards (read-only) ── */
-    .story-card {
-      background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      padding: 16px 18px; margin-bottom: 12px;
-    }
-    .story-card-question { font-size: 14px; font-weight: 600; color: var(--gold); margin-bottom: 4px; }
-    .story-card-preview { font-size: 14px; color: var(--ink-muted); line-height: 1.5; margin-bottom: 10px; }
-    .story-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .story-card-date { font-size: 12px; color: var(--ink-muted); }
-    .deepening-badge {
-      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
-    }
-    .deepening-badge.none { background: #f0ede8; color: var(--ink-muted); }
-    .deepening-badge.started { background: #fff3cd; color: #856404; }
-    .deepening-badge.finished { background: #e8f3e8; color: #3a6a3a; }
-    .transcript-toggle {
-      font-size: 12px; color: var(--gold); cursor: pointer; background: none; border: none;
-      font-family: inherit; padding: 0; margin-top: 4px;
-    }
-    .transcript-full {
-      margin-top: 10px; padding: 12px; background: var(--gold-pale);
-      border: 1px solid var(--border); border-radius: 8px;
-      font-size: 14px; line-height: 1.65; color: var(--ink); white-space: pre-wrap;
-      display: none;
-    }
-    .transcript-full.open { display: block; }
-
-    /* ── Chat interface ── */
-    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
-    .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; }
-    .chat-bubble.ai { background: var(--gold-light); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
-    .chat-bubble.user { background: var(--ink); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
-    .chat-input-row textarea {
-      flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-      font-size: 15px; font-family: 'Georgia', serif; color: var(--ink);
-      resize: none; height: 70px; line-height: 1.5;
-    }
-    .chat-input-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
-    .chat-send-btn {
-      padding: 12px 18px; background: var(--gold); color: #fff; border: none;
-      border-radius: 10px; font-size: 15px; cursor: pointer; white-space: nowrap; font-family: 'Georgia', serif;
-    }
-    .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
-
-    /* ── Assemble output ── */
-    .assemble-output {
-      background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      padding: 24px; font-size: 15px; line-height: 1.8; color: var(--ink);
-      white-space: pre-wrap; margin: 20px 0;
-    }
-
-    /* ── Chapter list ── */
-    .chapter-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; background: #fff; border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 8px; gap: 12px; cursor: pointer;
-    }
-    .chapter-item:hover { border-color: var(--gold); }
-    .chapter-item.active { border-color: var(--gold); background: var(--gold-light); }
-    .chapter-title-text { font-size: 15px; font-weight: 600; }
-
-    /* ── Edit layout ── */
-    .edit-layout { display: flex; gap: 20px; align-items: flex-start; }
-    .edit-sidebar { width: 220px; flex-shrink: 0; }
-    .edit-main { flex: 1; min-width: 0; }
-    @media (max-width: 600px) {
-      .edit-layout { flex-direction: column; }
-      .edit-sidebar { width: 100%; }
-    }
-
-    /* ── Chapter content editor ── */
-    .chapter-editor {
-      width: 100%; min-height: 200px; padding: 14px; border: 1.5px solid var(--border);
-      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
-      line-height: 1.7; resize: vertical; color: var(--ink); margin-bottom: 12px;
-    }
-    .chapter-editor:focus { outline: 2px solid var(--gold); border-color: transparent; }
-
-    /* ── Misc ── */
-    .section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 12px; }
-    .empty-state { text-align: center; color: var(--ink-muted); padding: 32px 0; font-size: 15px; }
-    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
-    .loading-msg { color: var(--ink-muted); font-size: 14px; font-style: italic; }
-    h1 { font-size: clamp(24px, 5vw, 36px); margin-bottom: 6px; }
-    h2 { font-size: clamp(20px, 4vw, 28px); margin-bottom: 6px; }
-    .sub { color: var(--ink-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .btn-first-pass:hover { background: var(--gold-light); }
+    .btn-first-pass:disabled { opacity: 0.5; cursor: default; }
     .stat-row { display: flex; gap: 20px; margin-bottom: 24px; }
     .stat { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; text-align: center; }
     .stat-num { font-size: 28px; font-weight: 700; color: var(--gold); }
     .stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
-    .readonly-note {
-      font-size: 12px; color: var(--ink-muted); background: var(--gold-pale);
-      border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
-      display: inline-block; margin-bottom: 16px;
-    }
-    /* ── Assemble three-section layout ── */
+    .section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 8px; }
     .section-block { margin-bottom: 28px; }
     .editable-area {
       width: 100%; padding: 16px; border: 1.5px solid var(--border); border-radius: 10px;
@@ -188,82 +73,75 @@
       padding: 16px; font-size: 15px; line-height: 1.75; color: var(--ink);
       white-space: pre-wrap;
     }
-    .save-notice { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
-    .btn-first-pass {
-      display: block; width: 100%; padding: 11px 20px; margin-bottom: 16px;
-      background: #fff; color: var(--gold); border: 1.5px solid var(--gold);
-      border-radius: 10px; font-size: 14px; font-family: 'Georgia', serif;
-      cursor: pointer; text-align: center; font-weight: 600;
+    .chapter-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: #fff; border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px; cursor: pointer; gap: 10px;
     }
-    .btn-first-pass:hover { background: var(--gold-light); }
-    .btn-first-pass:disabled { opacity: 0.5; cursor: default; }
+    .chapter-item:hover { border-color: var(--gold); }
+    .chapter-item.active { border-color: var(--gold); background: var(--gold-light); }
+    .chapter-title-text { font-size: 14px; font-weight: 600; }
+    .edit-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .edit-sidebar { width: 220px; flex-shrink: 0; }
+    .edit-main { flex: 1; min-width: 0; }
+    @media (max-width: 600px) { .edit-layout { flex-direction: column; } .edit-sidebar { width: 100%; } }
+    .chapter-editor {
+      width: 100%; min-height: 200px; padding: 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: 'Georgia', serif;
+      line-height: 1.7; resize: vertical; color: var(--ink); margin-bottom: 12px;
+    }
+    .chapter-editor:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+    .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; }
+    .chat-bubble.ai { background: var(--gold-light); color: var(--ink); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .chat-bubble.user { background: var(--ink); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .chat-input-row textarea {
+      flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: 'Georgia', serif; color: var(--ink); resize: none; height: 70px; line-height: 1.5;
+    }
+    .chat-input-row textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
+    .chat-send-btn {
+      padding: 12px 18px; background: var(--gold); color: #fff; border: none;
+      border-radius: 10px; font-size: 15px; cursor: pointer; font-family: 'Georgia', serif;
+    }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .empty-state { text-align: center; color: var(--ink-muted); padding: 32px 0; font-size: 15px; }
+    .error-msg { color: var(--danger); font-size: 14px; margin-top: 8px; }
+    .loading-msg { color: var(--ink-muted); font-size: 14px; font-style: italic; }
+    h1 { font-size: clamp(22px, 5vw, 32px); margin-bottom: 6px; }
+    h2 { font-size: clamp(18px, 4vw, 26px); margin-bottom: 6px; }
+    .sub { color: var(--ink-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+    .save-notice { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
   </style>
 </head>
 <body>
-
-<!-- ══════════════════════════════════════════════
-     SCREEN: RECORDINGS (read-only view)
-══════════════════════════════════════════════ -->
-<div class="screen" id="screenRecordings">
-  <nav class="top-nav">
-    <a href="/portal">← Back to portal</a>
-    <span class="wordmark">MyCogna · Memoir Workspace</span>
-    <span id="inviteeName" style="font-size:13px;color:var(--ink-muted);"></span>
-  </nav>
-  <div class="page">
-    <h1 id="recPageTitle">Memoir Workspace</h1>
-    <p class="sub" id="recPageSub">Review recordings, then assemble a memoir.</p>
-
-    <div class="progress-steps">
-      <div class="progress-step active" id="stepRec1">1 · Recordings</div>
-      <div class="progress-step" id="stepRec2">2 · Assemble</div>
-      <div class="progress-step" id="stepRec3">3 · Edit Chapters</div>
-    </div>
-
-    <div class="stat-row">
-      <div class="stat"><div class="stat-num" id="statRec">—</div><div class="stat-label">Recordings</div></div>
-      <div class="stat"><div class="stat-num" id="statDeep">—</div><div class="stat-label">Deepened</div></div>
-      <div class="stat"><div class="stat-num" id="statChap">—</div><div class="stat-label">Chapters</div></div>
-    </div>
-
-    <span class="readonly-note">Recordings are read-only. You can assemble and edit the memoir below.</span>
-
-    <div class="section-label">Recordings</div>
-    <div id="recList"><p class="loading-msg">Loading…</p></div>
-
-    <hr class="divider" />
-
-    <div id="assembleSection">
-      <button class="btn-primary" id="assembleBtnMain" onclick="pm.showAssemble()">Assemble Memoir →</button>
-    </div>
-
-    <div id="chapterSection" style="display:none; margin-top:24px;">
-      <div class="section-label">Chapters ready</div>
-      <div id="chapterListPreview"></div>
-      <button class="btn-primary" style="margin-top:12px;" onclick="pm.showEdit()">Edit chapters →</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════════════
      SCREEN: ASSEMBLE
 ══════════════════════════════════════════════ -->
 <div class="screen" id="screenAssemble">
   <nav class="top-nav">
-    <button class="link-btn" onclick="pm.showRecordings()">← Recordings</button>
-    <span class="wordmark" id="wordmarkAssemble">MyCogna · Memoir Workspace</span>
-    <span id="inviteeNameAssemble" style="font-size:13px;color:var(--ink-muted);"></span>
+    <a href="/portal">← Back to portal</a>
+    <span class="wordmark">MyCogna · Memoir Workspace</span>
+    <span></span>
   </nav>
   <div class="page">
-    <h2 id="assembleHeading">Assemble Memoir</h2>
-    <p class="sub" id="assembleSub">Claude will read all recordings and generate a Story Blueprint and chapter outline.</p>
+    <h1 id="assembleTitle">Assemble Memoir</h1>
+    <p class="sub" id="assembleSub">Loading…</p>
 
-    <div id="assembleAction">
-      <button class="btn-primary" id="assembleBtn" onclick="pm.runAssemble()">Assemble memoir →</button>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="statRecordings">—</div><div class="stat-label">Recordings</div></div>
+      <div class="stat"><div class="stat-num" id="statChapters">—</div><div class="stat-label">Chapters</div></div>
     </div>
 
-    <div id="assembleLoading" style="display:none; text-align:center; padding:40px 0;">
-      <p class="loading-msg">Claude is reading all recordings… this may take 30–60 seconds.</p>
+    <div id="assembleAction">
+      <button class="btn-primary" id="assembleBtn" onclick="pm.runAssemble()">Assemble Memoir →</button>
+    </div>
+
+    <div id="assembleLoading" style="display:none; text-align:center; padding:48px 0;">
+      <p class="loading-msg">Claude is reading all recordings… this may take 30–90 seconds.</p>
     </div>
 
     <div id="assembleOutput" style="display:none;">
@@ -287,9 +165,9 @@
         <div class="readonly-box" id="whatsMissingBox"></div>
       </div>
 
-      <button class="btn-primary" id="downloadBibleBtn" onclick="pm.downloadBible()">Download Story Blueprint</button>
+      <button class="btn-primary" onclick="pm.downloadBible()">Download Story Blueprint</button>
       <button class="btn-secondary" onclick="pm.proceedToEdit()">Proceed to editing →</button>
-      <button class="btn-secondary" onclick="pm.runAssemble()">Reassemble</button>
+      <button class="btn-secondary" onclick="pm.runAssemble()">Reassemble with new recordings</button>
     </div>
 
     <div id="assembleError" class="error-msg" style="display:none; margin-top:12px;"></div>
@@ -301,11 +179,10 @@
 ══════════════════════════════════════════════ -->
 <div class="screen" id="screenEdit">
   <nav class="top-nav">
-    <button class="link-btn" onclick="pm.showRecordings()">← Recordings</button>
-    <span class="wordmark" id="wordmarkEdit">MyCogna · Memoir Workspace</span>
-    <div class="nav-right">
-      <span id="inviteeNameEdit" style="font-size:13px;color:var(--ink-muted);"></span>
-      <button class="btn-sm" id="downloadManuscriptBtn" onclick="pm.downloadManuscript()">Download manuscript</button>
+    <button class="link-btn" onclick="pm.showAssemble()">← Story Blueprint</button>
+    <span class="wordmark">MyCogna · Memoir Workspace</span>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn-sm" onclick="pm.downloadManuscript()">Download manuscript</button>
     </div>
   </nav>
   <div class="page">
@@ -315,10 +192,10 @@
     <div class="edit-layout">
       <div class="edit-sidebar">
         <div class="section-label">Chapters</div>
-        <div id="editChapterList"></div>
+        <div id="editChapterList"><p class="loading-msg">Loading…</p></div>
       </div>
       <div class="edit-main" id="editMain">
-        <p class="empty-state">Select a chapter to begin editing.</p>
+        <p class="empty-state">Select a chapter from the list to begin editing.</p>
       </div>
     </div>
   </div>
@@ -326,27 +203,13 @@
 
 <script>
   const PORTAL_API = window.location.origin + '/api/portal/invitee';
-  const COLLECTION_API = window.location.origin + '/api/portal/collection';
   const params = new URLSearchParams(window.location.search);
   const STORYTELLER_ID = params.get('id');
   const WORKSPACE_TYPE = params.get('type') || 'memoir';
   const IS_BOOK = WORKSPACE_TYPE === 'book';
-  const IS_COLLECTION = WORKSPACE_TYPE === 'collection';
-
-  const L = {
-    pageTitle:       IS_BOOK ? 'MyCogna · Book Workspace'   : 'MyCogna · Memoir Workspace',
-    wordmark:        IS_BOOK ? 'MyCogna · Book Workspace'   : 'MyCogna · Memoir Workspace',
-    assembleHeading: IS_BOOK ? 'Assemble Book'              : 'Assemble Memoir',
-    assembleBtn:     IS_BOOK ? 'Assemble book →'            : 'Assemble memoir →',
-    downloadBible:   IS_BOOK ? 'Download Book Outline'      : 'Download Story Blueprint',
-    downloadBibleFile: IS_BOOK ? 'book-outline'             : 'book-bible',
-    manuscriptFile:  IS_BOOK ? 'book'                       : 'manuscript',
-    manuscriptBtn:   IS_BOOK ? 'Download book'              : 'Download manuscript',
-  };
 
   const pmState = {
     authToken: '',
-    storytellerId: STORYTELLER_ID,
     invitee: null,
     recordings: [],
     bookBible: null,
@@ -355,11 +218,6 @@
     chapters: [],
     currentChapterId: null,
   };
-
-  function apiUrl(path) {
-    if (IS_COLLECTION) return `${COLLECTION_API}${path}`;
-    return `${PORTAL_API}/${pmState.storytellerId}${path}`;
-  }
 
   async function apiFetch(url, opts = {}) {
     opts.headers = { ...opts.headers, 'Authorization': 'Bearer ' + pmState.authToken };
@@ -372,92 +230,17 @@
     return res.json();
   }
 
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    window.scrollTo(0, 0);
-  }
-
-  function setInviteeName(name) {
-    ['inviteeName', 'inviteeNameAssemble', 'inviteeNameEdit'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = name;
-    });
+  function apiUrl(path) {
+    return `${PORTAL_API}/${pmState.invitee?.id || STORYTELLER_ID}${path}`;
   }
 
   const pm = {
 
-    showRecordings() {
-      showScreen('screenRecordings');
-      const recs = pmState.recordings;
-      const deepened = recs.filter(r => r.deepening_status === 'finished').length;
-      document.getElementById('statRec').textContent = recs.length;
-      document.getElementById('statDeep').textContent = deepened;
-      document.getElementById('statChap').textContent = pmState.chapters.length;
-
-      // Progress steps
-      document.getElementById('stepRec1').className = 'progress-step done';
-      document.getElementById('stepRec2').className = pmState.bookBible ? 'progress-step done' : 'progress-step';
-      document.getElementById('stepRec3').className = pmState.chapters.length > 0 ? 'progress-step done' : 'progress-step';
-
-      const inv = pmState.invitee;
-      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email) : '';
-      document.getElementById('recPageTitle').textContent = name ? `${name}'s ${IS_BOOK ? 'Book' : 'Memoir'}` : (IS_BOOK ? 'Book Workspace' : 'Memoir Workspace');
-      document.getElementById('recPageSub').textContent =
-        `${recs.length} recording${recs.length !== 1 ? 's' : ''}, ${deepened} deepened. Review below, then assemble.`;
-
-      const list = document.getElementById('recList');
-      if (recs.length === 0) {
-        list.innerHTML = IS_COLLECTION
-          ? '<p class="empty-state">No recordings yet. Share an invite code with your storytellers and check back once they\'ve recorded.</p>'
-          : '<p class="empty-state">No recordings yet. This person hasn\'t recorded any stories.</p>';
-      } else {
-        list.innerHTML = recs.map(rec => {
-          const preview = (rec.transcript || '').slice(0, 140) + ((rec.transcript || '').length > 140 ? '…' : '');
-          const date = rec.created_at ? new Date(rec.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
-          const badgeClass = rec.deepening_status || 'none';
-          const badgeLabel = {none: 'Not deepened', started: 'In progress', finished: '✓ Deepened'}[badgeClass] || '';
-          const rid = rec.id.replace(/[^a-zA-Z0-9_]/g, '_');
-          return `
-            <div class="story-card">
-              ${IS_COLLECTION && rec.storyteller_name ? `<div style="font-size:12px;font-weight:600;color:var(--ink-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">${pm._esc(rec.storyteller_name)}</div>` : ''}
-              <div class="story-card-question">${pm._esc(rec.prompt_text || 'Custom question')}</div>
-              <div class="story-card-preview">${pm._esc(preview || '(No transcript)')}</div>
-              <div class="story-card-footer">
-                <span class="story-card-date">${date}</span>
-                <span class="deepening-badge ${badgeClass}">${badgeLabel}</span>
-              </div>
-              ${rec.transcript ? `
-              <button class="transcript-toggle" onclick="pm.toggleTranscript('${rid}')">Show full transcript ▾</button>
-              <div class="transcript-full" id="tr_${rid}">${pm._esc(rec.transcript)}</div>` : ''}
-            </div>`;
-        }).join('');
-      }
-
-      if (pmState.chapters.length > 0) {
-        document.getElementById('chapterSection').style.display = '';
-        document.getElementById('chapterListPreview').innerHTML = pmState.chapters.map(c =>
-          `<div class="chapter-item" onclick="pm.showEdit('${c.id}')">
-            <span class="chapter-title-text">${pm._esc(c.title)}</span>
-            <span class="btn-sm">Edit →</span>
-          </div>`
-        ).join('');
-      }
-    },
-
-    toggleTranscript(rid) {
-      const el = document.getElementById('tr_' + rid);
-      if (!el) return;
-      const open = el.classList.toggle('open');
-      const btn = el.previousElementSibling;
-      if (btn) btn.textContent = open ? 'Hide transcript ▴' : 'Show full transcript ▾';
-    },
-
     showAssemble() {
-      showScreen('screenAssemble');
-      const bibleLabel = IS_BOOK ? 'Book Outline' : 'Story Blueprint';
-      document.getElementById('assembleSub').textContent =
-        `${pmState.recordings.length} recording${pmState.recordings.length !== 1 ? 's' : ''} will be included. Claude will generate a ${bibleLabel}.`;
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenAssemble').classList.add('active');
+      window.scrollTo(0, 0);
+      pm.updateStats();
       if (pmState.bookBible) {
         document.getElementById('bibleEditor').value = pmState.bookBible.content || '';
         document.getElementById('outlineEditor').value = pmState.chapterOutline || '';
@@ -472,14 +255,19 @@
       document.getElementById('assembleError').style.display = 'none';
     },
 
+    updateStats() {
+      document.getElementById('statRecordings').textContent = pmState.recordings.length;
+      document.getElementById('statChapters').textContent = pmState.chapters.length;
+    },
+
     async runAssemble() {
       document.getElementById('assembleAction').style.display = 'none';
       document.getElementById('assembleOutput').style.display = 'none';
       document.getElementById('assembleLoading').style.display = '';
       document.getElementById('assembleError').style.display = 'none';
       try {
-        const data = await apiFetch(apiUrl('/memoir/assemble'), {method: 'POST'});
-        pmState.bookBible = {id: data.book_bible_id, content: data.book_bible || ''};
+        const data = await apiFetch(apiUrl('/memoir/assemble'), { method: 'POST' });
+        pmState.bookBible = { id: data.book_bible_id, content: data.book_bible || '' };
         pmState.chapterOutline = data.chapter_outline || '';
         pmState.whatsMissing = data.whats_missing || '';
         document.getElementById('bibleEditor').value = pmState.bookBible.content;
@@ -502,8 +290,8 @@
       try {
         await apiFetch(apiUrl('/memoir/bible'), {
           method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({book_bible: val}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_bible: val }),
         });
         notice.textContent = 'Saved.';
         setTimeout(() => { notice.textContent = ''; }, 2000);
@@ -519,8 +307,8 @@
       try {
         await apiFetch(apiUrl('/memoir/bible'), {
           method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({chapter_outline: val}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapter_outline: val }),
         });
         notice.textContent = 'Saved.';
         setTimeout(() => { notice.textContent = ''; }, 2000);
@@ -534,76 +322,57 @@
       const outline = pmState.chapterOutline || '';
       const missing = pmState.whatsMissing || '';
       const inv = pmState.invitee;
-      const name = IS_COLLECTION ? 'Combined Archive' : (inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee');
+      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email) : 'Memoir';
       const label = IS_BOOK ? 'Book Outline' : 'Story Blueprint';
       const content = `${name}'s ${label}\n${'='.repeat(50)}\n\nSTORY BLUEPRINT\n${'='.repeat(50)}\n\n${bible}\n\nCHAPTER OUTLINE\n${'='.repeat(50)}\n\n${outline}\n\nWHAT'S MISSING\n${'='.repeat(50)}\n\n${missing}`;
-      const blob = new Blob([content], {type:'text/plain'});
+      const blob = new Blob([content], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-${L.downloadBibleFile}.txt`; a.click();
+      a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-story-blueprint.txt`; a.click();
     },
 
     async proceedToEdit() {
-      showScreen('screenEdit');
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenEdit').classList.add('active');
+      window.scrollTo(0, 0);
       try {
         const data = await apiFetch(apiUrl('/memoir/chapters'));
         pmState.chapters = data.chapters || [];
         if (pmState.chapters.length === 0 && pmState.chapterOutline.trim()) {
           const populated = await apiFetch(apiUrl('/memoir/chapters/from-outline'), {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({outline_text: pmState.chapterOutline}),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outline_text: pmState.chapterOutline }),
           });
           pmState.chapters = populated.chapters || [];
+          pm.updateStats();
         }
-        pm._renderEditSidebar(null);
+        pm._renderChapterSidebar(null);
         if (pmState.chapters.length > 0) pm.loadChapter(pmState.chapters[0].id);
       } catch (err) {
         document.getElementById('editMain').innerHTML = `<p class="error-msg">${err.message}</p>`;
       }
     },
 
-    async showEdit(selectChapterId) {
-      showScreen('screenEdit');
-      try {
-        const data = await apiFetch(apiUrl('/memoir/chapters'));
-        pmState.chapters = data.chapters || [];
-        pm._renderEditSidebar(selectChapterId);
-        if (selectChapterId) pm.loadChapter(selectChapterId);
-        else if (pmState.chapters.length > 0) pm.loadChapter(pmState.chapters[0].id);
-      } catch (err) {
-        document.getElementById('editMain').innerHTML = `<p class="error-msg">${err.message}</p>`;
-      }
+    showEdit(selectChapterId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenEdit').classList.add('active');
+      window.scrollTo(0, 0);
+      pm._renderChapterSidebar(selectChapterId);
+      if (selectChapterId) pm.loadChapter(selectChapterId);
+      else if (pmState.chapters.length > 0) pm.loadChapter(pmState.chapters[0].id);
     },
 
-    _renderEditSidebar(activeId) {
+    _renderChapterSidebar(activeId) {
       const list = document.getElementById('editChapterList');
-      const addBtn = IS_COLLECTION ? `<button class="btn-sm" style="margin-bottom:12px;width:100%;" onclick="pm.addCollectionChapter()">+ Add chapter</button>` : '';
       if (pmState.chapters.length === 0) {
-        list.innerHTML = addBtn + `<p style="font-size:13px;color:var(--ink-muted);">No chapters yet.${IS_COLLECTION ? ' Use the outline above to draft chapters, then add them here.' : ` ${IS_BOOK ? 'Assemble the book' : 'Assemble the memoir'} first to generate chapters.`}</p>`;
+        list.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">No chapters yet. Go back to the Story Blueprint and assemble first.</p>';
         return;
       }
-      list.innerHTML = addBtn + pmState.chapters.map(c =>
+      list.innerHTML = pmState.chapters.map(c =>
         `<div class="chapter-item ${c.id === activeId ? 'active' : ''}" onclick="pm.loadChapter('${c.id}')" id="chap-item-${c.id}">
-          <span class="chapter-title-text" style="font-size:14px;">${pm._esc(c.title)}</span>
+          <span class="chapter-title-text">${pm._esc(c.title)}</span>
         </div>`
       ).join('');
-    },
-
-    async addCollectionChapter() {
-      const title = prompt('Chapter title:');
-      if (!title || !title.trim()) return;
-      try {
-        const data = await apiFetch(apiUrl('/memoir/chapters'), {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({title: title.trim(), content: '', sort_order: pmState.chapters.length}),
-        });
-        pmState.chapters.push(data.chapter);
-        pm._renderEditSidebar(data.chapter.id);
-        pm.loadChapter(data.chapter.id);
-      } catch (err) {
-        alert('Could not create chapter: ' + err.message);
-      }
     },
 
     async loadChapter(chapterId) {
@@ -619,9 +388,10 @@
         <div>
           <div class="section-label">${pm._esc(chapter.title)}</div>
           <textarea class="chapter-editor" id="chapterEditor" placeholder="Edit chapter content here…">${pm._esc(chapter.content || '')}</textarea>
-          <div style="display:flex;gap:10px;margin-bottom:20px;">
-            <button class="btn-sm" onclick="pm.saveChapter()">Save chapter</button>
+          <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+            <button class="btn-sm" onclick="pm.saveChapter()">Save</button>
             <button class="btn-sm" onclick="pm.downloadChapter()">Download chapter</button>
+            <button class="btn-sm" onclick="pm.downloadManuscript()">Download full manuscript</button>
           </div>
           <button class="btn-first-pass" id="firstPassBtn" onclick="pm.runFirstPass()">Ask Claude to write a first pass →</button>
           <div id="firstPassLoading" style="display:none;text-align:center;padding:16px 0;"><p class="loading-msg">Claude is drafting the chapter… this may take 30–60 seconds.</p></div>
@@ -634,6 +404,18 @@
           </div>
           <div id="editError" class="error-msg" style="display:none;margin-top:8px;"></div>
         </div>`;
+
+      const msgs = chapter.edit_messages || [];
+      if (msgs.length > 0) {
+        const container = document.getElementById('editMessages');
+        container.innerHTML = '';
+        msgs.forEach(m => {
+          const div = document.createElement('div');
+          div.className = `chat-bubble ${m.role === 'user' ? 'user' : 'ai'}`;
+          div.textContent = m.content;
+          container.appendChild(div);
+        });
+      }
     },
 
     async saveChapter() {
@@ -643,8 +425,8 @@
       try {
         await apiFetch(apiUrl('/memoir/chapters/' + pmState.currentChapterId), {
           method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({title: chapter.title, content, sort_order: chapter.sort_order}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: chapter.title, content, sort_order: chapter.sort_order }),
         });
         chapter.content = content;
       } catch (err) {
@@ -657,9 +439,18 @@
       const chapter = pmState.chapters.find(c => c.id === pmState.currentChapterId);
       if (!chapter) return;
       const content = document.getElementById('chapterEditor')?.value || chapter.content || '';
-      const blob = new Blob([`${chapter.title}\n${'='.repeat(50)}\n\n${content}`], {type:'text/plain'});
+      const blob = new Blob([`${chapter.title}\n${'='.repeat(50)}\n\n${content}`], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${chapter.title.toLowerCase().replace(/\s+/g, '-')}.txt`; a.click();
+    },
+
+    downloadManuscript() {
+      const inv = pmState.invitee;
+      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'memoir') : 'memoir';
+      const parts = pmState.chapters.map(c => `${c.title}\n${'='.repeat(50)}\n\n${c.content || ''}`);
+      const blob = new Blob([parts.join('\n\n\n')], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-manuscript.txt`; a.click();
     },
 
     async runFirstPass() {
@@ -669,7 +460,7 @@
       if (btn) btn.disabled = true;
       if (loading) loading.style.display = '';
       try {
-        const data = await apiFetch(apiUrl('/memoir/chapters/' + pmState.currentChapterId + '/first-pass'), {method: 'POST'});
+        const data = await apiFetch(apiUrl('/memoir/chapters/' + pmState.currentChapterId + '/first-pass'), { method: 'POST' });
         const editor = document.getElementById('chapterEditor');
         if (editor) editor.value = data.content || '';
         const chapter = pmState.chapters.find(c => c.id === pmState.currentChapterId);
@@ -681,15 +472,6 @@
         if (btn) btn.disabled = false;
         if (loading) loading.style.display = 'none';
       }
-    },
-
-    downloadManuscript() {
-      const inv = pmState.invitee;
-      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || 'Invitee') : 'Invitee';
-      const parts = pmState.chapters.map(c => `${c.title}\n${'='.repeat(50)}\n\n${c.content || ''}`);
-      const blob = new Blob([parts.join('\n\n\n')], {type:'text/plain'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-${L.manuscriptFile}.txt`; a.click();
     },
 
     _appendEditMessage(role, text) {
@@ -714,12 +496,11 @@
       if (btn) btn.disabled = true;
       pm._appendEditMessage('user', text);
       pm._appendEditMessage('ai', '…');
-
       try {
         const data = await apiFetch(apiUrl('/memoir/chapters/' + pmState.currentChapterId + '/edit'), {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({message: text}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
         });
         document.querySelectorAll('#editMessages .chat-bubble.ai').forEach((el, i, arr) => {
           if (i === arr.length - 1) el.textContent = data.message;
@@ -741,50 +522,35 @@
   // ── Boot ──
   window.addEventListener('load', async () => {
     const token = localStorage.getItem('portalToken');
-    if (!token || (!STORYTELLER_ID && !IS_COLLECTION)) { window.location = '/portal'; return; }
+    if (!token || !STORYTELLER_ID) { window.location = '/portal'; return; }
     pmState.authToken = token;
 
     try {
-      const data = IS_COLLECTION
-        ? await apiFetch(apiUrl('/data'))
-        : await apiFetch(apiUrl('/data'));
+      const data = await apiFetch(`${PORTAL_API}/${STORYTELLER_ID}/data`);
       pmState.invitee = data.invitee || null;
       pmState.recordings = data.recordings || [];
-      pmState.bookBible = data.book_bible;
+      pmState.bookBible = data.book_bible || null;
       pmState.chapterOutline = data.book_bible?.chapter_outline || '';
       pmState.whatsMissing = data.book_bible?.whats_missing || '';
       pmState.chapters = data.chapters || [];
 
-      const name = IS_COLLECTION
-        ? `Combined Legacy Archive (${data.storyteller_count || 0} storyteller${(data.storyteller_count || 0) !== 1 ? 's' : ''})`
-        : ([data.invitee?.first_name, data.invitee?.last_name].filter(Boolean).join(' ') || data.invitee?.email || '');
-      setInviteeName(name);
+      const inv = pmState.invitee;
+      const name = inv ? ([inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email) : '';
+      const heading = name ? `${name}'s Memoir` : (IS_BOOK ? 'Book Workspace' : 'Memoir Workspace');
+      document.getElementById('assembleTitle').textContent = heading;
+      document.getElementById('assembleSub').textContent =
+        `${pmState.recordings.length} recording${pmState.recordings.length !== 1 ? 's' : ''}. Claude will generate a Story Blueprint, chapter outline, and editorial notes.`;
 
-      // Apply workspace type labels
-      document.title = L.pageTitle;
-      ['wordmarkAssemble', 'wordmarkEdit'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = L.wordmark;
-      });
-      const assembleHeading = document.getElementById('assembleHeading');
-      if (assembleHeading) assembleHeading.textContent = L.assembleHeading;
-      const assembleBtn = document.getElementById('assembleBtn');
-      if (assembleBtn) assembleBtn.textContent = L.assembleBtn;
-      const assembleBtnMain = document.getElementById('assembleBtnMain');
-      if (assembleBtnMain) assembleBtnMain.textContent = L.assembleBtn;
-      const downloadBibleBtn = document.getElementById('downloadBibleBtn');
-      if (downloadBibleBtn) downloadBibleBtn.textContent = L.downloadBible;
-      const downloadManuscriptBtn = document.getElementById('downloadManuscriptBtn');
-      if (downloadManuscriptBtn) downloadManuscriptBtn.textContent = L.manuscriptBtn;
+      pm.updateStats();
 
       if (pmState.chapters.length > 0) {
         pm.showEdit();
       } else {
-        pm.showRecordings();
+        pm.showAssemble();
       }
     } catch (err) {
       document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:Georgia,serif;color:#C0392B;">
-        <p>Error loading workspace: ${pm._esc(err.message)}</p>
+        <p>Error loading workspace: ${err.message}</p>
         <p style="margin-top:16px;"><a href="/portal" style="color:#B8860B;">← Back to portal</a></p>
       </div>`;
     }
