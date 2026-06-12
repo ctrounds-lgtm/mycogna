@@ -333,10 +333,28 @@
     }
 
     // Route user based on their role
-    function routeByRole(user, token) {
+    async function routeByRole(user, token) {
       const role = user.role || 'storyteller';
       if (role === 'both' || role === 'portal_admin') {
         localStorage.setItem('portalToken', token);
+        // Individual users (setup_type=self) recorded their own stories —
+        // try to get a storyteller token and send them to their stories instead.
+        if (user.setup_type === 'self') {
+          try {
+            const res = await fetch('/api/auth/st-token', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              localStorage.setItem('st_token', data.st_token);
+              localStorage.setItem('st_email', data.st_email);
+              localStorage.setItem('st_first_name', data.st_first_name || '');
+              window.location.href = '/storyteller';
+              return;
+            }
+          } catch (_) {}
+        }
         window.location.href = '/portal';
       } else {
         localStorage.setItem('st_token', token);

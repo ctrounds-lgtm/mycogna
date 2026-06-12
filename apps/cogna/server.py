@@ -1606,6 +1606,23 @@ def get_access_code(authorization: Optional[str] = Header(default=None)):
     return {"access_code": user.get("child_access_code", "")}
 
 
+@app.post("/api/auth/st-token")
+def get_storyteller_token(authorization: Optional[str] = Header(default=None)):
+    """For individual portal users (setup_type=self): issue a storyteller session token
+    so they can be routed directly to the storyteller app after login."""
+    portal_user = _auth_user(authorization)
+    email = portal_user["email"]
+    st_user = _get_storyteller_user(email)
+    if not st_user:
+        raise HTTPException(status_code=404, detail="No storyteller account found for this user.")
+    token = _create_story_session(email)
+    return {
+        "st_token": token,
+        "st_email": email,
+        "st_first_name": st_user.get("first_name") or portal_user.get("first_name") or "",
+    }
+
+
 @app.post("/api/auth/request-reset")
 def auth_request_reset(payload: PasswordResetRequest):
     from datetime import timedelta
