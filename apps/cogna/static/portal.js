@@ -588,7 +588,7 @@ const portal = {
     const ft = fetchTier || tier;
     try {
       const [codesData, promptsData, recsData] = await Promise.all([
-        req(`${api}/storyteller/user-codes?tier=${ft}`, { headers: authHeaders() }),
+        req(`${api}/storyteller/invite-codes?tier=${ft}`, { headers: authHeaders() }),
         req(`${api}/storyteller/prompts`, { headers: authHeaders() }),
         req(`${api}/storyteller/recordings?tier=${ft}`, { headers: authHeaders() }),
       ]);
@@ -680,7 +680,7 @@ const portal = {
     portal.loadEPrompts();
     try {
       const [codesData, recsData] = await Promise.all([
-        req(`${api}/storyteller/user-codes?tier=E`, { headers: authHeaders() }),
+        req(`${api}/storyteller/invite-codes?tier=E`, { headers: authHeaders() }),
         req(`${api}/storyteller/recordings?tier=E`, { headers: authHeaders() }),
       ]);
       portal._renderPromoCodes(codesData.codes || [], 'E');
@@ -708,7 +708,7 @@ const portal = {
 
   async loadFCodes() {
     try {
-      const codesData = await req(`${api}/storyteller/user-codes?tier=F`, { headers: authHeaders() });
+      const codesData = await req(`${api}/storyteller/invite-codes?tier=F`, { headers: authHeaders() });
       portal._renderPromoCodes(codesData.codes || [], 'F');
     } catch (err) {
       console.error('loadFCodes error:', err.message);
@@ -719,26 +719,114 @@ const portal = {
     const el = document.getElementById('inviteeListF');
     if (!el) return;
     el.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+    const dlBtn = document.getElementById('downloadAllStoriesBtn');
     try {
       const data = await req(`${api}/portal/invitees?tier=F`, { headers: authHeaders() });
       const invitees = data.invitees || [];
       if (!invitees.length) {
         el.innerHTML = '<div class="empty-state"><p>No Book Builder invitees yet. Generate a Book Builder code and share it to get started.</p></div>';
+        if (dlBtn) dlBtn.classList.add('hidden');
         return;
       }
+      if (dlBtn) dlBtn.classList.remove('hidden');
       el.innerHTML = invitees.map(inv => {
         const name = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email;
         const count = inv.recording_count || 0;
         return `
-          <div class="story-item">
-            <div class="story-item-main">
-              <div class="story-item-text">${name}</div>
-              <div class="story-item-meta">${inv.email} · ${count} recording${count !== 1 ? 's' : ''}</div>
+          <div class="story-item invitee-card" id="invitee-card-${inv.id}">
+            <div class="story-item-main invitee-card-header" onclick="portal.toggleInvitee('${inv.id}')" style="cursor:pointer">
+              <div class="story-item-text invitee-card-title">
+                ${name} <span class="invitee-chevron" id="invitee-chevron-${inv.id}">▸</span>
+              </div>
+              <div class="story-item-meta">${name !== inv.email ? inv.email + ' · ' : ''}${count} recording${count !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="invitee-recordings hidden" id="invitee-recs-${inv.id}">
+              <div class="empty-state" style="padding:12px 0"><p>Loading recordings…</p></div>
             </div>
           </div>`;
       }).join('');
     } catch (err) {
       el.innerHTML = `<div class="empty-state"><p>Error loading invitees: ${err.message}</p></div>`;
+      if (dlBtn) dlBtn.classList.add('hidden');
+    }
+  },
+
+  toggleInvitee(id) {
+    const recs = document.getElementById(`invitee-recs-${id}`);
+    const chevron = document.getElementById(`invitee-chevron-${id}`);
+    if (!recs) return;
+    const opening = recs.classList.contains('hidden');
+    recs.classList.toggle('hidden', !opening);
+    if (chevron) chevron.textContent = opening ? '▾' : '▸';
+    if (opening && recs.dataset.loaded !== 'true') {
+      portal.loadInviteeRecordings(id, recs);
+    }
+  },
+
+  async loadInviteeRecordings(storytellerId, containerEl) {
+    try {
+      const data = await req(`${api}/portal/invitee/${storytellerId}/data`, { headers: authHeaders() });
+      const recordings = data.recordings || [];
+      const inv = data.invitee || {};
+      const displayName = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || inv.email || storytellerId;
+      if (!recordings.length) {
+        containerEl.innerHTML = '<div class="empty-state" style="padding:12px 0"><p>No recordings yet.</p></div>';
+        containerEl.dataset.loaded = 'true';
+        return;
+      }
+      containerEl.innerHTML = recordings.map((rec, i) => {
+        const dateStr = rec.created_at ? new Date(rec.created_at).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }) : '';
+        const question = rec.prompt_text || 'Custom question';
+        const transcript = rec.transcript || '';
+        const hasPending = !transcript;
+        const audioHtml = rec.audio_url
+          ? `<audio controls preload="none" style="width:100%;margin:8px 0 4px"><source src="${rec.audio_url}"><span style="font-size:12px;color:var(--ink-muted)">Audio not supported in this browser.</span></audio>`
+          : '';
+        const transcriptHtml = hasPending
+          ? '<span class="pending-label">Transcription pending</span>'
+          : `<div class="invitee-transcript">${transcript.replace(/\n/g, '<br>')}</div>`;
+        const dlBtn = transcript
+          ? `<button class="ghost-btn small" style="margin-top:8px" onclick="portal.downloadTranscript(${JSON.stringify(transcript)}, ${JSON.stringify(displayName + ' - ' + (i+1) + ' - ' + question.slice(0,40) + '.txt')})">Download transcript</button>`
+          : '';
+        return `
+          <div class="recording-card">
+            <div class="recording-question">${question}</div>
+            <div class="recording-date">${dateStr}</div>
+            ${audioHtml}
+            ${transcriptHtml}
+            ${dlBtn}
+          </div>`;
+      }).join('');
+      containerEl.dataset.loaded = 'true';
+    } catch (err) {
+      containerEl.innerHTML = `<div class="empty-state" style="padding:12px 0"><p>Error: ${err.message}</p></div>`;
+    }
+  },
+
+  downloadTranscript(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  async downloadAllStories(tier) {
+    const btn = document.getElementById('downloadAllStoriesBtn');
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Building zip…'; btn.disabled = true; }
+    try {
+      const resp = await fetch(`${api}/portal/invitees/all-stories.zip?tier=${tier || 'F'}`, { headers: authHeaders() });
+      if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `stories-${(tier || 'F').toLowerCase()}.zip`; a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Download failed: ' + err.message);
+    } finally {
+      if (btn) { btn.textContent = origText; btn.disabled = false; }
     }
   },
 
@@ -1170,7 +1258,7 @@ const portal = {
     const dt = portal._pendingCodeDisplayTier || t;
 
     try {
-      const result = await req(`${api}/storyteller/user-codes`, {
+      const result = await req(`${api}/storyteller/invite-codes`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: label, tier: t, recipient_email: email || null }),
@@ -1227,9 +1315,9 @@ const portal = {
   },
 
   async deactivateCode(code, tier) {
-    if (!confirm(`Deactivate user code ${code}? New accounts can no longer be created with this code. Existing accounts are unaffected.`)) return;
+    if (!confirm(`Deactivate invite code ${code}? New accounts can no longer be created with this code. Existing accounts are unaffected.`)) return;
     try {
-      await req(`${api}/storyteller/user-codes/${code}`, {
+      await req(`${api}/storyteller/invite-codes/${code}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
@@ -1257,7 +1345,7 @@ const portal = {
     const input = document.getElementById('labelEdit-' + code).querySelector('input');
     const description = input.value.trim();
     try {
-      await req(`${api}/storyteller/user-codes/${code}`, {
+      await req(`${api}/storyteller/invite-codes/${code}`, {
         method: 'PATCH',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),

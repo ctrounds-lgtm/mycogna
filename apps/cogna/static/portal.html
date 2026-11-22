@@ -166,7 +166,7 @@
     <!-- ── PANEL A — Free Storyteller ── -->
     <div id="panelA" class="hidden">
       <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Free tier — max 1 active)</span></h2>
+        <h2 class="section-title">Invite Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Free tier — max 1 active)</span></h2>
         <button class="add-btn" id="generateBtnA" onclick="portal.generatePromoCode('A')">+ Generate Code</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share an A-code with someone to give them free storytelling access (1 story/month).</p>
@@ -206,7 +206,7 @@
           <div class="onboarding-step">
             <div class="onboarding-step-num">2</div>
             <div class="onboarding-step-body">
-              <strong>Generate a user code</strong>
+              <strong>Generate an invite code</strong>
               <p>Click <strong>+ Generate Code</strong> above and give it a label so you remember who it's for. Each person needs their own code.</p>
             </div>
           </div>
@@ -222,7 +222,7 @@
       </div>
 
       <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Storytelling Unlimited)</span></h2>
+        <h2 class="section-title">Invite Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Storytelling Unlimited)</span></h2>
         <button class="add-btn" onclick="portal.generatePromoCode('B')">+ Generate Code</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a B-code with someone to give them unlimited storytelling access.</p>
@@ -261,7 +261,7 @@
     <!-- ── PANEL C — AI Assisted ── -->
     <div id="panelC" class="hidden">
       <div class="section-header-row" style="margin-top:8px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Storytelling Unlimited + Memoir Builder)</span></h2>
+        <h2 class="section-title">Invite Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Storytelling Unlimited + Memoir Builder)</span></h2>
         <button class="add-btn" onclick="portal.generatePromoCode('C')">+ Generate Code</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Share a code with someone to give them AI-assisted storytelling and memoir builder access.</p>
@@ -341,7 +341,7 @@
         <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;margin-bottom:0;padding:10px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border-left:3px solid var(--gold-light)">If you upgrade to Legacy Collection + Book Builder, your existing codes remain active — storytellers keep their recording access. To give a storyteller Go Deeper and book access, generate a new Book Builder code for them.</p>
       </div>
       <div class="section-header-row" style="margin-top:24px">
-        <h2 class="section-title">User Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection)</span></h2>
+        <h2 class="section-title">Invite Codes <span style="font-size:12px;font-weight:400;color:var(--ink-muted)">(Legacy Collection)</span></h2>
         <button class="add-btn" onclick="portal.generatePromoCode('E', 'E')">+ Storyteller Code</button>
       </div>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">The Legacy Collection gives you five storyteller codes per month. Your storytellers record responses to your questions at their own pace.</p>
@@ -424,7 +424,10 @@
       <div id="fPanel-stories" class="hidden" style="margin-top:20px">
         <div class="section-header-row">
           <h2 class="section-title">Enrolled Storytellers</h2>
-          <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="downloadAllStoriesBtn" class="ghost-btn hidden" onclick="portal.downloadAllStories('F')">Download all stories</button>
+            <button class="add-btn" onclick="portal.loadLegacyInvitees()">Refresh</button>
+          </div>
         </div>
         <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">Storytellers who have joined using a Book Builder code. Their recordings will be included in the combined book.</p>
         <div id="inviteeListF" class="stories-list" style="margin-bottom:40px">

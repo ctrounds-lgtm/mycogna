@@ -362,7 +362,7 @@ class SaveSessionRequest(BaseModel):
 
 
 class StoryValidateRequest(BaseModel):
-    user_code: str
+    invite_code: str
 
 
 class StoryPromptCreate(BaseModel):
@@ -397,7 +397,7 @@ class StripeCheckoutRequest(BaseModel):
 
 
 class StorySignupRequest(BaseModel):
-    user_code: Optional[str] = None
+    invite_code: Optional[str] = None
     plan: Optional[str] = None   # pre-Stripe tier hint: 'B', 'C', 'D'
     email: str
     password: str
@@ -464,6 +464,7 @@ class GiftPurchaseRequest(BaseModel):
     recipient_name: Optional[str] = None
     recipient_email: Optional[str] = None
     promo: Optional[str] = None
+    promotion_code: Optional[str] = None  # Stripe promotion code entered by user
 
 
 class GiftRedeemRequest(BaseModel):
@@ -1124,6 +1125,37 @@ def _send_gift_confirmation_email(gift: dict) -> None:
             print(f"[Resend] gift recipient email failed: {e}")
 
 
+def _send_gift_expiry_email(user: dict) -> None:
+    """Notify a portal user that their gift subscription has expired and they've moved to free tier."""
+    if not resend_sdk or not RESEND_API_KEY:
+        return
+    email = user.get("email", "")
+    if not email:
+        return
+    first_name = user.get("first_name") or (user.get("name", "") or "").split(" ")[0] or "there"
+    tier_name = GIFT_TIER_NAMES.get(user.get("tier", ""), "MyCogna")
+    base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
+    html = f"""
+    <p>Hi {first_name},</p>
+    <p>Your MyCogna gift subscription ({tier_name}) has come to an end — thank you for being part of the story.</p>
+    <p>Your account is still active. You're now on our free tier, which includes one recording per month.
+    All of your previous recordings are safe and waiting for you.</p>
+    <p>If you'd like to continue with full access, you can upgrade any time from your portal:</p>
+    <p><a href="{base_url}/portal">{base_url}/portal</a></p>
+    <p>We hope you enjoyed the experience.</p>
+    """
+    try:
+        resend_sdk.Emails.send({
+            "from": RESEND_FROM,
+            "to": [email],
+            "subject": "Your MyCogna gift subscription has ended",
+            "html": html,
+        })
+        print(f"[Gift] expiry email sent to {email}")
+    except Exception as e:
+        print(f"[Resend] gift expiry email failed for {email}: {e}")
+
+
 def _send_code_invite_email(code: str, label: str, tier: str, portal_user: dict, recipient_email: str) -> None:
     """Send a storyteller code invite to the recipient and cc the portal user."""
     if not resend_sdk or not RESEND_API_KEY:
@@ -1215,6 +1247,18 @@ async def gift_purchase(payload: GiftPurchaseRequest):
         else:
             raise HTTPException(status_code=400, detail="This promotional offer has expired.")
 
+    # Resolve Stripe promotion code if provided
+    stripe_promo_code_id = None
+    if payload.promotion_code:
+        code_str = payload.promotion_code.strip().upper()
+        try:
+            promo_list = stripe_sdk.PromotionCode.list(code=code_str, active=True, limit=1)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail="Could not validate promo code.")
+        if not promo_list.data:
+            raise HTTPException(status_code=400, detail="Promo code not found or expired.")
+        stripe_promo_code_id = promo_list.data[0].id
+
     code = _generate_gift_code()
     gift_id = "gift_" + secrets.token_hex(8)
     base_url = os.getenv("APP_BASE_URL", "https://mycogna.org")
@@ -1241,7 +1285,7 @@ async def gift_purchase(payload: GiftPurchaseRequest):
     tier_name = GIFT_TIER_NAMES.get(tier, tier)
     duration_str = f"{payload.duration_months} month" + ("s" if payload.duration_months != 1 else "")
     try:
-        stripe_session = stripe_sdk.checkout.Session.create(
+        session_params = dict(
             mode="payment",
             line_items=[{
                 "price_data": {
@@ -1260,6 +1304,9 @@ async def gift_purchase(payload: GiftPurchaseRequest):
             success_url=f"{base_url}/gift/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{base_url}/gift?canceled=1",
         )
+        if stripe_promo_code_id:
+            session_params["discounts"] = [{"promotion_code": stripe_promo_code_id}]
+        stripe_session = stripe_sdk.checkout.Session.create(**session_params)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
 
@@ -1576,6 +1623,7 @@ def auth_me(authorization: Optional[str] = Header(default=None)):
             if expires.tzinfo is None:
                 expires = expires.replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) > expires:
+                _send_gift_expiry_email(user)
                 _update_user(user["email"], {
                     "tier": "A",
                     "gift_expires_at": None,
@@ -2175,10 +2223,10 @@ def storyteller_me(authorization: Optional[str] = Header(default=None)):
 
 @app.post("/api/storyteller/validate")
 def storyteller_validate(payload: StoryValidateRequest):
-    code = payload.user_code.strip().upper()
+    code = payload.invite_code.strip().upper()
     pc = _get_promo_code(code)
     if not pc:
-        raise HTTPException(status_code=404, detail="User code not found or inactive")
+        raise HTTPException(status_code=404, detail="Invite code not found or inactive")
     code_tier = pc.get("tier", "A").upper()
     prompts = _get_active_prompts(pc.get("created_by"), include_system=code_tier not in {"E", "F"})
     if not prompts:
@@ -2188,13 +2236,13 @@ def storyteller_validate(payload: StoryValidateRequest):
 
 @app.post("/api/storyteller/signup")
 def storyteller_signup(payload: StorySignupRequest):
-    # Validate user code if provided
-    code = payload.user_code.strip().upper() if payload.user_code else None
+    # Validate invite code if provided
+    code = payload.invite_code.strip().upper() if payload.invite_code else None
     pc = None
     if code:
         pc = _get_promo_code(code)
         if not pc:
-            raise HTTPException(status_code=404, detail="User code not found or inactive")
+            raise HTTPException(status_code=404, detail="Invite code not found or inactive")
 
     email = payload.email.strip().lower()
     if not email or "@" not in email:
@@ -2792,7 +2840,7 @@ def reorder_story_prompts(
     return {"ok": True}
 
 
-@app.get("/api/storyteller/user-codes")
+@app.get("/api/storyteller/invite-codes")
 def list_promo_codes(
     authorization: Optional[str] = Header(default=None),
     tier: Optional[str] = Query(default=None),
@@ -2812,7 +2860,7 @@ def list_promo_codes(
     return {"codes": list(codes)}
 
 
-@app.post("/api/storyteller/user-codes")
+@app.post("/api/storyteller/invite-codes")
 def create_promo_code(
     payload: PromoCodeCreate,
     authorization: Optional[str] = Header(default=None),
@@ -2890,7 +2938,7 @@ def create_promo_code(
     return {"code": record}
 
 
-@app.patch("/api/storyteller/user-codes/{code}")
+@app.patch("/api/storyteller/invite-codes/{code}")
 def rename_promo_code(
     code: str,
     payload: PromoCodeCreate,
@@ -2909,7 +2957,7 @@ def rename_promo_code(
     return {"ok": True}
 
 
-@app.delete("/api/storyteller/user-codes/{code}")
+@app.delete("/api/storyteller/invite-codes/{code}")
 def deactivate_promo_code(
     code: str,
     authorization: Optional[str] = Header(default=None),
@@ -3070,7 +3118,9 @@ STORY BLUEPRINT: 3-4 paragraphs describing themes, voice, and emotional arc
 CHAPTER OUTLINE: numbered list of chapter titles with 1-2 sentence descriptions
 WHAT'S MISSING: a short, encouraging paragraph noting gaps
 
-Tone: warm, encouraging, professional. This person's stories matter."""
+Tone: warm, encouraging, professional. This person's stories matter.
+
+LANGUAGE: If the transcripts are in a language other than English, translate all content into English while preserving the storyteller's authentic voice and meaning."""
 
 
 def _parse_assembly_output(text: str) -> dict:
@@ -3167,6 +3217,8 @@ Write a complete first-draft chapter that:
 4. Closes in a way that feels complete yet connected to the whole memoir arc
 
 CRITICAL: Use only what was actually said. Never invent quotes, events, or details not present in the recordings. Write in a warm, literary non-fiction style — like a skilled memoir editor helping someone find the best version of their own story.
+
+LANGUAGE: If the recordings are in a language other than English, translate all content into English while preserving the storyteller's authentic voice and meaning.
 
 Return the chapter text only — no commentary, no preamble. Write it as finished prose."""
 
@@ -3823,6 +3875,120 @@ def list_portal_invitees(tier: str = Query(default="C"), authorization: Optional
     return {"invitees": invitees}
 
 
+@app.get("/api/portal/invitees/all-stories.zip")
+async def download_all_stories_zip(
+    tier: str = Query(default="F"),
+    authorization: Optional[str] = Header(default=None),
+):
+    """Download all storyteller transcripts (and audio up to AUDIO_ZIP_CAP files) as a zip.
+
+    Ownership: only recordings belonging to the logged-in portal admin are included.
+    Audio cap: first AUDIO_ZIP_CAP files are fetched and bundled; the rest get transcripts only.
+    """
+    import io
+    import zipfile as _zipfile
+    import re as _re
+
+    AUDIO_ZIP_CAP = 40  # max audio files to avoid OOM on Railway 512 MB
+
+    portal_user = _auth_user(authorization)
+    tier_upper = tier.upper()
+
+    # --- Gather invitees that belong to this portal admin ---
+    if supabase:
+        codes_r = supabase.table("promo_codes").select("code").eq("created_by", portal_user["email"]).eq("tier", tier_upper).execute()
+        codes = [r["code"] for r in (codes_r.data or [])]
+        if not codes:
+            invitees = []
+        else:
+            st_r = supabase.table("storyteller_users").select("id, email, first_name, last_name").in_("signup_code", codes).execute()
+            invitees = st_r.data or []
+    else:
+        db = _load_db()
+        codes = {v.get("code") for v in db.get("promo_codes", {}).values() if v.get("created_by") == portal_user["email"] and v.get("tier") == tier_upper}
+        invitees = [{"id": u["id"], "email": u["email"], "first_name": u.get("first_name", ""), "last_name": u.get("last_name", "")} for u in db.get("storyteller_users", {}).values() if u.get("signup_code") in codes]
+
+    buf = io.BytesIO()
+    audio_count = 0
+    audio_capped = False
+
+    with _zipfile.ZipFile(buf, mode="w", compression=_zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
+        for inv in invitees:
+            user_id = inv["id"]
+            display_name = " ".join(filter(None, [inv.get("first_name", ""), inv.get("last_name", "")])) or inv["email"]
+            safe_name = _re.sub(r"[^\w\- ]", "_", display_name).strip()
+            folder = safe_name or user_id
+
+            if supabase:
+                recs_r = supabase.table("story_recordings").select("id, prompt_id, transcript, audio_url, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+                recordings = recs_r.data or []
+                prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
+                prompt_map = {}
+                if prompt_ids:
+                    pr = supabase.table("story_prompts").select("id, text").in_("id", prompt_ids).execute()
+                    prompt_map = {p["id"]: p["text"] for p in (pr.data or [])}
+            else:
+                db = _load_db()
+                recordings = sorted([r for r in db["story_recordings"].values() if r.get("storyteller_user_id") == user_id], key=lambda x: x.get("created_at", ""))
+                prompt_map = {p["id"]: p["text"] for p in db.get("story_prompts", {}).values()}
+
+            for idx, rec in enumerate(recordings, start=1):
+                date_str = ""
+                if rec.get("created_at"):
+                    try:
+                        date_str = rec["created_at"][:10]
+                    except Exception:
+                        date_str = ""
+                prompt_text = prompt_map.get(rec.get("prompt_id") or "", "")
+                transcript = rec.get("transcript") or ""
+                question_slug = _re.sub(r"[^\w ]", "", prompt_text[:40]).strip().replace(" ", "-")[:30] if prompt_text else "recording"
+                base_name = f"{idx:02d}_{date_str}_{question_slug}"
+
+                # Transcript file
+                txt_lines = []
+                if prompt_text:
+                    txt_lines.append(f"Question: {prompt_text}\n")
+                txt_lines.append(f"Date: {date_str}\n")
+                txt_lines.append(f"Storyteller: {display_name} ({inv['email']})\n")
+                txt_lines.append("\n")
+                txt_lines.append(transcript if transcript else "[Transcription pending]")
+                zf.writestr(f"{folder}/{base_name}.txt", "".join(txt_lines))
+
+                # Audio file — only up to cap
+                audio_url = rec.get("audio_url") or ""
+                if audio_url and audio_count < AUDIO_ZIP_CAP:
+                    try:
+                        import httpx as _httpx
+                        resp = _httpx.get(audio_url, timeout=15, follow_redirects=True)
+                        if resp.status_code == 200:
+                            ext = Path(audio_url.split("?")[0]).suffix.lower() or ".webm"
+                            zf.writestr(f"{folder}/{base_name}{ext}", resp.content)
+                            audio_count += 1
+                    except Exception:
+                        pass  # skip audio on fetch failure; transcript is already included
+                elif audio_url and audio_count >= AUDIO_ZIP_CAP:
+                    audio_capped = True
+
+        if audio_capped:
+            note = (
+                f"NOTE: This zip includes transcripts for all recordings, but audio files were "
+                f"capped at {AUDIO_ZIP_CAP} to stay within server memory limits. "
+                f"To download individual audio files, open each recording in the portal.\n"
+            )
+            zf.writestr("README.txt", note)
+
+    buf.seek(0)
+    zip_bytes = buf.getvalue()
+    tier_label = "legacy-collection" if tier_upper == "E" else "book-builder"
+    filename = f"stories-{tier_label}.zip"
+    from fastapi.responses import Response as _Response
+    return _Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.get("/api/portal/invitee/{storyteller_id}/data")
 def portal_invitee_data(storyteller_id: str, authorization: Optional[str] = Header(default=None)):
     portal_user = _auth_user(authorization)
@@ -3840,7 +4006,7 @@ def portal_invitee_data(storyteller_id: str, authorization: Optional[str] = Head
             pc = next((v for v in db_lookup.get("promo_codes", {}).values() if v.get("code") == signup_code), None)
             code_tier = pc.get("tier", "C") if pc else "C"
     if supabase:
-        r = supabase.table("story_recordings").select("id, prompt_id, transcript, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
+        r = supabase.table("story_recordings").select("id, prompt_id, transcript, audio_url, created_at").eq("storyteller_user_id", user_id).order("created_at").execute()
         recordings = r.data or []
         prompt_ids = [rec["prompt_id"] for rec in recordings if rec.get("prompt_id")]
         prompt_map = {}

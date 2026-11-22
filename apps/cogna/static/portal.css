@@ -1379,3 +1379,52 @@ input[type=range]:focus { outline: none; }
   text-decoration: none;
 }
 .upgrade-cta-link:hover { text-decoration: underline; }
+
+/* Expandable invitee cards — Stories tab */
+.invitee-card { border-radius: 8px; overflow: hidden; }
+.invitee-card-header { user-select: none; }
+.invitee-card-header:hover { background: var(--surface-hover, #f5f5f5); }
+.invitee-card-title { display: flex; align-items: center; gap: 6px; }
+.invitee-chevron { font-size: 12px; color: var(--ink-muted); }
+.invitee-recordings { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border); }
+.recording-card {
+  background: var(--surface, #fafafa);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.recording-question {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.recording-date {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+.invitee-transcript {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.6;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.pending-label {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: var(--surface-hover, #f0f0f0);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-top: 6px;
+}
+.ghost-btn.small { font-size: 12px; padding: 4px 10px; }
