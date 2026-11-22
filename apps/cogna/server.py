@@ -150,10 +150,12 @@ def _update_seat_quantity(portal_email: str, delta: int) -> None:
     if not supabase:
         return
     try:
-        r = supabase.table("users").select("stripe_subscription_id, stripe_seat_item_id, stripe_customer_id, tier").eq("email", portal_email).limit(1).execute()
+        r = supabase.table("users").select("stripe_subscription_id, stripe_seat_item_id, stripe_customer_id, tier, comped").eq("email", portal_email).limit(1).execute()
         if not r.data:
             return
         user = r.data[0]
+        if user.get("comped"):
+            return  # comped accounts have no Stripe subscription to update
         if user.get("tier") not in ("E", "F"):
             return
         sub_id = user.get("stripe_subscription_id")
@@ -919,7 +921,9 @@ def _handle_subscription_deleted(sub: dict) -> None:
     if supabase:
         supabase.table("storyteller_users").update(updates).eq("stripe_customer_id", customer_id).execute()
         portal_updates = {**updates, "stripe_seat_item_id": None}
-        supabase.table("users").update(portal_updates).eq("stripe_customer_id", customer_id).execute()
+        # Never downgrade comped accounts — they have no Stripe subscription, so customer_id
+        # will be NULL and this filter won't match, but the extra guard makes intent explicit.
+        supabase.table("users").update(portal_updates).eq("stripe_customer_id", customer_id).eq("comped", False).execute()
 
 
 def _handle_payment_failed(invoice: dict) -> None:
@@ -1015,6 +1019,7 @@ async def billing_status(authorization: Optional[str] = Header(default=None)):
         "period_end": period_end,  # alias used by frontend
         "has_subscription": has_subscription,
         "active_code_count": active_code_count,
+        "comped": bool(user.get("comped", False)),
         "user_type": "portal",
     }
 
@@ -2815,8 +2820,9 @@ def create_promo_code(
     user = _auth_user(authorization)
     tier = payload.tier.upper() if payload.tier in {"A", "B", "C", "D", "E", "F"} else "A"
 
-    # E/F codes always require an active Stripe subscription — verified live against Stripe API
-    if tier in {"E", "F"}:
+    # E/F codes always require an active Stripe subscription — verified live against Stripe API.
+    # Comped accounts bypass this check entirely.
+    if tier in {"E", "F"} and not user.get("comped"):
         if not stripe_sdk or not STRIPE_SECRET_KEY:
             raise HTTPException(
                 status_code=503,
@@ -4957,6 +4963,7 @@ def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "role": user.get("role", "portal_admin"),
         "gift_expires_at": user.get("gift_expires_at"),
         "gift_code": user.get("gift_code"),
+        "comped": bool(user.get("comped", False)),
     }
 
 

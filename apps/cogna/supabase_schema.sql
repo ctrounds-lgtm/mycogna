@@ -426,3 +426,12 @@ ALTER TABLE story_prompts ADD COLUMN IF NOT EXISTS category TEXT;
 -- ─────────────────────────────────────────────
 
 ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS recipient_email TEXT;
+
+-- ─────────────────────────────────────────────
+-- Migration: comped accounts (2026-11-21)
+-- Run once in Supabase SQL editor.
+-- ─────────────────────────────────────────────
+
+-- comped=true bypasses Stripe subscription checks and seat billing entirely.
+-- Never set tier, subscription_status, or stripe_* fields on comped accounts.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS comped BOOLEAN NOT NULL DEFAULT false;
