@@ -632,14 +632,14 @@
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
 
-  <!-- ── SCREEN 1: Enter user code ── -->
+  <!-- ── SCREEN 1: Enter invite code ── -->
   <div class="screen hidden" id="screenEntry">
     <div class="inner">
       <div class="eyebrow">MyCogna · Storyteller</div>
       <h1 class="headline">Share your<br><em>story</em></h1>
-      <p class="sub">Enter the user code you received to get started.<br>Your voice matters. Take your time.</p>
+      <p class="sub">Enter the invite code you received to get started.<br>Your voice matters. Take your time.</p>
 
-      <input type="text" id="userCodeInput" class="code-input"
+      <input type="text" id="inviteCodeInput" class="code-input"
              placeholder="STORY-XXXX" maxlength="20"
              oninput="st.formatCode(this)"
              onkeydown="if(event.key==='Enter') st.submitCode()">
@@ -698,7 +698,7 @@
 
       <div class="divider">or</div>
 
-      <button class="btn-secondary" onclick="st.showEntry()">← I have a user code instead</button>
+      <button class="btn-secondary" onclick="st.showEntry()">← I have an invite code instead</button>
     </div>
   </div>
 
@@ -877,7 +877,7 @@
     const ALL_SCREENS = ['screenEntry','screenSignup','screenLogin','screenResetRequest','screenResetConfirm','screenOnboarding','screenChoice','screenPromptSelect','screenRecord','screenProcessing','screenDone','screenMyStories'];
 
     const stState = {
-      userCode: '',
+      inviteCode: '',
       authToken: '',
       tier: 'A',           // 'A' | 'B' | 'C' | 'D'
       managed: false,      // true = institutional invitee — no AI buttons, no upgrade prompts
@@ -912,7 +912,14 @@
       const res = await fetch(API + path, opts);
       if (!res.ok) {
         let detail = `Error ${res.status}`;
-        try { const b = await res.json(); if (b.detail) detail = b.detail; } catch {}
+        try {
+          const b = await res.json();
+          if (b.detail) {
+            detail = Array.isArray(b.detail)
+              ? b.detail.map(e => e.msg || String(e)).join('; ')
+              : String(b.detail);
+          }
+        } catch {}
         throw new Error(detail);
       }
       return res.json();
@@ -938,10 +945,10 @@
 
       // ── Code entry → signup ──
       async submitCode() {
-        const code = document.getElementById('userCodeInput').value.trim().toUpperCase();
+        const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
         const errEl = document.getElementById('codeError');
         errEl.classList.add('hidden');
-        if (!code) { errEl.textContent = 'Please enter your user code.'; errEl.classList.remove('hidden'); return; }
+        if (!code) { errEl.textContent = 'Please enter your invite code.'; errEl.classList.remove('hidden'); return; }
 
         const btn = document.getElementById('codeBtn');
         btn.textContent = 'Checking…';
@@ -951,9 +958,9 @@
           const result = await apiFetch('/validate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_code: code }),
+            body: JSON.stringify({ invite_code: code }),
           });
-          stState.userCode = code;
+          stState.inviteCode = code;
           stState.prompts = result.prompts;
           document.getElementById('signupCodeBadge').textContent = code;
           document.getElementById('signupError').classList.add('hidden');
@@ -987,7 +994,7 @@
           const result = await apiFetch('/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_code: stState.userCode, email, password }),
+            body: JSON.stringify({ invite_code: stState.inviteCode, email, password }),
           });
           stState.authToken = result.token;
           stState.tier = result.user.tier || 'A';
